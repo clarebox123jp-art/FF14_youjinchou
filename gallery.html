@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>相簿 | 幻想友人帳</title>
+  <meta name="description" content="幻想友人帳的回憶相簿。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="brand sfx">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a45c" stroke-width="1.4">
+        <path d="M12 2 L18 12 L12 22 L6 12 Z" /><path d="M12 2 L12 22 M6 12 L18 12" stroke-width="0.8" />
+      </svg>
+      <span>幻想友人帳</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="選單">☰</button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html" class="sfx">首頁</a>
+      <a href="about.html" class="sfx">公會介紹</a>
+      <a href="members.html" class="sfx">幹部成員</a>
+      <a href="gallery.html" class="active sfx">相簿</a>
+    </div>
+  </nav>
+
+  <section class="section" style="padding-bottom:20px">
+    <div class="wrap reveal" style="text-align:center">
+      <p class="eyebrow">Gallery</p>
+      <h1 style="font-size:clamp(2.2rem,6vw,3.4rem)">相簿</h1>
+      <p class="body" style="margin:16px auto 0">那些捨不得刪的截圖與回憶。</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:20px">
+    <div class="wrap">
+      <!-- 換照片：改 <img src="images/gallery-1.jpg">；換說明：改 <figcaption> 的字 -->
+      <div class="grid-gallery reveal">
+
+        <figure class="photo">
+          <img src="images/gallery-1.jpg" alt="截圖" />
+          <figcaption class="cap">週末 8 人極副本通關的那一晚</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="images/gallery-2.jpg" alt="截圖" />
+          <figcaption class="cap">白銀鄉 9 區 30 號 · 我們的家</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="images/gallery-3.jpg" alt="截圖" />
+          <figcaption class="cap">DC 知識王比賽現場</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="images/gallery-4.jpg" alt="截圖" />
+          <figcaption class="cap">第一場公會小網聚</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="images/gallery-5.jpg" alt="截圖" />
+          <figcaption class="cap">大家一起賺的藏寶圖冒險團</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="images/gallery-6.jpg" alt="截圖" />
+          <figcaption class="cap">潛水艇與菜田的日常產出</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span class="sigil">✦</span>
+      <h3>幻想友人帳</h3>
+      <p>Final Fantasy XIV · 鳳凰伺服器 開服公會</p>
+      <p>公會房：白銀鄉 9 區 30 號 溫泉區</p>
+      <p class="copyright">© 2026 幻想友人帳. 本站為 FF14 玩家自製，與 SQUARE ENIX 無關。</p>
+    </div>
+  </footer>
+
+  <button class="audio-btn" id="audioBtn" aria-label="背景音樂開關">
+    <span class="note">♪</span><span class="label">音樂：關</span>
+  </button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

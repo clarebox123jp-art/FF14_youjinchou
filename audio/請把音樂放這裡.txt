@@ -1,0 +1,17 @@
+這個資料夾放聲音檔。
+
+需要兩個檔案：
+1. bgm.mp3   ← 背景音樂（要自己準備一首放進來，檔名就叫 bgm.mp3）
+2. click.mp3 ← 按鍵音效（已經附了一個範例，可以直接用，也可以換掉）
+
+要換檔名的話，記得同時去改 js/main.js 最上面的：
+  const BGM_SRC   = "audio/bgm.mp3";
+  const CLICK_SRC = "audio/click.mp3";
+
+【去哪裡找可以合法使用的音樂 / 音效】
+- YouTube 音效庫（YouTube Audio Library，登入 YouTube 工作室即可下載）
+- Pixabay Music / Pixabay 音效（pixabay.com，免費可商用）
+- Freesound（freesound.org，注意每個檔案的授權條款）
+
+【重要】不要直接用 FF14 遊戲內的音樂——那是 SQUARE ENIX 的版權。
+自己拍的截圖沒問題，但官方配樂請改用上面那些免版稅來源。

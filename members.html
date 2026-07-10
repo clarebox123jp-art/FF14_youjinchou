@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>幹部成員 | 幻想友人帳</title>
+  <meta name="description" content="幻想友人帳的會長與幹部。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="brand sfx">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a45c" stroke-width="1.4">
+        <path d="M12 2 L18 12 L12 22 L6 12 Z" /><path d="M12 2 L12 22 M6 12 L18 12" stroke-width="0.8" />
+      </svg>
+      <span>幻想友人帳</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="選單">☰</button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html" class="sfx">首頁</a>
+      <a href="about.html" class="sfx">公會介紹</a>
+      <a href="members.html" class="active sfx">幹部成員</a>
+      <a href="gallery.html" class="sfx">相簿</a>
+    </div>
+  </nav>
+
+  <section class="section" style="padding-bottom:20px">
+    <div class="wrap reveal" style="text-align:center">
+      <p class="eyebrow">Members</p>
+      <h1 style="font-size:clamp(2.2rem,6vw,3.4rem)">幹部成員</h1>
+      <p class="body" style="margin:16px auto 0">有問題想入會，都可以密下面這些人。</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:20px">
+    <div class="wrap">
+      <!-- ============================================================
+           想加成員就複製一整個 <article class="member">...</article>
+           換照片：把角色截圖放進 images/、改 <img src="...">
+           ============================================================ -->
+      <div class="grid-members reveal">
+
+        <article class="member">
+          <img src="images/member-1.jpg" alt="會長 小克瑞爾" />
+          <div class="info">
+            <p class="role">會長 · Master</p>
+            <h3>小克瑞爾</h3>
+            <p>DC 私訊 ID：ke7235。平日 20:00–24:00、假日全天。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/member-2.jpg" alt="幹部 Izumi澄" />
+          <div class="info">
+            <p class="role">幹部 · Officer</p>
+            <h3>Izumi澄</h3>
+            <p>平日與假日全天可密，先邀你入會。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/member-3.jpg" alt="幹部 九里斯蒂安" />
+          <div class="info">
+            <p class="role">幹部 · Officer</p>
+            <h3>九里斯蒂安</h3>
+            <p>平日與假日全天可密，先邀你入會。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/member-4.jpg" alt="幹部 拉可帕萩琴" />
+          <div class="info">
+            <p class="role">幹部 · Officer</p>
+            <h3>拉可帕萩琴</h3>
+            <p>平日與假日全天可密，先邀你入會。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/member-5.jpg" alt="幹部 豐川奏" />
+          <div class="info">
+            <p class="role">幹部 · Officer</p>
+            <h3>豐川奏</h3>
+            <p>平日與假日全天可密，先邀你入會。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/member-6.jpg" alt="幹部 九尾焱狐" />
+          <div class="info">
+            <p class="role">幹部 · Officer</p>
+            <h3>九尾焱狐</h3>
+            <p>平日與假日全天可密，先邀你入會。</p>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="body reveal" style="text-align:center;margin:44px auto 0">
+        也可以直接
+        <a href="https://discord.gg/r8A9Vpku33" class="sfx" target="_blank" rel="noopener" style="color:var(--gold)">加入 Discord 候客室</a>
+        ，私訊會長 ke7235 並註明來自巴哈招生文。
+      </p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span class="sigil">✦</span>
+      <h3>幻想友人帳</h3>
+      <p>Final Fantasy XIV · 鳳凰伺服器 開服公會</p>
+      <p>公會房：白銀鄉 9 區 30 號 溫泉區</p>
+      <p class="copyright">© 2026 幻想友人帳. 本站為 FF14 玩家自製，與 SQUARE ENIX 無關。</p>
+    </div>
+  </footer>
+
+  <button class="audio-btn" id="audioBtn" aria-label="背景音樂開關">
+    <span class="note">♪</span><span class="label">音樂：關</span>
+  </button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

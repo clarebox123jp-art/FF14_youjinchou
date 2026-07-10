@@ -412,3 +412,45 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .lightbox .lb-close:hover { background: #fff; }
+
+/* ============================================================
+   ★ 相簿跑馬燈（左右捲動）：照片縮小約 30%、置中、可滑動；沿用 .photo/.cap/.photo-frame
+   ============================================================ */
+.carousel { position: relative; margin-top: 40px; }
+.car-track {
+  display: flex; gap: 22px; overflow-x: auto;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  padding: 6px calc((100% - min(84%, 440px)) / 2) 6px;  /* 左右留白讓首尾能置中 */
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.car-track::-webkit-scrollbar { display: none; }
+.car-track .photo { flex: 0 0 min(84%, 440px); scroll-snap-align: center; }
+
+/* 左右箭頭（圓鈕，對齊照片中央） */
+.car-arrow {
+  position: absolute; top: 36%; transform: translateY(-50%); z-index: 3;
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
+  background: rgba(250, 244, 232, 0.94); color: var(--ink);
+  font-size: 1.7rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(44, 38, 32, 0.16);
+  transition: opacity 0.2s, background 0.2s;
+}
+.car-arrow.prev { left: 4px; }
+.car-arrow.next { right: 4px; }
+.car-arrow:hover { background: #fff; }
+.car-arrow:disabled { opacity: 0.32; cursor: default; }
+
+/* 計數：第幾張 / 共幾張 */
+.car-counter {
+  text-align: center; margin-top: 20px;
+  font-family: var(--font-display); letter-spacing: 0.14em;
+  color: var(--muted); font-size: 1.1rem;
+}
+.car-counter .cur { color: var(--shu); font-weight: 700; }
+
+@media (max-width: 560px) {
+  .car-track { padding: 6px calc((100% - 88%) / 2) 6px; gap: 14px; }
+  .car-track .photo { flex: 0 0 88%; }
+  .car-arrow { width: 40px; height: 40px; font-size: 1.4rem; }
+}

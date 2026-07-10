@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RP 商店 | 幻想友人帳</title>
+  <meta name="description" content="幻想友人帳的角色扮演商店，職務招募與工作夥伴。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="brand sfx">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#b08d3f" stroke-width="1.4">
+        <path d="M12 2 L18 12 L12 22 L6 12 Z" /><path d="M12 2 L12 22 M6 12 L18 12" stroke-width="0.8" />
+      </svg>
+      <span>幻想友人帳</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="選單">☰</button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html" class="sfx">首頁</a>
+      <a href="about.html" class="sfx">公會介紹</a>
+      <a href="members.html" class="sfx">幹部成員</a>
+      <a href="gallery.html" class="sfx">相簿</a>
+      <a href="shop.html" class="active sfx">RP 商店</a>
+    </div>
+  </nav>
+
+  <!-- 頁面標頭（精緻文青版文案） -->
+  <section class="section" style="padding-bottom:40px">
+    <div class="wrap reveal" style="text-align:center">
+      <p class="eyebrow">RP Shop</p>
+      <h1 style="font-size:clamp(2.2rem,6vw,3.6rem)">角色扮演商店</h1>
+      <div style="margin:22px 0"><span class="hanko">店</span></div>
+      <p class="body" style="margin:0 auto">
+        在白銀鄉的溫泉一隅，我們正籌備一間以故事為底的角色扮演店。<br />
+        若你也著迷於在艾歐傑亞裡扮演另一種人生，<br />這裡或許正留著一個位置，等你。
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       A. 職務招募（9 個職務）
+       想增減職務：複製或刪掉一整個 <article class="job">...</article> 即可。
+       說明文字可隨時手動調整。
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Positions · 招募職務</p>
+        <h2>店舖職務</h2>
+        <p class="body" style="margin-top:14px">依商店需求而定，歡迎依你的專長與興趣認領。</p>
+      </div>
+
+      <div class="job-grid reveal">
+
+        <article class="job">
+          <div class="num">01</div>
+          <h3>網站設計與管理</h3>
+          <p>商店網站的設計、更新與日常維護。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">02</div>
+          <h3>場景設計與裝潢</h3>
+          <p>規劃店內動線、佈景與整體氛圍裝潢。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">03</div>
+          <h3>商品供應</h3>
+          <p>提供販售商品，依商店需求而定。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">04</div>
+          <h3>家具／庭具供應</h3>
+          <p>提供店內家具與庭具，依商店需求而定。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">05</div>
+          <h3>店員</h3>
+          <p>對角色扮演有興趣，負責招呼與演出，依商店需求而定。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">06</div>
+          <h3>專業攝影</h3>
+          <p>對遊戲拍照功能有研究，能拍出讓人驚豔的照片。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">07</div>
+          <h3>公關宣傳</h3>
+          <p>熱衷於把遊戲中的內容分享到社群媒體。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">08</div>
+          <h3>財務管理</h3>
+          <p>支出、收入、薪水分配等帳務管理。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">09</div>
+          <h3>雜務組</h3>
+          <p>什麼都能做一點，哪裡需要幫忙就幫一下。</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       B. 工作夥伴名冊
+       每人一張卡：照片 + 角色名／ID + 遊玩時間 + 擔任職務 + 一句簡介。
+       想增減／修改：複製或刪掉一整個 <article class="member">...</article>，
+       照片放進 images/、改 <img src="...">。ID 與遊玩時間可隨時手動調整。
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Our People · 工作夥伴</p>
+        <h2>工作夥伴</h2>
+        <p class="body" style="margin-top:14px">目前的店舖成員，之後會陸續補上。</p>
+      </div>
+
+      <div class="grid-members reveal">
+
+        <article class="member">
+          <img src="images/staff-1.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">店長 · 場景設計</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>平日晚間 · 假日全天</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/staff-2.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">店員 · 專業攝影</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>假日午後</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <img src="images/staff-3.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">公關宣傳</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>不定期</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="body reveal" style="text-align:center;margin:44px auto 0">
+        想參與 RP 商店的經營或演出？
+        <a href="https://discord.gg/r8A9Vpku33" class="sfx" target="_blank" rel="noopener" style="color:var(--shu)">來 Discord 找我們聊聊 →</a>
+      </p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span class="sigil">✦</span>
+      <h3>幻想友人帳</h3>
+      <p>Final Fantasy XIV · 鳳凰伺服器 開服公會</p>
+      <p>公會房：白銀鄉 9 區 30 號 溫泉區</p>
+      <p class="copyright">© 2026 幻想友人帳. 本站為 FF14 玩家自製，與 SQUARE ENIX 無關。</p>
+    </div>
+  </footer>
+
+  <button class="audio-btn" id="audioBtn" aria-label="背景音樂開關">
+    <span class="note">♪</span><span class="label">音樂：關</span>
+  </button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

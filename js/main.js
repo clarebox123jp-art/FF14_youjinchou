@@ -93,54 +93,65 @@ const io = new IntersectionObserver(
 document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
 /* ------------------------------------------------------------
-   5) 首頁 Hero 飄動光點（妖光 / 螢火感）
+   5) 首頁 Hero 飄落櫻花瓣（和風）
    - 只在首頁（有 id="heroFx" 的畫布）執行
    - 使用者若在系統開了「減少動態」，就不播放
    - 想調數量/顏色：改下面 COUNT 與 COLORS
 ------------------------------------------------------------ */
-(function heroLights() {
+(function heroPetals() {
   const canvas = document.getElementById("heroFx");
   if (!canvas) return;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduce) return;
 
   const ctx = canvas.getContext("2d");
-  const COUNT = 46;                                   // 光點數量
-  const COLORS = ["#7fd6c8", "#c9a45c", "#e7a6b6"];   // 妖光青 / 金 / 櫻
-  let w, h, dots;
+  const COUNT = 26;                                   // 花瓣數量（別太多，淡淡的就好）
+  const COLORS = ["#e7a6b6", "#f0c3ce", "#d98a99"];   // 深淺不一的櫻色
+  let w, h, petals;
 
   function resize() {
     w = canvas.width = canvas.offsetWidth;
     h = canvas.height = canvas.offsetHeight;
   }
   function seed() {
-    dots = Array.from({ length: COUNT }, () => ({
+    petals = Array.from({ length: COUNT }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      r: Math.random() * 2 + 0.6,
-      a: Math.random() * 0.6 + 0.15,
-      dx: (Math.random() - 0.5) * 0.25,
-      dy: -(Math.random() * 0.35 + 0.08),
-      tw: Math.random() * Math.PI * 2,
+      s: Math.random() * 5 + 4,        // 大小
+      a: Math.random() * 0.4 + 0.35,   // 透明度
+      dy: Math.random() * 0.5 + 0.35,  // 落下速度
+      sway: Math.random() * 0.8 + 0.3, // 左右擺幅
+      rot: Math.random() * Math.PI,    // 旋轉角
+      dr: (Math.random() - 0.5) * 0.03,
+      ph: Math.random() * Math.PI * 2, // 擺動相位
       c: COLORS[Math.floor(Math.random() * COLORS.length)],
     }));
   }
+  function drawPetal(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = p.a;
+    ctx.fillStyle = p.c;
+    // 用兩段貝茲曲線畫一片花瓣
+    ctx.beginPath();
+    ctx.moveTo(0, -p.s);
+    ctx.bezierCurveTo(p.s * 0.7, -p.s * 0.5, p.s * 0.5, p.s * 0.6, 0, p.s);
+    ctx.bezierCurveTo(-p.s * 0.5, p.s * 0.6, -p.s * 0.7, -p.s * 0.5, 0, -p.s);
+    ctx.fill();
+    ctx.restore();
+  }
   function frame() {
     ctx.clearRect(0, 0, w, h);
-    for (const d of dots) {
-      d.x += d.dx; d.y += d.dy; d.tw += 0.03;
-      if (d.y < -10) { d.y = h + 10; d.x = Math.random() * w; }
-      if (d.x < -10) d.x = w + 10;
-      if (d.x > w + 10) d.x = -10;
-      const flick = d.a * (0.6 + 0.4 * Math.sin(d.tw));
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fillStyle = d.c;
-      ctx.globalAlpha = flick;
-      ctx.shadowBlur = 8; ctx.shadowColor = d.c;
-      ctx.fill();
+    for (const p of petals) {
+      p.ph += 0.02;
+      p.y += p.dy;
+      p.x += Math.sin(p.ph) * p.sway;
+      p.rot += p.dr;
+      if (p.y > h + 12) { p.y = -12; p.x = Math.random() * w; }
+      drawPetal(p);
     }
-    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
     requestAnimationFrame(frame);
   }
   resize(); seed(); frame();

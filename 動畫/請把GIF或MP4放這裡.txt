@@ -1,0 +1,9 @@
+這個資料夾放你的動畫檔（GIF 或 MP4）。
+
+用法範例（放進網頁裡）：
+- GIF：<img src="動畫/你的檔名.gif" alt="說明">
+- MP4：<video src="動畫/你的檔名.mp4" autoplay loop muted playsinline></video>
+  （muted 靜音才能自動播放；playsinline 讓手機不強制全螢幕）
+
+檔名建議用英文或數字，避免部分伺服器對中文檔名的相容問題。
+之後你把檔案放進來，跟我說要放在哪一頁哪個位置，我幫你接上。

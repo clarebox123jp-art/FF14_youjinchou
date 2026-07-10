@@ -161,3 +161,51 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   resize(); seed(); frame();
   window.addEventListener("resize", () => { resize(); seed(); });
 })();
+
+/* ------------------------------------------------------------
+   5) 相簿：點照片放大（燈箱 Lightbox），可關閉
+   - 只在有相簿照片的頁面作用，其他頁自動略過
+   - 關閉方式：右上角 ×、點灰色背景、按 Esc
+------------------------------------------------------------ */
+(function () {
+  const imgs = document.querySelectorAll(".photo .photo-frame img");
+  if (!imgs.length) return;
+
+  const lb = document.createElement("div");
+  lb.className = "lightbox";
+  lb.innerHTML =
+    '<button class="lb-close" aria-label="關閉放大">×</button>' +
+    '<img class="lb-img" alt="" />' +
+    '<p class="lb-cap"></p>';
+  document.body.appendChild(lb);
+
+  const lbImg = lb.querySelector(".lb-img");
+  const lbCap = lb.querySelector(".lb-cap");
+  const closeBtn = lb.querySelector(".lb-close");
+
+  function openLB(src, alt, cap) {
+    lbImg.src = src;
+    lbImg.alt = alt || "";
+    lbCap.textContent = cap || "";
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden"; // 放大時鎖住背景捲動
+  }
+  function closeLB() {
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+    lbImg.removeAttribute("src");
+  }
+
+  imgs.forEach(function (img) {
+    img.addEventListener("click", function () {
+      const fig = img.closest(".photo");
+      const capEl = fig ? fig.querySelector(".cap") : null;
+      openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
+    });
+  });
+  closeBtn.addEventListener("click", closeLB);
+  lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); }); // 點背景關閉
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+  });
+})();

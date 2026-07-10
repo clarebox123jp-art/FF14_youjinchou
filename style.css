@@ -352,6 +352,64 @@ body {
 }
 @media (max-width: 640px) { .hero-logo { width: 94%; } }
 
-/* 相簿分類區塊：用 2 欄放大照片更好看，手機自動 1 欄 */
+/* ============================================================
+   ★ 相簿改版：2 欄大圖 + 說明移到照片下方做成「和紙標籤」+ 點照片放大
+   （沿用鐵則①，舊 .cap 疊層規則保留在上面、這裡覆寫）
+   ============================================================ */
+
+/* 分類區塊 2 欄（手機自動 1 欄）—— 之前漏推、這次補上 */
 .grid-gallery.two { grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 560px) { .grid-gallery.two { grid-template-columns: 1fr; } }
+
+/* 照片外框：負責圓角、裁切、hover 放大與「可點擊」游標 */
+.photo { position: static; border: none; border-radius: 0; overflow: visible; background: transparent; }
+.photo .photo-frame {
+  position: relative; border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--line); cursor: zoom-in;
+  box-shadow: 0 6px 18px rgba(44, 38, 32, 0.10);
+}
+.photo .photo-frame img { display: block; width: 100%; aspect-ratio: 3/2; object-fit: cover; transition: transform 0.5s; }
+.photo:hover .photo-frame img { transform: scale(1.06); }
+
+/* 和紙標籤紙：落在照片「下方」、置中、輕微傾斜，像手貼上去的紙籤 */
+.photo .cap {
+  position: relative; left: auto; right: auto; bottom: auto;
+  display: block; width: max-content; max-width: 90%;
+  margin: 16px auto 0; padding: 11px 20px;
+  background: linear-gradient(180deg, #fbf6ec, #f2e7d3);   /* 和紙質感 */
+  color: var(--ink);
+  font-size: 0.9rem; line-height: 1.7; text-align: center;
+  border: 1px solid var(--line); border-radius: 3px;
+  box-shadow: 0 5px 14px rgba(44, 38, 32, 0.14);
+  transform: rotate(-1.2deg);
+}
+/* 標籤上緣的「和紙膠帶」小裝飾 */
+.photo .cap::before {
+  content: ""; position: absolute; top: -9px; left: 50%;
+  width: 48px; height: 16px; transform: translateX(-50%) rotate(2.5deg);
+  background: rgba(176, 141, 63, 0.26);
+  border: 1px solid rgba(176, 141, 63, 0.34);
+}
+
+/* 燈箱：點照片放大檢視 */
+.lightbox {
+  position: fixed; inset: 0; z-index: 1000; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(28, 24, 20, 0.88); padding: 4vmin; cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox .lb-img {
+  max-width: 94vw; max-height: 86vh; object-fit: contain;
+  border-radius: 6px; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55); cursor: default;
+}
+.lightbox .lb-cap {
+  position: absolute; bottom: 22px; left: 0; right: 0; text-align: center;
+  color: #f3e9d6; font-size: 0.95rem; letter-spacing: 0.02em; padding: 0 20px;
+}
+.lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px; width: 46px; height: 46px;
+  border-radius: 50%; border: none; background: rgba(250, 244, 232, 0.94);
+  color: var(--ink); font-size: 1.7rem; line-height: 1; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.lightbox .lb-close:hover { background: #fff; }

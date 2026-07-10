@@ -341,3 +341,51 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     slides[i].classList.add("is-on");
   }, 5000);                                      // 每 5 秒切下一張
 })();
+
+/* ------------------------------------------------------------
+   10) 背景音樂音量滑桿（所有頁面）
+   - 出現在右下角「♪ 音樂」鈕的上方
+   - 音量記 localStorage，換頁沿用；預設沿用 BGM_VOLUME
+------------------------------------------------------------ */
+(function () {
+  if (!audioBtn) return;
+  const wrap = document.createElement("div");
+  wrap.className = "vol-wrap";
+  wrap.innerHTML =
+    '<span class="vol-ico" aria-hidden="true">🔊</span>' +
+    '<input type="range" class="vol-slider" min="0" max="100" step="1" aria-label="背景音樂音量" />';
+  document.body.appendChild(wrap);
+  const slider = wrap.querySelector("input");
+  const saved = parseInt(localStorage.getItem("bgmVol"), 10);
+  const v = Number.isFinite(saved) ? saved : Math.round(BGM_VOLUME * 100);
+  slider.value = v;
+  bgm.volume = v / 100;
+  slider.addEventListener("input", function () {
+    bgm.volume = slider.value / 100;
+    localStorage.setItem("bgmVol", slider.value);
+  });
+})();
+
+/* ------------------------------------------------------------
+   11) 主題曲歌詞跑馬燈（只在有 #lyricsTrack 的頁面作用＝公會介紹）
+   - 歌詞由下往上連續捲動（內容自動複製一份接在後面，無縫循環）
+   - 跟著音樂走：音樂播放時捲動、暫停時停住（body.bgm-on）
+   - 捲動速度：每句約 3.4 秒，句數多寡自動換算（想調快慢改這個數字）
+------------------------------------------------------------ */
+(function () {
+  const setCls = (on) => document.body.classList.toggle("bgm-on", on);
+  bgm.addEventListener("play",  () => setCls(true));
+  bgm.addEventListener("pause", () => setCls(false));
+  setCls(!bgm.paused);
+
+  const track = document.getElementById("lyricsTrack");
+  if (!track) return;
+  const SEC_PER_LINE = 3.4;
+  const lines = track.children.length;
+  track.innerHTML += track.innerHTML;              // 複製一份 → 無縫循環
+  track.style.animationDuration = (lines * SEC_PER_LINE) + "s";
+
+  // 音樂開始後隱藏「點右下角聆聽」提示
+  const hint = document.getElementById("lyricsHint");
+  if (hint) bgm.addEventListener("play", () => { hint.style.display = "none"; });
+})();

@@ -686,3 +686,69 @@ body.has-bg { background: transparent; }         /* 讓固定背景層透出來 
 }
 .admin-modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 .admin-hint { font-size: 0.84rem; color: var(--shu); min-height: 1.2em; margin-top: 8px; }
+
+/* ============================================================
+   ★ 2026-07 追加：音量滑桿 ＋ 公會介紹主題曲歌詞跑馬燈
+   ============================================================ */
+/* 音量滑桿（右下角音樂鈕上方，所有頁面） */
+.vol-wrap {
+  position: fixed; right: 20px; bottom: 72px; z-index: 60;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: rgba(246, 239, 226, 0.92);
+  border: 1px solid var(--line); border-radius: 999px;
+}
+.vol-wrap .vol-ico { font-size: 0.85rem; }
+.vol-slider { width: 104px; accent-color: var(--shu); cursor: pointer; }
+@media (max-width: 560px) { .vol-slider { width: 82px; } }
+
+/* 歌詞欄：桌機寬螢幕顯示在左側空白處（深色羽化框）
+   - 寬度依左側空白自動伸縮（190px～300px）
+   - 螢幕不夠寬（<1520px）自動隱藏，不會壓到內文
+   - 想調透明度改 background 的 0.78；想調羽化改 mask 的 12% */
+.lyrics-panel {
+  display: none;
+  position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
+  z-index: 5;
+  width: clamp(190px, calc((100vw - var(--maxw)) / 2 - 60px), 300px);
+  height: min(74vh, 660px);
+  padding: 26px 20px;
+  color: #f2e9d8;
+  background: rgba(30, 27, 22, 0.78);
+  border-radius: 20px;
+  -webkit-mask-image:
+    linear-gradient(to right,  transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    linear-gradient(to right,  transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
+          mask-composite: intersect;
+}
+@media (min-width: 1520px) { .lyrics-panel { display: flex; flex-direction: column; } }
+
+.lyrics-panel .lyrics-title {
+  font-family: var(--font-display);
+  text-align: center; font-size: 1.02rem; letter-spacing: 0.08em;
+  color: #f6efe2; margin-bottom: 6px;
+}
+.lyrics-panel .lyrics-hint {
+  text-align: center; font-size: 0.78rem; color: #cdbfa4; margin-bottom: 8px;
+}
+
+/* 歌詞可視窗：上下再做一層淡出，捲動時像 MV 字幕浮現／隱沒 */
+.lyrics-view {
+  flex: 1; overflow: hidden; position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+}
+.lyrics-track {
+  animation: lyricsUp 90s linear infinite;   /* 實際秒數由 main.js 依句數換算覆蓋 */
+  animation-play-state: paused;              /* 音樂沒開＝停住 */
+}
+body.bgm-on .lyrics-track { animation-play-state: running; }
+@keyframes lyricsUp { to { transform: translateY(-50%); } }
+
+.lyrics-track p { margin: 0 0 18px; font-size: 0.92rem; line-height: 1.75; letter-spacing: 0.03em; }
+.lyrics-track p span { display: block; font-size: 0.85em; color: #cdbfa4; }
+@media (prefers-reduced-motion: reduce) { .lyrics-track { animation: none; } }

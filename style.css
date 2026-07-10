@@ -518,3 +518,10 @@ body.home { background: transparent; }
   .home .hero { min-height: 84vh; }     /* 首頁背景在手機也撐滿約一屏 */
   .portals { margin-top: 34px; }
 }
+
+/* 首頁 hero 內文改善對比：原本 .hero .lead 是 --muted 淡灰，疊在背景圖上太接近底色。
+   在首頁改用墨色 + 淡和紙光暈，讓字浮起來、清楚好讀（不影響其他頁）。 */
+.home .hero .lead {
+  color: var(--ink);
+  text-shadow: 0 1px 12px rgba(246, 239, 226, 0.92), 0 0 2px rgba(246, 239, 226, 0.75);
+}

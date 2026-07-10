@@ -389,3 +389,33 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   const hint = document.getElementById("lyricsHint");
   if (hint) bgm.addEventListener("play", () => { hint.style.display = "none"; });
 })();
+
+/* ------------------------------------------------------------
+   12) 公會介紹「日常」迷你輪播：頁面上每個 .about-slides 各自輪播
+   - 每張 3 秒（想調快慢改 SLIDE_MS）、1 秒淡入淡出
+   - 圖說（figcaption）跟著照片換（取 img 的 data-cap，沒有就用 alt）
+   - 尊重「減少動態」：停在第一張
+------------------------------------------------------------ */
+(function () {
+  const SLIDE_MS = 3000;
+  const boxes = document.querySelectorAll(".about-slides");
+  if (!boxes.length) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  boxes.forEach(function (box) {
+    const imgs = box.querySelectorAll("img");
+    const fig  = box.closest("figure");
+    const cap  = fig ? fig.querySelector("figcaption") : null;
+    const setCap = (i) => { if (cap) cap.textContent = imgs[i].dataset.cap || imgs[i].alt || ""; };
+    if (!imgs.length) return;
+    imgs[0].classList.add("is-on");
+    setCap(0);
+    if (imgs.length < 2 || reduce) return;
+    let i = 0;
+    setInterval(function () {
+      imgs[i].classList.remove("is-on");
+      i = (i + 1) % imgs.length;
+      imgs[i].classList.add("is-on");
+      setCap(i);
+    }, SLIDE_MS);
+  });
+})();

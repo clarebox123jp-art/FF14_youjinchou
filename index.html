@@ -32,6 +32,11 @@
        想換效果：改下面的 url；想關掉：整個 <div> 刪掉。 -->
   <div class="home-petals" id="homePetals" style="background-image:url('動畫/櫻花飄落.gif')"></div>
 
+  <!-- ★ 訪客歡迎橫幅（人數由 Firebase 計數；程式在 firebase-app.js 第 1 段。讀取失敗會自動整條隱藏） -->
+  <div class="visit-banner" id="visitBanner">
+    歡迎來到幻想友人帳的部屋，您是此網頁於 2026/07/10 成立至今的第 <b id="visitorCount">…</b> 位訪客
+  </div>
+
   <!-- ============ 導覽列（四頁共用） ============ -->
   <nav class="nav">
     <a href="index.html" class="brand sfx">
@@ -138,5 +143,7 @@
   </button>
 
   <script src="main.js"></script>
+  <!-- ★ Firebase（訪客計數）：ES 模組、載入失敗不影響其他功能 -->
+  <script type="module" src="firebase-app.js"></script>
 </body>
 </html>

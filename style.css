@@ -607,3 +607,82 @@ body.has-bg { background: transparent; }         /* 讓固定背景層透出來 
 .has-bg .footer .copyright {
   text-shadow: 0 1px 10px rgba(246, 239, 226, 0.92), 0 0 2px rgba(246, 239, 226, 0.72);
 }
+
+/* ============================================================
+   ★ 2026-07 追加：訪客歡迎橫幅 ＋ Firebase 管理模式介面
+   ============================================================ */
+/* 首頁最上方的歡迎橫幅（訪客計數） */
+.visit-banner {
+  position: relative; z-index: 51;
+  text-align: center; padding: 9px 16px;
+  font-size: 0.88rem; letter-spacing: 0.06em;
+  color: var(--ink);
+  background: rgba(246, 239, 226, 0.92);
+  border-bottom: 1px solid var(--line);
+}
+.visit-banner b { color: var(--shu); font-size: 1.02em; }
+
+/* 無照片時的佔位（朱印風） */
+.member .noimg {
+  width: 100%; aspect-ratio: 4 / 5;
+  display: flex; align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, rgba(178,58,44,0.05) 0 12px, transparent 12px 24px), var(--bg-2);
+}
+.member .noimg span {
+  font-family: var(--font-display); font-size: 2rem; color: #fff;
+  background: var(--shu); width: 64px; height: 64px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* 管理按鈕（共用） */
+.admin-btn {
+  font-family: var(--font-body); font-size: 0.9rem; cursor: pointer;
+  padding: 8px 16px; border-radius: 10px;
+  border: 1px solid var(--line); background: rgba(246,239,226,0.96); color: var(--ink);
+}
+.admin-btn.primary { background: var(--shu); border-color: var(--shu); color: #fff; }
+.admin-btn:hover { filter: brightness(1.05); }
+
+/* 右下登入鈕（#admin 才出現；避開左下音樂鈕） */
+.admin-fab { position: fixed; left: 18px; bottom: 18px; z-index: 90; box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
+
+/* 登入後頂端管理列 */
+.admin-bar {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 90; display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; border-radius: 14px;
+  background: rgba(30, 30, 34, 0.92); color: #fff;
+  font-size: 0.88rem; box-shadow: 0 8px 26px rgba(0,0,0,0.28);
+}
+
+/* 夥伴卡上的 編輯／刪除 小鈕 */
+.member { position: relative; }
+.member .admin-actions {
+  position: absolute; top: 8px; right: 8px; display: flex; gap: 6px;
+}
+.member .admin-actions button {
+  font-size: 0.78rem; cursor: pointer; padding: 5px 9px; border-radius: 8px;
+  border: 0; background: rgba(30,30,34,0.82); color: #fff;
+}
+.member .admin-actions button:hover { background: var(--shu); }
+
+/* 新增／編輯表單（燈箱） */
+.admin-modal {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(20, 18, 14, 0.55);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.admin-modal-card {
+  width: min(460px, 100%); max-height: 90vh; overflow: auto;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
+  padding: 22px 22px 18px;
+}
+.admin-modal-card h3 { margin-bottom: 12px; }
+.admin-modal-card label { display: block; font-size: 0.86rem; color: var(--muted); margin: 10px 0 2px; }
+.admin-modal-card input, .admin-modal-card textarea {
+  width: 100%; margin-top: 4px; padding: 9px 11px;
+  font: inherit; color: var(--ink);
+  background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 10px;
+}
+.admin-modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.admin-hint { font-size: 0.84rem; color: var(--shu); min-height: 1.2em; margin-top: 8px; }

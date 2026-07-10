@@ -5,8 +5,11 @@
    ★★★ 新手設定區：換音樂／音效檔案改這兩行 ★★★
    把你的檔案放進 audio/ 資料夾，改成你的檔名即可。
    ============================================================ */
-const BGM_SRC   = "audio/bgm.m4a";     // 背景音樂（實際檔案為 bgm.m4a）
-// const BGM_SRC   = "audio/bgm.mp3";  // ← 舊：檔名對不上，保留備查（鐵則①）
+const DEFAULT_BGM = "audio/bgm.m4a";   // 各頁預設背景音樂
+// 個別頁面想用專屬音樂：在該頁 <body> 加 data-bgm="audio/檔名.m4a"（例：RP 商店頁）
+const BGM_SRC   = (document.body && document.body.dataset.bgm) || DEFAULT_BGM;
+// const BGM_SRC   = "audio/bgm.m4a";  // ← 舊：固定單一音樂，保留備查（鐵則①）
+// const BGM_SRC   = "audio/bgm.mp3";  // ← 更舊：檔名對不上，保留備查
 const CLICK_SRC = "audio/click.mp3";   // 按鍵音效（已附一個範例，可換）
 const CLICK_VOLUME = 0.35;             // 按鍵音效音量 0~1
 const BGM_VOLUME   = 0.45;             // 背景音樂音量 0~1
@@ -157,4 +160,52 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   }
   resize(); seed(); frame();
   window.addEventListener("resize", () => { resize(); seed(); });
+})();
+
+/* ------------------------------------------------------------
+   5) 相簿：點照片放大（燈箱 Lightbox），可關閉
+   - 只在有相簿照片的頁面作用，其他頁自動略過
+   - 關閉方式：右上角 ×、點灰色背景、按 Esc
+------------------------------------------------------------ */
+(function () {
+  const imgs = document.querySelectorAll(".photo .photo-frame img");
+  if (!imgs.length) return;
+
+  const lb = document.createElement("div");
+  lb.className = "lightbox";
+  lb.innerHTML =
+    '<button class="lb-close" aria-label="關閉放大">×</button>' +
+    '<img class="lb-img" alt="" />' +
+    '<p class="lb-cap"></p>';
+  document.body.appendChild(lb);
+
+  const lbImg = lb.querySelector(".lb-img");
+  const lbCap = lb.querySelector(".lb-cap");
+  const closeBtn = lb.querySelector(".lb-close");
+
+  function openLB(src, alt, cap) {
+    lbImg.src = src;
+    lbImg.alt = alt || "";
+    lbCap.textContent = cap || "";
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden"; // 放大時鎖住背景捲動
+  }
+  function closeLB() {
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+    lbImg.removeAttribute("src");
+  }
+
+  imgs.forEach(function (img) {
+    img.addEventListener("click", function () {
+      const fig = img.closest(".photo");
+      const capEl = fig ? fig.querySelector(".cap") : null;
+      openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
+    });
+  });
+  closeBtn.addEventListener("click", closeLB);
+  lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); }); // 點背景關閉
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+  });
 })();

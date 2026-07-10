@@ -10,7 +10,8 @@ const DEFAULT_BGM = "audio/bgm.m4a";   // 各頁預設背景音樂
 const BGM_SRC   = (document.body && document.body.dataset.bgm) || DEFAULT_BGM;
 // const BGM_SRC   = "audio/bgm.m4a";  // ← 舊：固定單一音樂，保留備查（鐵則①）
 // const BGM_SRC   = "audio/bgm.mp3";  // ← 更舊：檔名對不上，保留備查
-const CLICK_SRC = "audio/click.mp3";   // 按鍵音效（已附一個範例，可換）
+const CLICK_SRC = "audio/圖鑑翻頁.mp3"; // 按鍵音效（圖鑑翻頁）
+// const CLICK_SRC = "audio/click.mp3";   // ← 舊：範例音效，保留備查（鐵則①）
 const CLICK_VOLUME = 0.35;             // 按鍵音效音量 0~1
 const BGM_VOLUME   = 0.45;             // 背景音樂音量 0~1
 
@@ -207,5 +208,116 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); }); // 點背景關閉
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+  });
+})();
+
+/* ------------------------------------------------------------
+   6) 相簿跑馬燈：左右捲動 + 下方「第幾張 / 共幾張」計數
+   - 左右箭頭、觸控滑動皆可；到頭/尾時箭頭變淡
+   - 只在有 #galleryCarousel 的頁面作用
+------------------------------------------------------------ */
+/* 舊版（單一 #galleryCarousel，保留備查，鐵則①）：
+(function () {
+  const car = document.getElementById("galleryCarousel");
+  if (!car) return;
+  const track = car.querySelector(".car-track");
+  const slides = Array.from(track.querySelectorAll(".photo"));
+  const curEl = car.querySelector(".cur");
+  const totalEl = car.querySelector(".total");
+  const prev = car.querySelector(".prev");
+  const next = car.querySelector(".next");
+  if (!slides.length) return;
+  if (totalEl) totalEl.textContent = slides.length;
+  function currentIndex() {
+    const center = track.scrollLeft + track.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    slides.forEach(function (s, i) {
+      const c = s.offsetLeft + s.offsetWidth / 2;
+      const d = Math.abs(c - center);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+  ...（其餘同下方新版邏輯）...
+})();
+*/
+
+// 新版：自動初始化頁面上「每個」 .carousel（相簿現在有上下兩排）
+(function () {
+  const cars = document.querySelectorAll(".carousel");
+  if (!cars.length) return;
+  cars.forEach(initCarousel);
+
+  function initCarousel(car) {
+    const track = car.querySelector(".car-track");
+    if (!track) return;
+    const slides = Array.from(track.querySelectorAll(".photo"));
+    const curEl = car.querySelector(".cur");
+    const totalEl = car.querySelector(".total");
+    const prev = car.querySelector(".prev");
+    const next = car.querySelector(".next");
+    if (!slides.length) return;
+    if (totalEl) totalEl.textContent = slides.length;
+
+    function currentIndex() {
+      const center = track.scrollLeft + track.clientWidth / 2;
+      let best = 0, bestDist = Infinity;
+      slides.forEach(function (s, i) {
+        const c = s.offsetLeft + s.offsetWidth / 2;
+        const d = Math.abs(c - center);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    }
+    function update() {
+      const i = currentIndex();
+      if (curEl) curEl.textContent = i + 1;
+      if (prev) prev.disabled = i === 0;
+      if (next) next.disabled = i === slides.length - 1;
+    }
+    function goTo(i) {
+      i = Math.max(0, Math.min(slides.length - 1, i));
+      const s = slides[i];
+      track.scrollTo({ left: s.offsetLeft - (track.clientWidth - s.offsetWidth) / 2, behavior: "smooth" });
+    }
+    if (prev) prev.addEventListener("click", function () { goTo(currentIndex() - 1); });
+    if (next) next.addEventListener("click", function () { goTo(currentIndex() + 1); });
+    let t;
+    track.addEventListener("scroll", function () { clearTimeout(t); t = setTimeout(update, 80); });
+    window.addEventListener("resize", update);
+    update();
+  }
+})();
+
+/* ------------------------------------------------------------
+   7) 首頁時段背景：依「台灣時間」決定 清晨黃昏 / 白天 / 夜晚
+   - 只在有 #homeBg 的首頁作用
+   - 6:00-7:59、16:00-17:59 → 黃昏；8:00-15:59 → 白天；18:00-5:59 → 夜晚
+------------------------------------------------------------ */
+(function () {
+  const el = document.getElementById("homeBg");
+  if (!el) return;
+  let hour;
+  try {
+    hour = parseInt(new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Taipei", hour: "numeric", hour12: false
+    }).format(new Date()), 10);
+  } catch (e) {
+    hour = new Date().getHours();  // 萬一環境不支援時區，退回本機時間
+  }
+  if (hour === 24) hour = 0;
+  let cls;
+  if ((hour >= 6 && hour < 8) || (hour >= 16 && hour < 18)) cls = "is-dusk";
+  else if (hour >= 8 && hour < 16) cls = "is-day";
+  else cls = "is-night";
+  el.classList.add(cls);
+})();
+
+/* ------------------------------------------------------------
+   8) 關閉／離開網頁時，確保背景音樂停止（含手機切到背景、bfcache 情況）
+------------------------------------------------------------ */
+(function () {
+  window.addEventListener("pagehide", function () {
+    try { bgm.pause(); } catch (e) {}
   });
 })();

@@ -357,7 +357,7 @@ body {
    （沿用鐵則①，舊 .cap 疊層規則保留在上面、這裡覆寫）
    ============================================================ */
 
-/* 分類區塊 2 欄（手機自動 1 欄）—— 之前漏推、這次補上 */
+/* 分類區塊 2 欄（手機自動 1 欄） */
 .grid-gallery.two { grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 560px) { .grid-gallery.two { grid-template-columns: 1fr; } }
 
@@ -376,14 +376,13 @@ body {
   position: relative; left: auto; right: auto; bottom: auto;
   display: block; width: max-content; max-width: 90%;
   margin: 16px auto 0; padding: 11px 20px;
-  background: linear-gradient(180deg, #fbf6ec, #f2e7d3);   /* 和紙質感 */
+  background: linear-gradient(180deg, #fbf6ec, #f2e7d3);
   color: var(--ink);
   font-size: 0.9rem; line-height: 1.7; text-align: center;
   border: 1px solid var(--line); border-radius: 3px;
   box-shadow: 0 5px 14px rgba(44, 38, 32, 0.14);
   transform: rotate(-1.2deg);
 }
-/* 標籤上緣的「和紙膠帶」小裝飾 */
 .photo .cap::before {
   content: ""; position: absolute; top: -9px; left: 50%;
   width: 48px; height: 16px; transform: translateX(-50%) rotate(2.5deg);
@@ -413,3 +412,109 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .lightbox .lb-close:hover { background: #fff; }
+
+/* ============================================================
+   ★ 相簿跑馬燈（左右捲動）：照片縮小約 30%、置中、可滑動；沿用 .photo/.cap/.photo-frame
+   ============================================================ */
+.carousel { position: relative; margin-top: 40px; }
+.car-track {
+  display: flex; gap: 22px; overflow-x: auto;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  padding: 6px calc((100% - min(84%, 440px)) / 2) 6px;  /* 左右留白讓首尾能置中 */
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.car-track::-webkit-scrollbar { display: none; }
+.car-track .photo { flex: 0 0 min(84%, 440px); scroll-snap-align: center; }
+
+/* 左右箭頭（圓鈕，對齊照片中央） */
+.car-arrow {
+  position: absolute; top: 36%; transform: translateY(-50%); z-index: 3;
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
+  background: rgba(250, 244, 232, 0.94); color: var(--ink);
+  font-size: 1.7rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(44, 38, 32, 0.16);
+  transition: opacity 0.2s, background 0.2s;
+}
+.car-arrow.prev { left: 4px; }
+.car-arrow.next { right: 4px; }
+.car-arrow:hover { background: #fff; }
+.car-arrow:disabled { opacity: 0.32; cursor: default; }
+
+/* 計數：第幾張 / 共幾張 */
+.car-counter {
+  text-align: center; margin-top: 20px;
+  font-family: var(--font-display); letter-spacing: 0.14em;
+  color: var(--muted); font-size: 1.1rem;
+}
+.car-counter .cur { color: var(--shu); font-weight: 700; }
+
+@media (max-width: 560px) {
+  .car-track { padding: 6px calc((100% - 88%) / 2) 6px; gap: 14px; }
+  .car-track .photo { flex: 0 0 88%; }
+  .car-arrow { width: 40px; height: 40px; font-size: 1.4rem; }
+}
+
+/* ============================================================
+   ★ 首頁羽化大圖（四邊柔邊漸隱透明）：用兩道 mask 漸層交集，
+     不必另存透明 PNG。想更柔＝把 14% 調大；想改尺寸＝改 max-width。
+   ============================================================ */
+.feather-img { margin: 6px auto 44px; max-width: 760px; }
+.feather-img img {
+  display: block; width: 100%; height: auto;
+  -webkit-mask-image:
+    linear-gradient(to right,  transparent 0, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    linear-gradient(to right,  transparent 0, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+          mask-composite: intersect;
+}
+@media (max-width: 560px) { .feather-img { margin-bottom: 26px; } }
+
+/* ── 公會介紹內文插圖：置中、圓角、和紙細框、下方小圖說 ── */
+.about-figure { margin: 28px auto 6px; max-width: 640px; text-align: center; }
+.about-figure img {
+  display: block; width: 100%; height: auto; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(44, 38, 32, 0.12);
+}
+.about-figure figcaption {
+  margin-top: 10px; font-family: var(--font-display);
+  font-size: 0.9rem; color: var(--muted); letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   ★ 首頁時段固定背景（只作用於 <body class="home">，其他頁不受影響）
+   - .home-bg 用 position:fixed（手機／iOS 相容，優於 background-attachment:fixed）
+   - 上覆一層「和紙紗罩」讓標題與內文在圖上仍清楚可讀；想更透就把下面的 0.7x 數字調小
+   - 圖片依台灣時間由 js/main.js 加上 .is-dusk / .is-day / .is-night
+   ============================================================ */
+.home-bg {
+  position: fixed; inset: 0; z-index: -1;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  background-color: var(--bg);
+}
+.home-bg::after {           /* 和紙紗罩：上濃下淡，字更好讀（想看更多背景就把數字調小） */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    rgba(246, 239, 226, 0.74) 0%,
+    rgba(246, 239, 226, 0.55) 40%,
+    rgba(246, 239, 226, 0.62) 100%);
+}
+.home-bg.is-dusk  { background-image: url("images/home-bg-dusk.webp"); }   /* 6:00-7:59、16:00-17:59 */
+.home-bg.is-day   { background-image: url("images/home-bg-day.webp"); }    /* 8:00-15:59 */
+.home-bg.is-night { background-image: url("images/home-bg-night.webp"); }  /* 18:00-5:59 */
+
+/* 首頁：標題區與頁面底透明，露出固定背景（內文仍是深墨字，靠紗罩維持可讀） */
+body.home { background: transparent; }
+.home .hero { background: transparent; }
+.home .hero-fx { opacity: 0.72; }   /* 櫻花瓣稍降，讓背景景色透出來 */
+
+/* 手機直式版面微調 */
+@media (max-width: 560px) {
+  html, body { overflow-x: hidden; }   /* 保險：不出現橫向捲動 */
+  .section { padding: 48px 0; }
+  .home .hero { min-height: 84vh; }     /* 首頁背景在手機也撐滿約一屏 */
+  .portals { margin-top: 34px; }
+}

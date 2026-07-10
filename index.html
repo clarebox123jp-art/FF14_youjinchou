@@ -20,9 +20,13 @@
   <!-- 備援字型：Noto TC（內文圓體「粉圓」在 css/style.css 以 @font-face 載入） -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="home">
+
+  <!-- ★ 首頁時段固定背景：圖片固定不動、內容在上面捲動；依台灣時間切換清晨黃昏／白天／夜晚。
+       實際切換邏輯在 main.js（找 #homeBg）；紗罩與圖片對應在 style.css 的 .home-bg -->
+  <div class="home-bg" id="homeBg"></div>
 
   <!-- ============ 導覽列（四頁共用） ============ -->
   <nav class="nav">
@@ -57,12 +61,18 @@
       <div class="star" style="animation:rise 1s ease 0.45s both"><span class="hanko">友</span></div>
       <p class="lead">在這裡，每個名字都不只是路人——<br />而是值得相知相惜的「友緣人」。</p>
     </div>
-    <div class="scroll-cue">向下滑動</div>
+    <!-- 已移除「向下滑動」提示（鐵則①保留備查）：
+    <div class="scroll-cue">向下滑動</div> -->
   </header>
 
   <!-- ============ 導覽卡片 ============ -->
   <section class="section">
     <div class="wrap">
+      <!-- ★ 羽化大圖：四邊柔邊漸隱透明（樣式在 css/style.css 檔尾 .feather-img；想改大小改 max-width，想改羽化強弱改 mask 的 14%） -->
+      <figure class="feather-img reveal">
+        <img src="images/home-house-watercolor.webp" alt="公會小屋溫馨合照（水彩畫風）" loading="lazy" />
+      </figure>
+
       <div class="reveal" style="text-align:center">
         <p class="eyebrow">Explore</p>
         <h2>走進友人帳</h2>
@@ -122,6 +132,6 @@
     <span class="note">♪</span><span class="label">音樂：關</span>
   </button>
 
-  <script src="js/main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -41,10 +41,17 @@
   <section class="section" style="padding-top:20px">
     <div class="wrap">
       <!-- 換照片：改 <img src="...">；換說明：改 <figcaption>。增減照片＝複製或刪一個 <figure class="photo">（計數會自動更新） -->
-      <!-- ↓ 相簿跑馬燈：左右捲動、下方顯示 第幾張/共幾張、點圖放大。順序＝下面 <figure> 的順序 -->
-      <div class="carousel reveal" id="galleryCarousel">
-        <button class="car-arrow prev" aria-label="上一張">‹</button>
+      <!-- ↓ 相簿分兩排跑馬燈（上：成員互動的回憶／下：公會小屋的景緻）。
+           每排各自左右捲動、各自計數、可各自點圖放大。
+           增減照片＝在對應 <div class="car-track"> 內複製或刪一個 <figure class="photo">，計數自動更新。
+           JS 會自動初始化頁面上「每個」.carousel（見 js/main.js 第 6 段）。-->
 
+      <!-- ── 上排：成員互動的回憶 ── -->
+      <div class="reveal" style="text-align:center;margin-bottom:2px">
+        <p class="eyebrow">Moments · 成員互動的回憶</p>
+      </div>
+      <div class="carousel reveal" id="galleryTop">
+        <button class="car-arrow prev" aria-label="上一張">‹</button>
         <div class="car-track">
           <figure class="photo">
             <div class="photo-frame"><img src="images/first-meetup-badge.webp" alt="第一次網聚名牌" loading="lazy" /></div>
@@ -63,6 +70,42 @@
             <figcaption class="cap">三位店員在吧台後並肩搖盞，杯緣晃出的不只是酒，是整晚的熱鬧。</figcaption>
           </figure>
           <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-sun-coast.webp" alt="公會團員大合照 太陽海岸" loading="lazy" /></div>
+            <figcaption class="cap">陽光、浪聲與一整排並肩的身影——太陽海岸的這張大合照，把夏天曬進了每個人的笑容裡。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-sun-coast-jin.webp" alt="公會團員在太陽海岸排成人字" loading="lazy" /></div>
+            <figcaption class="cap">大夥兒排成一個大大的「人」字漂浮海面——原來「友緣人」三個字，可以這樣寫。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-wedding.webp" alt="參加會員的婚禮" loading="lazy" /></div>
+            <figcaption class="cap">受邀見證會員的婚禮，紅毯那端的誓言，我們也一起紅了眼眶。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-treasure-final.webp" alt="藏寶圖深層迷宮最終層" loading="lazy" /></div>
+            <figcaption class="cap">一路過關斬將，終於站上深層迷宮的最後一層——寶藏是其次，並肩到底才是。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-new-year-eve.webp" alt="除夕迎新春" loading="lazy" /></div>
+            <figcaption class="cap">除夕夜圍爐，煙火在螢幕裡炸開，新的一年，友人帳又多寫了好幾個名字。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-2026-countdown.webp" alt="2026 跨年合照" loading="lazy" /></div>
+            <figcaption class="cap">倒數三、二、一——2026 的第一秒，是和你們一起跨過的。</figcaption>
+          </figure>
+        </div>
+        <button class="car-arrow next" aria-label="下一張">›</button>
+        <p class="car-counter"><span class="cur">1</span> / <span class="total">10</span></p>
+      </div>
+
+      <!-- ── 下排：公會小屋的景緻 ── -->
+      <div class="reveal" style="text-align:center;margin:46px 0 2px">
+        <p class="eyebrow">Our Home · 公會小屋的景緻</p>
+      </div>
+      <div class="carousel reveal" id="galleryBottom">
+        <button class="car-arrow prev" aria-label="上一張">‹</button>
+        <div class="car-track">
+          <figure class="photo">
             <div class="photo-frame"><img src="images/house-stage-clair.webp" alt="公會小屋舞台上的小克瑞爾" loading="lazy" /></div>
             <figcaption class="cap">公會小屋的小舞台亮起，小克瑞爾站定的那刻，這個家就有了主角。</figcaption>
           </figure>
@@ -70,10 +113,17 @@
             <div class="photo-frame"><img src="images/公會的小溪發現河童.webp" alt="公會的小溪發現河童" loading="lazy" /></div>
             <figcaption class="cap">沿著公會的小溪散步，竟撞見一隻探頭的河童，連水聲都俏皮了起來。</figcaption>
           </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-guild-land.webp" alt="買到公會地" loading="lazy" /></div>
+            <figcaption class="cap">敲下這塊地的那一刻，白銀鄉多了一盞燈，我們終於有了家的門牌。</figcaption>
+          </figure>
+          <figure class="photo">
+            <div class="photo-frame"><img src="images/gallery-bathhouse.webp" alt="公會澡堂" loading="lazy" /></div>
+            <figcaption class="cap">白銀鄉的公會澡堂，暖湯蒸騰、燈影搖曳，一天的疲憊都溶進了這池溫柔裡。</figcaption>
+          </figure>
         </div>
-
         <button class="car-arrow next" aria-label="下一張">›</button>
-        <p class="car-counter"><span class="cur">1</span> / <span class="total">6</span></p>
+        <p class="car-counter"><span class="cur">1</span> / <span class="total">4</span></p>
       </div>
 
       <!-- 舊版（兩大類 grid）與佔位圖說明，保留備查（鐵則①）：
@@ -97,6 +147,6 @@
     <span class="note">♪</span><span class="label">音樂：關</span>
   </button>
 
-  <script src="js/main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

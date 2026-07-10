@@ -11,7 +11,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="has-bg">
+
+  <!-- ★ 內頁固定背景圖（祭典）：樣式在 style.css 檔尾 .page-bg；想換圖改下面 url、想關掉整個 <div id="pageBg"> 刪掉 -->
+  <div class="page-bg" id="pageBg">
+    <div class="pbg-slide is-on" style="background-image:url('images/page-bg-festival.webp')"></div>
+  </div>
+
+  <!-- ★ 右上角動畫特效（水墨梅花）：樣式在 style.css 檔尾 .corner-fx；想換圖改下面 url、想關掉整行刪掉 -->
+  <div class="corner-fx" style="background-image:url('動畫/水墨梅花.gif')" aria-hidden="true"></div>
 
   <nav class="nav">
     <a href="index.html" class="brand sfx">

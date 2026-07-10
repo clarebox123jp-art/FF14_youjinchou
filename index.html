@@ -28,6 +28,10 @@
        實際切換邏輯在 main.js（找 #homeBg）；紗罩與圖片對應在 style.css 的 .home-bg -->
   <div class="home-bg" id="homeBg"></div>
 
+  <!-- ★ 首頁全螢幕櫻花飄落 GIF：固定滿版、階層在「背景圖之上、文字之下」（樣式在 style.css 檔尾 .home-petals）
+       想換效果：改下面的 url；想關掉：整個 <div> 刪掉。 -->
+  <div class="home-petals" id="homePetals" style="background-image:url('動畫/櫻花飄落.gif')"></div>
+
   <!-- ============ 導覽列（四頁共用） ============ -->
   <nav class="nav">
     <a href="index.html" class="brand sfx">
@@ -52,7 +56,8 @@
        想改成放自己的背景圖：到 style.css 的 .hero 把 background 換成
        background: url('../images/hero.jpg') center/cover; -->
   <header class="hero">
-    <canvas class="hero-fx" id="heroFx"></canvas>
+    <!-- 舊：程式繪製的飄落櫻花瓣畫布（heroFx），已改為上方 .home-petals 全螢幕 GIF；保留備查（鐵則①）
+    <canvas class="hero-fx" id="heroFx"></canvas> -->
     <div class="hero-inner">
       <p class="eyebrow">Final Fantasy XIV · 鳳凰伺服器 · 開服公會</p>
       <h1 class="hero-title"><img class="hero-logo" src="images/logo-title.webp" alt="幻想友人帳" /></h1>

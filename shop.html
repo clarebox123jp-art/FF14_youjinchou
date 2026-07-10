@@ -11,7 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-bgm="audio/RP商店BGM.m4a">
+<body class="has-bg" data-bgm="audio/RP商店BGM.m4a">
+
+  <!-- ★ 內頁固定背景圖（祭典）：樣式在 style.css 檔尾 .page-bg；想換圖改下面 url、想關掉整個 <div id="pageBg"> 刪掉 -->
+  <div class="page-bg" id="pageBg">
+    <div class="pbg-slide is-on" style="background-image:url('images/page-bg-festival.webp')"></div>
+  </div>
 
   <nav class="nav">
     <a href="index.html" class="brand sfx">
@@ -144,9 +149,11 @@
       <div class="reveal">
         <p class="eyebrow">Our People · 工作夥伴</p>
         <h2>工作夥伴</h2>
-        <p class="body" style="margin-top:14px">目前的店舖成員，之後會陸續補上。</p>
+        <p class="body" style="margin-top:14px">店舖成員即將公開，敬請期待。</p>
       </div>
 
+      <!-- ★ 2026-07 暫時隱藏：佔位的工作夥伴卡（之後改用線上編輯功能補上真實成員）。
+           想先手動恢復：把這整個註解拆掉即可（鐵則①保留備查）。
       <div class="grid-members reveal">
 
         <article class="member">
@@ -183,6 +190,7 @@
         </article>
 
       </div>
+      -->
 
       <p class="body reveal" style="text-align:center;margin:44px auto 0">
         想參與 RP 商店的經營或演出？

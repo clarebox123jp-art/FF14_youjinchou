@@ -11,7 +11,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="has-bg">
+
+  <!-- ★ 內頁固定背景圖（天守閣／庭園／神社，每 5 秒淡入淡出輪播）
+       樣式在 style.css 檔尾 .page-bg；輪播程式在 main.js 第 9 段。
+       想換圖：改各 slide 的 url；想關掉：整個 <div id="pageBg"> 刪掉。 -->
+  <div class="page-bg" id="pageBg">
+    <div class="pbg-slide is-on" style="background-image:url('images/about-bg-castle.webp')"></div>
+    <div class="pbg-slide" style="background-image:url('images/about-bg-garden.webp')"></div>
+    <div class="pbg-slide" style="background-image:url('images/about-bg-shrine.webp')"></div>
+  </div>
+
+  <!-- ★ 右上角動畫特效（水墨竹葉）：樣式在 style.css 檔尾 .corner-fx；想換圖改下面 url、想關掉整行刪掉 -->
+  <div class="corner-fx" style="background-image:url('動畫/水墨竹葉.gif')" aria-hidden="true"></div>
 
   <nav class="nav">
     <a href="index.html" class="brand sfx">

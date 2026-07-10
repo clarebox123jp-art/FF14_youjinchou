@@ -525,3 +525,85 @@ body.home { background: transparent; }
   color: var(--ink);
   text-shadow: 0 1px 12px rgba(246, 239, 226, 0.92), 0 0 2px rgba(246, 239, 226, 0.75);
 }
+
+/* ============================================================
+   ★ 2026-07 追加：首頁全螢幕櫻花 GIF ＋ 內頁右上角特效 ＋ 首頁文字加深
+   （沿用鐵則①：全部疊在檔尾覆寫區，上面原規則都不動）
+   ============================================================ */
+
+/* 1) 首頁背景圖再往後推一層，讓櫻花 GIF 疊在「背景圖之上、文字之下」 */
+.home-bg { z-index: -2; }
+
+/* 2) 首頁全螢幕櫻花飄落：固定滿版、以「平鋪」填滿整個畫面。
+   （GIF 原圖只有 282px，直接放大到全螢幕會糊，所以用平鋪保持清晰又能滿版。）
+   想要更大／更少花瓣：把 background-size 調大；想更淡：改 opacity。
+   GIF 檔名寫在 index.html 的 .home-petals（想換圖改那裡）。 */
+.home-petals {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-repeat: repeat;
+  background-position: top center;
+  background-size: 300px auto;
+  opacity: 0.82;
+}
+/* 尊重系統「減少動態」設定：關掉滿版動畫 */
+@media (prefers-reduced-motion: reduce) { .home-petals { display: none; } }
+
+/* 3) 首頁疊在背景圖上的淡灰次要文字 → 改深墨色＋淡和紙光暈，清楚好讀。
+   （只作用於首頁 body.home，其他頁維持原本淡墨褐不受影響。） */
+.home .section p.body,
+.home .footer p,
+.home .footer .copyright { color: var(--ink); }
+.home .footer .copyright { opacity: 0.9; }
+.home .section p.body,
+.home .footer p,
+.home .footer .copyright {
+  text-shadow: 0 1px 10px rgba(246, 239, 226, 0.92), 0 0 2px rgba(246, 239, 226, 0.72);
+}
+
+/* 4) 內頁右上角動畫特效（公會介紹＝竹葉／幹部＝梅花／相簿＝楓葉）
+   固定在右上角、墊在文字後面、不擋點擊；左緣柔化融入頁面。
+   GIF 檔名寫在各頁的 .corner-fx（想換圖改那裡）。
+   想改大小：改 width；想更淡：改 opacity；想關掉：把該頁 <div class="corner-fx"> 刪掉。 */
+.corner-fx {
+  position: fixed; top: 64px; right: 0; z-index: -1; pointer-events: none;
+  width: min(300px, 42vw); aspect-ratio: 1 / 1;
+  background-repeat: no-repeat; background-position: top right; background-size: contain;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to left, #000 65%, transparent 100%);
+          mask-image: linear-gradient(to left, #000 65%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) { .corner-fx { display: none; } }
+@media (max-width: 560px) { .corner-fx { top: 58px; opacity: 0.8; } }
+
+/* ============================================================
+   ★ 2026-07 追加：內頁固定背景圖（同首頁規格：固定滿版＋和紙紗罩＋文字加深）
+   - 公會介紹＝3 張每 5 秒淡入淡出輪播；幹部／相簿／RP 商店＝單張
+   - 用 body class="has-bg" 啟用；背景層墊在最底（-3），右上角特效(-1) 仍在其上、文字最上
+   ============================================================ */
+body.has-bg { background: transparent; }         /* 讓固定背景層透出來 */
+
+.page-bg { position: fixed; inset: 0; z-index: -3; background-color: var(--bg); }
+.page-bg .pbg-slide {
+  position: absolute; inset: 0;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  opacity: 0; transition: opacity 1.4s ease;   /* 淡入淡出 1.4 秒 */
+}
+.page-bg .pbg-slide.is-on { opacity: 1; }        /* 目前顯示的那張 */
+.page-bg::after {                                /* 和紙紗罩：同首頁，維持文字可讀（想多露背景把數字調小） */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    rgba(246, 239, 226, 0.74) 0%,
+    rgba(246, 239, 226, 0.55) 40%,
+    rgba(246, 239, 226, 0.62) 100%);
+}
+
+/* 內頁疊在背景圖上的淡灰次要文字 → 改深墨色＋淡和紙光暈（同首頁處理，只作用於 has-bg 頁） */
+.has-bg .section p.body,
+.has-bg .footer p,
+.has-bg .footer .copyright { color: var(--ink); }
+.has-bg .footer .copyright { opacity: 0.9; }
+.has-bg .section p.body,
+.has-bg .footer p,
+.has-bg .footer .copyright {
+  text-shadow: 0 1px 10px rgba(246, 239, 226, 0.92), 0 0 2px rgba(246, 239, 226, 0.72);
+}

@@ -321,3 +321,23 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     try { bgm.pause(); } catch (e) {}
   });
 })();
+
+/* ------------------------------------------------------------
+   9) 內頁固定背景：多張時每 5 秒淡入淡出輪播（單張則不動作）
+   - 只在有 #pageBg 且 .pbg-slide 超過一張的頁面作用（目前＝公會介紹）
+   - 尊重系統「減少動態」：只顯示第一張、不輪播
+------------------------------------------------------------ */
+(function () {
+  const bg = document.getElementById("pageBg");
+  if (!bg) return;
+  const slides = Array.from(bg.querySelectorAll(".pbg-slide"));
+  if (slides.length < 2) return;                 // 單張背景不需要輪播
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;                            // 減少動態：維持第一張即可
+  let i = 0;
+  setInterval(function () {
+    slides[i].classList.remove("is-on");
+    i = (i + 1) % slides.length;
+    slides[i].classList.add("is-on");
+  }, 5000);                                      // 每 5 秒切下一張
+})();

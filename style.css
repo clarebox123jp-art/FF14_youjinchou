@@ -752,3 +752,20 @@ body.bgm-on .lyrics-track { animation-play-state: running; }
 .lyrics-track p { margin: 0 0 18px; font-size: 0.92rem; line-height: 1.75; letter-spacing: 0.03em; }
 .lyrics-track p span { display: block; font-size: 0.85em; color: #cdbfa4; }
 @media (prefers-reduced-motion: reduce) { .lyrics-track { animation: none; } }
+
+/* ============================================================
+   ★ 2026-07 追加：相簿預覽尺寸縮小（照片＋和紙標籤在各種螢幕完整入鏡）
+   - 電腦：每張上限 330px 寬（原 440px），高度再以視窗高度 46vh 封頂
+   - 手機：每張佔畫面寬 70%（原 88%），標籤字級略縮
+   想再調大小：改下面的 330px / 70% 兩個數字（上下兩處要一起改）
+   ============================================================ */
+.car-track { padding: 6px calc((100% - min(62%, 330px)) / 2) 6px; }
+.car-track .photo { flex-basis: min(62%, 330px); }
+.car-track .photo-frame img { max-height: min(46vh, 260px); }
+
+@media (max-width: 560px) {
+  .car-track { padding: 6px calc((100% - 70%) / 2) 6px; gap: 12px; }
+  .car-track .photo { flex: 0 0 70%; }
+  .car-track .photo-frame img { max-height: 40vh; }
+  .photo .cap { font-size: 0.82rem; padding: 9px 14px; }
+}

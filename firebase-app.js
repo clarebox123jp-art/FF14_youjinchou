@@ -882,7 +882,10 @@ async function exportOverrides() {
     const now = pageData.text[k].replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
     const was = (textDefaults[k] || "").replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
     lines.push("・目前顯示：「" + now + "」");
-    if (/color\s*:/.test(pageData.text[k])) lines.push("　（此段內含「局部文字變色」，樣式已存在文字內容裡，會隨文字一併併回）");
+    if (/color\s*:/.test(pageData.text[k])) {
+      lines.push("　（此段內含「局部文字變色」，下面附原始HTML，貼給 Claude 即可連變色一起併回預設）");
+      lines.push("　原始HTML：" + pageData.text[k]);
+    }
     if (was) lines.push("　（網頁預設原是：「" + was.slice(0, 60) + (was.length > 60 ? "…" : "") + "」）");
     if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能預設文字已被改過而脫鉤）");
   });

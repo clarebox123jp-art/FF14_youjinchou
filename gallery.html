@@ -60,7 +60,7 @@
       </div>
       <div class="carousel reveal" id="galleryTop">
         <button class="car-arrow prev" aria-label="上一張">‹</button>
-        <div class="car-track">
+        <div class="car-track" data-imglist="gallery-top">
           <figure class="photo">
             <div class="photo-frame"><img src="images/first-meetup-badge.webp" alt="第一次網聚名牌" loading="lazy" /></div>
             <figcaption class="cap">2026.04.11，台北。第一次網聚的專屬名牌，把線上的緣分，攤在陽光下相認。</figcaption>
@@ -112,7 +112,7 @@
       </div>
       <div class="carousel reveal" id="galleryBottom">
         <button class="car-arrow prev" aria-label="上一張">‹</button>
-        <div class="car-track">
+        <div class="car-track" data-imglist="gallery-bottom">
           <figure class="photo">
             <div class="photo-frame"><img src="images/house-stage-clair.webp" alt="公會小屋舞台上的小克瑞爾" loading="lazy" /></div>
             <figcaption class="cap">公會小屋的小舞台亮起，小克瑞爾站定的那刻，這個家就有了主角。</figcaption>
@@ -156,5 +156,7 @@
   </button>
 
   <script src="main.js"></script>
+  <!-- ★ Firebase（線上編輯／內容覆寫）：ES 模組、載入失敗不影響其他功能 -->
+  <script type="module" src="firebase-app.js"></script>
 </body>
 </html>

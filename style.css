@@ -788,3 +788,46 @@ body.bgm-on .lyrics-track { animation-play-state: running; }
 }
 .about-slides img.is-on { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .about-slides img:first-child { opacity: 1; } }
+
+/* ============================================================
+   ★ 2026-07 追加：歌詞欄調整（速度改由 JS 捲動、字縮 20%、可拖曳）
+   ============================================================ */
+.lyrics-track { animation: none; }                       /* 停用舊 CSS 動畫，改用下方 JS 平滑捲動（可拖曳） */
+.lyrics-track p { font-size: 0.74rem; margin-bottom: 15px; }  /* 原 0.92rem，縮小 20% */
+.lyrics-view {
+  overflow-y: auto;                                      /* 開放捲動（觸控可直接滑） */
+  scrollbar-width: none; -ms-overflow-style: none;       /* 隱藏捲軸，維持乾淨 */
+  cursor: grab; touch-action: pan-y;
+  overscroll-behavior: contain;                          /* 捲到頭不要帶動整頁 */
+}
+.lyrics-view::-webkit-scrollbar { display: none; }
+.lyrics-view.grabbing { cursor: grabbing; }
+
+/* ============================================================
+   ★ 2026-07 追加：全站線上編輯介面（僅管理模式看得到）
+   ============================================================ */
+.edit-able:hover { outline: 2px dashed rgba(178, 58, 44, 0.55); outline-offset: 4px; cursor: text; }
+.editing { outline: 2px solid var(--shu) !important; outline-offset: 4px; background: rgba(255,255,255,0.5); }
+
+.edit-bar {
+  position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%);
+  z-index: 130; display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 14px;
+  background: rgba(30,30,34,0.94); color: #fff; font-size: 0.88rem;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.3);
+}
+
+.img-admin-host { position: relative; }
+.img-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 8;
+  display: flex; gap: 6px;
+}
+.img-badge button {
+  font-size: 0.78rem; cursor: pointer; padding: 5px 9px; border-radius: 8px;
+  border: 0; background: rgba(30,30,34,0.85); color: #fff;
+}
+.img-badge button:hover { background: var(--shu); }
+
+.yjc-ghost { opacity: 0.35; filter: grayscale(0.6); }
+
+.imglist-add { display: block; margin: 14px auto 0; }

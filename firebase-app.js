@@ -20,7 +20,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, increment,
-  collection, getDocs, addDoc, deleteDoc, query, orderBy, serverTimestamp
+  collection, getDocs, addDoc, deleteDoc, query, orderBy, serverTimestamp,
+  where, deleteField, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- 0) 初始化 ---------- */
@@ -275,4 +276,290 @@ onAuthStateChanged(auth, (user) => {
     if (fab) fab.style.display = "";
   }
   renderPartners();                  // 依身分重畫（顯示／隱藏編輯鈕）
+});
+
+/* ============================================================
+   4) 全站線上編輯（管理模式限定）
+   ------------------------------------------------------------
+   資料存法（都在 siteContent 集合，規則已涵蓋、不必改規則）：
+   - 文件 page-{頁名}：{ text: {段落鍵: HTML}, hidden: [圖片鍵] }
+   - 文件（自動 ID）：{ page, kind:"add"|"replace", container/key, src, cap, order }
+   每段文字／每張圖的「鍵」＝內容指紋（雜湊），所以顏色調整、排版改版
+   不會弄丟編輯；但若 Claude 之後改了某段的「預設文字」，該段的線上編輯
+   會自動失效回到新預設（屬正常現象，重新編輯即可）。
+   ============================================================ */
+const PAGE = ((location.pathname.split("/").pop() || "index.html").replace(".html", "")) || "index";
+const pageRef = doc(db, "siteContent", "page-" + PAGE);
+
+function h32(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+
+/* 可編輯文字的範圍（排除動態產生與管理介面本身） */
+const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inner h1,.hero-inner p,.footer p,.footer h3";
+const EXCLUDE = "#partnerList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
+
+const textDefaults = {};                 // 每段的預設內容（供「回復預設」）
+function collectEditables() {
+  const seen = {}; const out = [];
+  document.querySelectorAll(EDIT_SEL).forEach((el) => {
+    if (el.closest(EXCLUDE)) return;
+    if (!el.dataset.editKey) {
+      const base = "t" + h32(el.textContent.trim().slice(0, 80) + "|" + el.tagName);
+      const n = (seen[base] = (seen[base] || 0) + 1);
+      el.dataset.editKey = n > 1 ? base + "-" + n : base;
+      textDefaults[el.dataset.editKey] = el.innerHTML;
+    }
+    out.push(el);
+  });
+  return out;
+}
+function collectImgs() {
+  return Array.from(document.querySelectorAll(".wrap img, .hero-inner img"))
+    .filter((im) => !im.closest("#partnerList,.admin-modal"));
+}
+const imgKeyOf = (im) => im.dataset.imgKey || (im.dataset.imgKey = "i" + h32(im.getAttribute("src") || ""));
+
+let pageData = { text: {}, hidden: [] };
+let imgDocs = [];                        // 線上新增／更換的圖片文件
+const hiddenHosts = {};                  // 圖片鍵 → 被隱藏的節點（供管理模式復原）
+
+let overridesReady;                      // Promise：內容套用完成
+async function applyOverrides() {
+  try {
+    const els = collectEditables();
+    const snap = await getDoc(pageRef);
+    pageData = Object.assign({ text: {}, hidden: [] }, snap.exists() ? snap.data() : {});
+    els.forEach((el) => {
+      const v = pageData.text && pageData.text[el.dataset.editKey];
+      if (typeof v === "string") el.innerHTML = v;
+    });
+
+    const qs = await getDocs(query(collection(db, "siteContent"), where("page", "==", PAGE)));
+    imgDocs = qs.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // 更換過的圖
+    collectImgs().forEach((im) => {
+      const rep = imgDocs.find((d) => d.kind === "replace" && d.key === imgKeyOf(im));
+      if (rep) im.src = rep.src;
+    });
+    // 線上新增的圖 → 塞進對應容器
+    imgDocs.filter((d) => d.kind === "add").forEach((d) => {
+      const box = document.querySelector('[data-imglist="' + d.container + '"]');
+      if (!box || box.querySelector('[data-doc-id="' + d.id + '"]')) return;
+      if (box.classList.contains("car-track")) {
+        const fig = document.createElement("figure");
+        fig.className = "photo"; fig.dataset.docId = d.id;
+        fig.innerHTML = '<div class="photo-frame"><img loading="lazy" /></div><figcaption class="cap"></figcaption>';
+        const im = fig.querySelector("img");
+        im.src = d.src; im.alt = d.cap || "";
+        fig.querySelector(".cap").textContent = d.cap || "";
+        box.appendChild(fig);
+      } else {
+        const im = document.createElement("img");
+        im.src = d.src; im.alt = d.cap || ""; im.dataset.cap = d.cap || ""; im.dataset.docId = d.id;
+        box.appendChild(im);
+      }
+    });
+    // 隱藏的圖
+    (pageData.hidden || []).forEach((k) => hideImgByKey(k));
+    document.dispatchEvent(new Event("yjc-overrides"));
+  } catch (e) {
+    console.warn("線上內容載入失敗（顯示網頁預設）：", e);
+  }
+}
+function hideImgByKey(k) {
+  const im = document.querySelector('[data-img-key="' + k + '"]') ||
+             collectImgs().find((x) => imgKeyOf(x) === k);
+  if (!im) return;
+  im.setAttribute("data-yjc-hidden", "1");
+  const host = im.closest(".photo, .about-figure") || im;
+  host.style.display = "none";
+  hiddenHosts[k] = { im, host };
+}
+overridesReady = applyOverrides();
+
+/* ---------- 管理模式：文字編輯 ---------- */
+let editingEl = null, editBar = null;
+function startEdit(el) {
+  finishEdit(false);
+  editingEl = el;
+  el.dataset.before = el.innerHTML;
+  el.contentEditable = "true";
+  el.classList.add("editing");
+  el.focus();
+  document.body.classList.add("yjc-editing");
+  editBar = document.createElement("div");
+  editBar.className = "edit-bar";
+  editBar.innerHTML =
+    '<span>✎ 正在編輯文字</span>' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
+    '<button type="button" class="admin-btn" data-a="reset">回復預設</button>';
+  document.body.appendChild(editBar);
+  editBar.addEventListener("click", async (e) => {
+    const a = e.target.dataset.a;
+    if (a === "cancel") { editingEl.innerHTML = editingEl.dataset.before; finishEdit(true); }
+    if (a === "save") {
+      const key = editingEl.dataset.editKey, html = editingEl.innerHTML;
+      try {
+        await setDoc(pageRef, { text: { [key]: html } }, { merge: true });
+        pageData.text[key] = html;
+        finishEdit(true);
+      } catch (err) { alert("儲存失敗：" + (err.message || err)); }
+    }
+    if (a === "reset") {
+      const key = editingEl.dataset.editKey;
+      try {
+        await setDoc(pageRef, { text: { [key]: deleteField() } }, { merge: true });
+        delete pageData.text[key];
+        editingEl.innerHTML = textDefaults[key] || editingEl.dataset.before;
+        finishEdit(true);
+      } catch (err) { alert("回復失敗：" + (err.message || err)); }
+    }
+  });
+}
+function finishEdit(clean) {
+  if (editBar) { editBar.remove(); editBar = null; }
+  if (editingEl) {
+    editingEl.contentEditable = "false";
+    editingEl.classList.remove("editing");
+    if (!clean) editingEl.innerHTML = editingEl.dataset.before || editingEl.innerHTML;
+    editingEl = null;
+  }
+  document.body.classList.remove("yjc-editing");
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && editingEl) { editingEl.innerHTML = editingEl.dataset.before; finishEdit(true); } });
+
+/* ---------- 管理模式：圖片 隱藏／復原／更換 ---------- */
+async function toggleHideImg(im) {
+  const k = imgKeyOf(im);
+  const docId = (im.closest("[data-doc-id]") || im).dataset ? (im.closest("[data-doc-id]")?.dataset.docId || im.dataset.docId) : null;
+  if (docId) {                                   // 線上新增的圖 → 直接刪文件
+    if (!confirm("刪除這張線上新增的照片？（無法復原）")) return;
+    await deleteDoc(doc(db, "siteContent", docId));
+    (im.closest(".photo") || im).remove();
+    document.dispatchEvent(new Event("yjc-overrides"));
+    return;
+  }
+  if (im.getAttribute("data-yjc-hidden")) {      // 已隱藏 → 復原
+    await setDoc(pageRef, { hidden: arrayRemove(k) }, { merge: true });
+    im.removeAttribute("data-yjc-hidden");
+    const host = hiddenHosts[k] ? hiddenHosts[k].host : (im.closest(".photo, .about-figure") || im);
+    host.style.display = ""; host.classList.remove("yjc-ghost");
+  } else {                                       // 隱藏（管理模式下改成半透明，不真的消失）
+    await setDoc(pageRef, { hidden: arrayUnion(k) }, { merge: true });
+    im.setAttribute("data-yjc-hidden", "1");
+    const host = im.closest(".photo, .about-figure") || im;
+    host.classList.add("yjc-ghost");
+    hiddenHosts[k] = { im, host };
+  }
+  refreshBadges();
+  document.dispatchEvent(new Event("yjc-overrides"));
+}
+function replaceImg(im) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*";
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    try {
+      const src = await compressImage(f, 1400, 0.82);
+      const k = imgKeyOf(im);
+      const old = imgDocs.find((d) => d.kind === "replace" && d.key === k);
+      if (old) await updateDoc(doc(db, "siteContent", old.id), { src });
+      else await addDoc(collection(db, "siteContent"), { page: PAGE, kind: "replace", key: k, src, order: Date.now() });
+      im.src = src;
+    } catch (e) { alert("更換失敗：" + (e.message || e)); }
+  };
+  inp.click();
+}
+function addImgTo(container) {
+  const box = document.querySelector('[data-imglist="' + container + '"]');
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal"; wrap.id = "addImgModal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>新增照片</h3>' +
+    '<label>照片檔案<input id="aiFile" type="file" accept="image/*" /></label>' +
+    '<label>照片說明（相簿的和紙標籤／輪播圖說）<textarea id="aiCap" rows="2"></textarea></label>' +
+    '<p class="admin-hint" id="aiMsg"></p>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" id="aiSave">上傳</button>' +
+    '<button type="button" class="admin-btn" id="aiCancel">取消</button></div></div>';
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+  wrap.querySelector("#aiCancel").onclick = () => wrap.remove();
+  wrap.querySelector("#aiSave").onclick = async () => {
+    const f = wrap.querySelector("#aiFile").files[0];
+    const cap = wrap.querySelector("#aiCap").value.trim();
+    const msg = wrap.querySelector("#aiMsg");
+    if (!f) { msg.textContent = "請先選一張照片。"; return; }
+    try {
+      msg.textContent = "上傳中…";
+      const src = await compressImage(f, box && box.classList.contains("car-track") ? 1400 : 1200, 0.82);
+      await addDoc(collection(db, "siteContent"), { page: PAGE, kind: "add", container, src, cap, order: Date.now() });
+      wrap.remove();
+      imgDocs = []; await applyOverrides();       // 重新套用 → 新照片入列
+      if (isAdmin) refreshBadges();
+    } catch (e) { msg.textContent = "❌ " + (e.message || e); }
+  };
+}
+
+/* ---------- 管理模式：把編輯介面掛上頁面 ---------- */
+let editingEnabled = false;
+async function enableEditing() {
+  await overridesReady;
+  if (editingEnabled) return;
+  editingEnabled = true;
+  // 文字：點一下開始編輯（管理模式中，可編輯段落內的連結不會跳轉、改為進入編輯）
+  document.addEventListener("click", (e) => {
+    if (!isAdmin) return;
+    if (e.target.closest(".img-badge,.edit-bar,.admin-bar,.admin-modal")) return;
+    const el = e.target.closest("[data-edit-key]");
+    if (!el || editingEl === el) return;
+    e.preventDefault();
+    startEdit(el);
+  });
+  collectEditables().forEach((el) => el.classList.add("edit-able"));
+  refreshBadges();
+  // 隱藏中的圖在管理模式顯示成半透明可復原
+  Object.values(hiddenHosts).forEach(({ host }) => { host.style.display = ""; host.classList.add("yjc-ghost"); });
+  // 每個照片容器加「＋加照片」
+  document.querySelectorAll("[data-imglist]").forEach((box) => {
+    if (box.dataset.addBtn) return;
+    box.dataset.addBtn = "1";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "admin-btn imglist-add";
+    btn.textContent = "＋ 加照片";
+    btn.onclick = () => addImgTo(box.dataset.imglist);
+    (box.closest(".carousel") || box.parentElement).insertAdjacentElement("afterend", btn);
+  });
+}
+function refreshBadges() {
+  document.querySelectorAll(".img-badge").forEach((b) => b.remove());
+  if (!isAdmin) return;
+  collectImgs().forEach((im) => {
+    if (im.closest(".about-slides") && !im.classList.contains("is-on") && !im.getAttribute("data-yjc-hidden")) return; // 疊圖只標當前那張
+    const host = im.closest(".photo, .about-figure, .member, figure") || im.parentElement;
+    if (!host || host.querySelector(":scope > .img-badge")) return;
+    host.classList.add("img-admin-host");
+    const b = document.createElement("div");
+    b.className = "img-badge";
+    const hidden = !!im.getAttribute("data-yjc-hidden");
+    b.innerHTML =
+      '<button type="button" data-a="hide">' + (hidden ? "↩ 復原" : "✕ 隱藏") + "</button>" +
+      (hidden ? "" : '<button type="button" data-a="rep">↻ 換圖</button>');
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const target = im.closest(".about-slides") ? im.closest(".about-slides").querySelector("img.is-on") || im : im;
+      if (e.target.dataset.a === "hide") toggleHideImg(target);
+      if (e.target.dataset.a === "rep") replaceImg(target);
+    });
+    host.appendChild(b);
+  });
+}
+setInterval(() => { if (isAdmin) refreshBadges(); }, 3200);  // 輪播換張時，徽章跟著當前那張
+
+/* 登入狀態掛上編輯 */
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email === ADMIN_EMAIL) enableEditing();
+  else { finishEdit(true); refreshBadges(); }
 });

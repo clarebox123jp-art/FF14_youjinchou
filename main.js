@@ -197,12 +197,21 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     lbImg.removeAttribute("src");
   }
 
+  /* 舊：逐張綁定（新加入的照片不會有燈箱，保留備查，鐵則①）
   imgs.forEach(function (img) {
     img.addEventListener("click", function () {
       const fig = img.closest(".photo");
       const capEl = fig ? fig.querySelector(".cap") : null;
       openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
     });
+  }); */
+  // 新：事件委派——之後線上新增的照片也自動有燈箱
+  document.addEventListener("click", function (e) {
+    const img = e.target.closest(".photo .photo-frame img");
+    if (!img || document.body.classList.contains("yjc-editing")) return;
+    const fig = img.closest(".photo");
+    const capEl = fig ? fig.querySelector(".cap") : null;
+    openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
   });
   closeBtn.addEventListener("click", closeLB);
   lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); }); // 點背景關閉
@@ -251,18 +260,20 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   function initCarousel(car) {
     const track = car.querySelector(".car-track");
     if (!track) return;
-    const slides = Array.from(track.querySelectorAll(".photo"));
+    // 舊：const slides = Array.from(track.querySelectorAll(".photo"));（固定清單，線上增刪照片後會失準，保留備查）
+    // 新：活清單——每次都重新數，線上新增／隱藏照片後計數與箭頭自動正確
+    const slides = () => Array.from(track.querySelectorAll(".photo")).filter((s) => s.style.display !== "none");
     const curEl = car.querySelector(".cur");
     const totalEl = car.querySelector(".total");
     const prev = car.querySelector(".prev");
     const next = car.querySelector(".next");
-    if (!slides.length) return;
-    if (totalEl) totalEl.textContent = slides.length;
+    if (!slides().length) return;
 
     function currentIndex() {
+      const list = slides();
       const center = track.scrollLeft + track.clientWidth / 2;
       let best = 0, bestDist = Infinity;
-      slides.forEach(function (s, i) {
+      list.forEach(function (s, i) {
         const c = s.offsetLeft + s.offsetWidth / 2;
         const d = Math.abs(c - center);
         if (d < bestDist) { bestDist = d; best = i; }
@@ -270,14 +281,18 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
       return best;
     }
     function update() {
+      const list = slides();
       const i = currentIndex();
-      if (curEl) curEl.textContent = i + 1;
+      if (totalEl) totalEl.textContent = list.length;
+      if (curEl) curEl.textContent = Math.min(i + 1, list.length);
       if (prev) prev.disabled = i === 0;
-      if (next) next.disabled = i === slides.length - 1;
+      if (next) next.disabled = i >= list.length - 1;
     }
     function goTo(i) {
-      i = Math.max(0, Math.min(slides.length - 1, i));
-      const s = slides[i];
+      const list = slides();
+      i = Math.max(0, Math.min(list.length - 1, i));
+      const s = list[i];
+      if (!s) return;
       track.scrollTo({ left: s.offsetLeft - (track.clientWidth - s.offsetWidth) / 2, behavior: "smooth" });
     }
     if (prev) prev.addEventListener("click", function () { goTo(currentIndex() - 1); });
@@ -285,6 +300,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     let t;
     track.addEventListener("scroll", function () { clearTimeout(t); t = setTimeout(update, 80); });
     window.addEventListener("resize", update);
+    document.addEventListener("yjc-overrides", update);   // 線上內容套用後重新計數
     update();
   }
 })();
@@ -402,20 +418,83 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   if (!boxes.length) return;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   boxes.forEach(function (box) {
-    const imgs = box.querySelectorAll("img");
+    // 舊：const imgs = box.querySelectorAll("img");（固定清單，保留備查）
+    // 新：活清單——線上新增／隱藏照片後輪播自動跟上
+    const live = () => Array.from(box.querySelectorAll("img:not([data-yjc-hidden])"));
     const fig  = box.closest("figure");
     const cap  = fig ? fig.querySelector("figcaption") : null;
-    const setCap = (i) => { if (cap) cap.textContent = imgs[i].dataset.cap || imgs[i].alt || ""; };
-    if (!imgs.length) return;
-    imgs[0].classList.add("is-on");
-    setCap(0);
-    if (imgs.length < 2 || reduce) return;
+    const setCap = (im) => { if (cap && im) cap.textContent = im.dataset.cap || im.alt || ""; };
+    let list = live();
+    if (!list.length) return;
+    list[0].classList.add("is-on");
+    setCap(list[0]);
+    if (reduce) return;
     let i = 0;
     setInterval(function () {
-      imgs[i].classList.remove("is-on");
-      i = (i + 1) % imgs.length;
-      imgs[i].classList.add("is-on");
-      setCap(i);
+      list = live();
+      if (list.length < 2) return;
+      list.forEach((im) => im.classList.remove("is-on"));
+      i = (i + 1) % list.length;
+      list[i].classList.add("is-on");
+      setCap(list[i]);
     }, SLIDE_MS);
   });
+})();
+
+/* ------------------------------------------------------------
+   13) 歌詞平滑捲動引擎（取代第 11 段的 CSS 動畫；11 段仍負責
+       複製歌詞做無縫循環、隱藏提示、bgm-on 狀態）
+   - 每句 6.8 秒（＝原 3.4 秒放慢 50%；想調快慢改 SEC_PER_LINE）
+   - 音樂播放時自動往上捲；滑鼠拖曳／滾輪／觸控可自由看整份歌詞，
+     放開約 1.2 秒後自動接續上捲；無縫循環不會捲到底
+------------------------------------------------------------ */
+(function () {
+  const view  = document.querySelector(".lyrics-view");
+  const track = document.getElementById("lyricsTrack");
+  if (!view || !track) return;
+  const SEC_PER_LINE = 6.8;
+  let paused = false, resumeT = null, dragging = false, startY = 0, startTop = 0;
+
+  const halfH = () => track.scrollHeight / 2;             // 內容有複製一份，一半＝一輪
+  const speed = () => {                                    // px / 毫秒
+    const lines = track.children.length / 2 || 1;
+    return halfH() / (lines * SEC_PER_LINE * 1000);
+  };
+
+  let last = performance.now();
+  (function step(now) {
+    const dt = Math.min(now - last, 100); last = now;      // 分頁切走再回來不暴衝
+    if (!paused && !dragging && document.body.classList.contains("bgm-on")) {
+      view.scrollTop += speed() * dt;
+    }
+    const h = halfH();
+    if (h > 0) {                                           // 無縫循環
+      if (view.scrollTop >= h) view.scrollTop -= h;
+      else if (view.scrollTop < 0) view.scrollTop += h;
+    }
+    requestAnimationFrame(step);
+  })(last);
+
+  function pauseThenResume() {
+    paused = true; clearTimeout(resumeT);
+    resumeT = setTimeout(() => { paused = false; last = performance.now(); }, 1200);
+  }
+  // 滑鼠拖曳（觸控用原生捲動即可）
+  view.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse") return;
+    dragging = true; startY = e.clientY; startTop = view.scrollTop;
+    view.setPointerCapture(e.pointerId); view.classList.add("grabbing");
+    e.preventDefault();
+  });
+  view.addEventListener("pointermove", (e) => {
+    if (dragging) view.scrollTop = startTop - (e.clientY - startY);
+  });
+  ["pointerup", "pointercancel"].forEach((ev) =>
+    view.addEventListener(ev, () => {
+      if (!dragging) return;
+      dragging = false; view.classList.remove("grabbing"); pauseThenResume();
+    })
+  );
+  view.addEventListener("wheel", pauseThenResume, { passive: true });
+  view.addEventListener("touchmove", pauseThenResume, { passive: true });
 })();

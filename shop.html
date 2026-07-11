@@ -293,17 +293,25 @@
   </section>
 
   <!-- ============================================================
-       B. 工作夥伴名冊
-       每人一張卡：照片 + 角色名／ID + 遊玩時間 + 擔任職務 + 一句簡介。
-       想增減／修改：複製或刪掉一整個 <article class="member">...</article>，
-       照片放進 images/、改 <img src="...">。ID 與遊玩時間可隨時手動調整。
+       B. 店員名簿（★2026-07-11 由「工作夥伴名冊」升級而來）
+       直式長條照片並列，點照片可放大看完整原圖（main.js 第 14 段燈箱）。
+       名單資料由 firebase-app.js 第 13 段渲染進 #staffList：
+       Firestore 沒資料時先顯示內建預設 8 位；管理列「⤓ 匯入預設店員」
+       寫入資料庫後即可線上編輯／新增／刪除。
        ============================================================ -->
   <section class="section">
     <div class="wrap">
+      <!-- ★ 舊「工作夥伴」標題保留備查（鐵則①）：
       <div class="reveal">
         <p class="eyebrow">Our People · 工作夥伴</p>
         <h2>工作夥伴</h2>
         <p class="body" style="margin-top:14px">在部屋裡一起把店開起來的夥伴們。</p>
+      </div>
+      -->
+      <div class="reveal">
+        <p class="eyebrow">Our Staff · 店員名簿</p>
+        <h2>店員名簿</h2>
+        <p class="body" style="margin-top:14px">留名於帳中的，皆是此店的一期一會。輕點照片，便能望見他們完整的身影。</p>
       </div>
 
       <!-- ★ 2026-07 暫時隱藏：佔位的工作夥伴卡（之後改用線上編輯功能補上真實成員）。
@@ -346,10 +354,16 @@
       </div>
       -->
 
-      <!-- ★ 線上編輯版工作夥伴：內容存在 Firebase，由 firebase-app.js 讀出來畫進下面容器。
-           管理方式：網址加 #admin → 登入 → 新增／編輯／刪除。 -->
+      <!-- ★ 舊「線上編輯版工作夥伴」容器保留備查（鐵則①）。
+           想回退：拆掉下面這段註解、並把 #staffList 兩行註解掉即可。
       <div class="grid-members reveal" id="partnerList"></div>
       <p class="body" id="partnerEmpty" style="text-align:center;margin-top:30px">店舖成員即將公開，敬請期待。</p>
+      -->
+
+      <!-- ★ 2026-07-11 店員名簿：直式短冊照片並列，資料由 firebase-app.js 第 13 段渲染。
+           管理方式：網址加 #admin → 登入 → ＋新增店員／⤓匯入預設店員 → 逐張 ✎編輯／✕刪除。 -->
+      <div class="staff-row reveal" id="staffList"></div>
+      <p class="body" id="staffEmpty" style="text-align:center;margin-top:30px;display:none">店員名簿整理中，敬請期待。</p>
 
       <p class="body reveal" style="text-align:center;margin:44px auto 0">
         想參與 RP 商店的經營或演出？

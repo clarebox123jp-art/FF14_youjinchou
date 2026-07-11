@@ -514,3 +514,51 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   view.addEventListener("wheel", pauseThenResume, { passive: true });
   view.addEventListener("touchmove", pauseThenResume, { passive: true });
 })();
+
+/* ------------------------------------------------------------
+   14) RP 商店「店員名簿」燈箱：點長條照片 → 放大看完整原圖
+   - 只在有 #staffList 的頁面（shop.html）作用
+   - 卡片由 firebase-app.js 第 13 段動態產生 → 用事件委派，
+     之後線上新增／編輯的店員照片也自動有燈箱
+   - 沿用第 5 段的 .lightbox 樣式；關閉：右上 ×、點背景、Esc
+------------------------------------------------------------ */
+(function () {
+  if (!document.getElementById("staffList")) return;
+
+  const lb = document.createElement("div");
+  lb.className = "lightbox";
+  lb.innerHTML =
+    '<button class="lb-close" aria-label="關閉放大">×</button>' +
+    '<img class="lb-img" alt="" />' +
+    '<p class="lb-cap"></p>';
+  document.body.appendChild(lb);
+
+  const lbImg = lb.querySelector(".lb-img");
+  const lbCap = lb.querySelector(".lb-cap");
+
+  function closeLB() {
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+    lbImg.removeAttribute("src");
+  }
+
+  document.addEventListener("click", function (e) {
+    const box = e.target.closest("#staffList .staff-photo");
+    if (!box) return;
+    const img = box.querySelector("img");
+    if (!img) return;                       // 「印」佔位（無照片）不放大
+    lbImg.src = img.currentSrc || img.src;
+    lbImg.alt = img.alt || "";
+    const name = box.dataset.name || "";
+    const role = box.dataset.role || "";
+    lbCap.textContent = name && role ? name + " · " + role : name;
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden"; // 放大時鎖住背景捲動
+  });
+
+  lb.querySelector(".lb-close").addEventListener("click", closeLB);
+  lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+  });
+})();

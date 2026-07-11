@@ -84,7 +84,12 @@ async function loadPartners() {
   try {
     const q = query(collection(db, "shopPartners"), orderBy("order"), orderBy("createdAt"));
     const snap = await getDocs(q);
-    partnersCache = snap.docs.map((d) => ({ id: d.id, data: d.data() }));
+    /* ★ 2026-07-11：同一集合現在也存「店員名簿」（kind:"staff"，見第 13 段），
+       這裡把店員濾掉，避免誤入舊的工作夥伴清單。
+       舊寫法備查：partnersCache = snap.docs.map((d) => ({ id: d.id, data: d.data() })); */
+    partnersCache = snap.docs
+      .map((d) => ({ id: d.id, data: d.data() }))
+      .filter((x) => x.data.kind !== "staff");
   } catch (e) {
     console.warn("讀取工作夥伴失敗：", e);
     partnersCache = [];
@@ -245,6 +250,7 @@ function buildAdminBar(email) {
   bar.innerHTML = `
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
+    ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
@@ -257,6 +263,11 @@ function buildAdminBar(email) {
   try { if (localStorage.getItem("yjcAdminFold") === "1") bar.classList.add("folded"); } catch (_) {}
   const add = document.getElementById("abAdd");
   if (add) add.onclick = () => openPartnerForm();
+  /* ★ 2026-07-11：店員名簿（實作在第 13 段） */
+  const sAdd = document.getElementById("abStaffAdd");
+  if (sAdd) sAdd.onclick = () => openStaffForm();
+  const sSeed = document.getElementById("abStaffSeed");
+  if (sSeed) sSeed.onclick = seedDefaultStaff;
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -294,6 +305,7 @@ onAuthStateChanged(auth, (user) => {
     if (fab) fab.style.display = "";
   }
   renderPartners();                  // 依身分重畫（顯示／隱藏編輯鈕）
+  renderStaff();                     // ★ 2026-07-11：店員名簿同樣依身分重畫（第 13 段）
 });
 
 /* ============================================================
@@ -314,7 +326,9 @@ function h32(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5)
 /* 可編輯文字的範圍（排除動態產生與管理介面本身）
    ※ .photo .cap ＝ 相簿照片的和紙標籤圖說（不論在不在 .wrap 內都涵蓋） */
 const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inner h1,.hero-inner p,.footer p,.footer h3,.photo .cap";
-const EXCLUDE = "#partnerList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
+/* ★ 2026-07-11：加入 #staffList（店員名簿卡片由 Firestore 動態產生，不走段落編輯）
+   舊值備查："#partnerList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar" */
+const EXCLUDE = "#partnerList,#staffList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
 
 const textDefaults = {};                 // 每段的預設內容（供「回復預設」）
 function collectEditables() {
@@ -1180,3 +1194,192 @@ document.addEventListener("click", (e) => {
   const folded = bar.classList.toggle("folded");
   try { localStorage.setItem("yjcAdminFold", folded ? "1" : "0"); } catch (_) {}
 });
+
+/* ============================================================
+   13) RP 商店「店員名簿」（只在有 #staffList 的頁面執行＝shop.html）
+   ------------------------------------------------------------
+   - 資料存在既有的 shopPartners 集合、以 kind:"staff" 標記
+     → 不必動 Firestore 規則（管理員可寫、全站可讀）
+   - Firestore 還沒有店員資料時，前台先顯示內建預設 8 位（DEFAULT_STAFF）；
+     管理列按「⤓ 匯入預設店員」寫入資料庫後，每張卡即可 ✎編輯／✕刪除
+   - 照片欄位兩種都吃：repo 相對路徑（如 images/officer-clair.webp）
+     或線上上傳、canvas 壓縮後的 WebP dataURL
+   ============================================================ */
+const staffList  = document.getElementById("staffList");
+const staffEmpty = document.getElementById("staffEmpty");
+
+/* 內建預設名單（2026-07-11 老師定案；順序＝order） */
+const DEFAULT_STAFF = [
+  { name: "小克瑞爾",   role: "帳簿主", services: "公會長 · 網站維護",   photo: "images/officer-clair.webp",     order: 1 },
+  { name: "卡爾",       role: "店員",   services: "角色扮演／陪座聊天", photo: "images/卡爾.jpg",               order: 2 },
+  { name: "拉可帕萩琴", role: "店員",   services: "角色扮演／陪座聊天", photo: "images/officer-rakopa.webp",    order: 3 },
+  { name: "小露貓",     role: "店員",   services: "角色扮演／陪座聊天", photo: "images/小露貓.jpg",             order: 4 },
+  /* ★ 2026-07-11 追加兩位店員：order 用 4.1／4.2 小數插隊，
+     這樣就算資料庫先前已匯入過（九里斯蒂安=5 起跳），
+     再補匯這兩位也會乖乖排在店員群後面、不會打亂順序 */
+  { name: "菲亞梅塔",   role: "店員",   services: "角色扮演／陪座聊天", photo: "images/菲亞梅塔.jpg",           order: 4.1 },
+  { name: "哈魯德",     role: "店員",   services: "角色扮演／陪座聊天", photo: "images/哈魯德.jpg",             order: 4.2 },
+  { name: "九里斯蒂安", role: "鏡花司", services: "裝潢布置",           photo: "images/officer-christian.webp", order: 5 },
+  { name: "狂月巴",     role: "能樂司", services: "樂器表演",           photo: "images/狂月巴.jpg",             order: 6 },
+  { name: "埃米爾",     role: "花魁",   services: "舞蹈表演",           photo: "images/埃米爾.jpg",             order: 7 },
+  { name: "骸梅十穗",   role: "留影司", services: "美照攝影",           photo: "images/officer-toho.webp",      order: 8 },
+];
+
+let staffCache = [];             // Firestore 版 [{id, data}]
+let staffUsingDefault = true;    // true＝目前顯示的是內建預設（尚未匯入資料庫）
+
+async function loadStaff() {
+  if (!staffList) return;
+  try {
+    const q = query(collection(db, "shopPartners"), orderBy("order"), orderBy("createdAt"));
+    const snap = await getDocs(q);
+    staffCache = snap.docs
+      .map((d) => ({ id: d.id, data: d.data() }))
+      .filter((x) => x.data.kind === "staff");
+  } catch (e) {
+    console.warn("讀取店員名簿失敗：", e);
+    staffCache = [];
+  }
+  staffUsingDefault = staffCache.length === 0;
+  renderStaff();
+}
+
+function renderStaff() {
+  if (!staffList) return;
+  staffList.innerHTML = "";
+  const rows = staffUsingDefault
+    ? DEFAULT_STAFF.map((d) => ({ id: null, data: d }))
+    : staffCache;
+  if (staffEmpty) staffEmpty.style.display = rows.length ? "none" : "";
+  for (const { id, data: s } of rows) {
+    const card = document.createElement("article");
+    card.className = "staff-card";
+    const img = s.photo
+      ? `<img src="${s.photo}" alt="${esc(s.name)} 的照片" loading="lazy" />`
+      : `<div class="noimg" aria-hidden="true"><span>印</span></div>`;
+    card.innerHTML = `
+      <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${img}</div>
+      <h3>${esc(s.name)}</h3>
+      <p class="staff-role">${esc(s.role)}</p>
+      <p class="staff-serv">${esc(s.services)}</p>`;
+    if (isAdmin && id) {
+      const bar = document.createElement("div");
+      bar.className = "admin-actions";
+      bar.innerHTML = `<button type="button" data-act="edit">✎ 編輯</button>
+                       <button type="button" data-act="del">✕ 刪除</button>`;
+      bar.querySelector('[data-act="edit"]').onclick = () => openStaffForm(id, s);
+      bar.querySelector('[data-act="del"]').onclick = async () => {
+        if (!confirm(`確定要刪除店員「${s.name}」嗎？（無法復原）`)) return;
+        await deleteDoc(doc(db, "shopPartners", id));
+        loadStaff();
+      };
+      card.appendChild(bar);
+    }
+    staffList.appendChild(card);
+  }
+  /* 管理員看到的還是內建預設時 → 提醒先匯入才能逐張編輯 */
+  if (isAdmin && staffUsingDefault && rows.length) {
+    const hint = document.createElement("p");
+    hint.className = "staff-default-hint";
+    hint.textContent = "目前顯示內建預設名單；按管理列「⤓ 匯入預設店員」寫入資料庫後，才能逐張編輯／刪除。";
+    staffList.appendChild(hint);
+  }
+}
+renderStaff();   // 先立刻畫出內建預設（避免等待 Firestore 期間空白）
+loadStaff();     // 再讀 Firestore，有資料就換成線上版
+
+/* ---------- 新增／編輯店員的表單（燈箱式，比照夥伴表單） ---------- */
+function openStaffForm(id = null, s = {}) {
+  closeStaffForm();
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.id = "staffModal";
+  wrap.innerHTML = `
+    <div class="admin-modal-card">
+      <h3>${id ? "編輯店員" : "新增店員"}</h3>
+      <label>玩家 ID（例：小克瑞爾）<input id="sfName" value="${esc(s.name)}" /></label>
+      <label>職務名稱（例：帳簿主）<input id="sfRole" value="${esc(s.role)}" /></label>
+      <label>服務項目（例：公會長 · 網站維護）<input id="sfServ" value="${esc(s.services)}" /></label>
+      <label>照片（可不選＝維持不變／無照片）<input id="sfPhoto" type="file" accept="image/*" /></label>
+      <label>排序（數字小的排前面）<input id="sfOrder" type="number" value="${Number.isFinite(s.order) ? s.order : (staffCache.length + 1)}" /></label>
+      <p class="admin-hint" id="sfMsg"></p>
+      <div class="admin-modal-btns">
+        <button type="button" id="sfSave" class="admin-btn primary">儲存</button>
+        <button type="button" id="sfCancel" class="admin-btn">取消</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeStaffForm(); });
+  document.getElementById("sfCancel").onclick = closeStaffForm;
+  document.getElementById("sfSave").onclick = async () => {
+    const msg = document.getElementById("sfMsg");
+    const btn = document.getElementById("sfSave");
+    try {
+      btn.disabled = true; msg.textContent = "儲存中…";
+      const data = {
+        kind:     "staff",
+        name:     document.getElementById("sfName").value.trim(),
+        role:     document.getElementById("sfRole").value.trim(),
+        services: document.getElementById("sfServ").value.trim(),
+        order:    Number(document.getElementById("sfOrder").value) || 0,
+      };
+      if (!data.name) throw new Error("「玩家 ID」不能空白。");
+      const file = document.getElementById("sfPhoto").files[0];
+      if (file) data.photo = await compressImage(file);   // 沿用第 2 段的壓縮（WebP dataURL）
+      if (id) {
+        await updateDoc(doc(db, "shopPartners", id), data);
+      } else {
+        data.photo = data.photo || "";
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "shopPartners"), data);
+      }
+      closeStaffForm();
+      loadStaff();
+    } catch (e) {
+      btn.disabled = false;
+      msg.textContent = "❌ " + (e.message || "儲存失敗，請再試一次。");
+    }
+  };
+}
+function closeStaffForm() {
+  const m = document.getElementById("staffModal");
+  if (m) m.remove();
+}
+
+/* ---------- 一鍵把內建預設店員寫進 Firestore（★2026-07-11 升級：只補缺漏） ----------
+   同名店員資料庫已有的會自動跳過，所以之後預設名單加了新人，
+   老師再按一次「⤓ 匯入預設店員」就只會補上新加的，不會出現重複卡片。
+   舊版備查（無去重，整批寫入）：
+   async function seedDefaultStaff() {
+     if (!confirm(staffUsingDefault
+       ? "要把內建預設的 8 位店員寫進資料庫嗎？寫入後即可逐張編輯／刪除。"
+       : "資料庫已經有店員資料，再匯入會多出重複的 8 張預設卡，確定要繼續嗎？")) return;
+     try {
+       for (const s of DEFAULT_STAFF) {
+         await addDoc(collection(db, "shopPartners"), { kind: "staff", ...s, createdAt: serverTimestamp() });
+       }
+       alert("✅ 已匯入預設店員名單，現在每張卡都可以編輯或刪除了。");
+       loadStaff();
+     } catch (e) {
+       alert("❌ 匯入失敗：" + (e.message || e));
+     }
+   }
+------------------------------------------------------------------------------ */
+async function seedDefaultStaff() {
+  const existing = new Set(staffCache.map((x) => x.data.name));   // 資料庫已有的店員名字
+  const missing  = DEFAULT_STAFF.filter((s) => !existing.has(s.name));
+  if (!missing.length) {
+    alert("預設名單裡的店員都已經在資料庫了，不需要匯入。");
+    return;
+  }
+  if (!confirm(`要把還沒入庫的 ${missing.length} 位預設店員（${missing.map((s) => s.name).join("、")}）寫進資料庫嗎？寫入後即可逐張編輯／刪除。`)) return;
+  try {
+    for (const s of missing) {
+      await addDoc(collection(db, "shopPartners"), { kind: "staff", ...s, createdAt: serverTimestamp() });
+    }
+    alert(`✅ 已匯入 ${missing.length} 位店員。`);
+    loadStaff();
+  } catch (e) {
+    alert("❌ 匯入失敗：" + (e.message || e));
+  }
+}

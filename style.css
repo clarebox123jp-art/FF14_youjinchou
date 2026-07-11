@@ -963,3 +963,56 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px) {
   .admin-bar { left: 10px; right: auto; max-width: 78vw; }
 }
+
+/* ============================================================
+   ★ 2026-07-11 追加：RP 商店「店員名簿」直式短冊卡（shop.html）
+   - 照片統一裁成直立長條（短冊風），原圖不動；
+     點照片由 main.js 第 14 段開燈箱看完整原圖
+   - 名單由 firebase-app.js 第 13 段渲染進 #staffList
+   ============================================================ */
+.staff-row {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 28px 16px; margin-top: 38px;
+}
+.staff-card { width: 122px; flex: 0 0 auto; text-align: center; }
+.staff-photo {
+  width: 100%; aspect-ratio: 3 / 7; overflow: hidden; position: relative;
+  border-radius: 12px; border: 1px solid rgba(176, 141, 63, .5); /* 古金細框 */
+  box-shadow: 0 8px 18px rgba(44, 38, 32, .18);
+  background: var(--bg-2); cursor: zoom-in;
+}
+.staff-photo img {
+  width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; /* 稍偏上，臉入鏡 */
+  display: block; transition: transform .35s ease;
+}
+.staff-photo:hover img { transform: scale(1.06); }
+.staff-photo .noimg {           /* 無照片時的「印」佔位（沿用夥伴卡的意象） */
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+}
+.staff-photo .noimg span {
+  font-family: var(--font-display); font-size: 2rem; color: var(--shu);
+  border: 2px solid var(--shu); border-radius: 10px; padding: 8px 10px; opacity: .75;
+}
+.staff-card h3 {
+  font-family: var(--font-display); font-size: 1.06rem;
+  margin-top: 12px; color: var(--ink); letter-spacing: .04em;
+}
+.staff-card .staff-role {
+  color: var(--shu); font-size: .82rem; font-weight: 700;
+  margin-top: 4px; letter-spacing: .08em;
+}
+.staff-card .staff-serv { color: var(--muted); font-size: .78rem; margin-top: 2px; line-height: 1.5; }
+.staff-card .admin-actions { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+.staff-card .admin-actions button {
+  border: none; border-radius: 8px; padding: 4px 8px; font-size: .74rem;
+  background: var(--aether); color: #fff; cursor: pointer;
+}
+.staff-card .admin-actions button:hover { background: var(--shu); }
+.staff-default-hint {           /* 管理員視角：提示先匯入預設才可編輯 */
+  flex: 1 1 100%; text-align: center; color: var(--muted); font-size: .82rem; margin-top: 6px;
+}
+@media (max-width: 640px) {
+  .staff-row { gap: 22px 10px; }
+  .staff-card { width: 100px; }
+  .staff-card h3 { font-size: .98rem; }
+}

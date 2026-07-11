@@ -117,80 +117,81 @@
 
   <hr class="divider" />
 
+  <!-- ★ 2026-07-11 區塊重排：「店舖職務」整區移到頁面最底部（貴客榜之後）；「店員名簿」移到此處（服務內容之下）。 -->
   <!-- ============================================================
-       A. 職務招募（9 個職務）
-       想增減職務：複製或刪掉一整個 <article class="job">...</article> 即可。
-       說明文字可隨時手動調整。
+       B. 店員名簿（★2026-07-11 由「工作夥伴名冊」升級而來）
+       直式長條照片並列，點照片可放大看完整原圖（main.js 第 14 段燈箱）。
+       名單資料由 firebase-app.js 第 13 段渲染進 #staffList：
+       Firestore 沒資料時先顯示內建預設 8 位；管理列「⤓ 匯入預設店員」
+       寫入資料庫後即可線上編輯／新增／刪除。
        ============================================================ -->
   <section class="section">
     <div class="wrap">
+      <!-- ★ 舊「工作夥伴」標題保留備查（鐵則①）：
       <div class="reveal">
-        <p class="eyebrow">Positions · 招募職務</p>
-        <h2>店舖職務</h2>
-        <p class="body" style="margin-top:14px">依商店需求而定，歡迎依你的專長與興趣認領。</p>
+        <p class="eyebrow">Our People · 工作夥伴</p>
+        <h2>工作夥伴</h2>
+        <p class="body" style="margin-top:14px">在部屋裡一起把店開起來的夥伴們。</p>
+      </div>
+      -->
+      <div class="reveal">
+        <p class="eyebrow">Our Staff · 店員名簿</p>
+        <h2>店員名簿</h2>
+        <p class="body" style="margin-top:14px">留名於帳中的，皆是此店的一期一會。輕點照片，便能望見他們完整的身影。</p>
       </div>
 
-      <div class="job-grid reveal">
+      <!-- ★ 2026-07 暫時隱藏：佔位的工作夥伴卡（之後改用線上編輯功能補上真實成員）。
+           想先手動恢復：把這整個註解拆掉即可（鐵則①保留備查）。
+      <div class="grid-members reveal">
 
-        <article class="job">
-          <div class="num">01</div>
-          <h3>網站設計與管理</h3>
-          <p>商店網站的設計、更新與日常維護。</p>
+        <article class="member">
+          <img src="images/staff-1.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">店長 · 場景設計</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>平日晚間 · 假日全天</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
         </article>
 
-        <article class="job">
-          <div class="num">02</div>
-          <h3>場景設計與裝潢</h3>
-          <!-- 舊：規劃店內動線、佈景與整體氛圍裝潢。 -->
-          <p>規劃各主題包廂（診療室、教室、和室茶間、溫泉雅座…）的佈景與輪換，打造整體氛圍。</p>
+        <article class="member">
+          <img src="images/staff-2.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">店員 · 專業攝影</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>假日午後</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
         </article>
 
-        <article class="job">
-          <div class="num">03</div>
-          <h3>商品供應</h3>
-          <!-- 舊：提供販售商品，依商店需求而定。 -->
-          <p>供應坐檯佐談的餐點、茶點與特調飲品，依商店需求備貨。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">04</div>
-          <h3>家具／庭具供應</h3>
-          <p>提供店內家具與庭具，依商店需求而定。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">05</div>
-          <h3>NPC 陪聊店員</h3>
-          <!-- 舊：店員／對角色扮演有興趣，負責招呼與演出，依商店需求而定。 -->
-          <p>本店主力！以指定身分（醫生、小學老師、各行各業）入席包廂坐檯陪聊，依預約單準備角色設定與話題。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">06</div>
-          <h3>專業攝影</h3>
-          <!-- 舊：對遊戲拍照功能有研究，能拍出讓人驚豔的照片。 -->
-          <p>負責包廂合影服務：構圖打光、GPose 掌鏡與成品精修，拍出讓人驚豔的照片。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">07</div>
-          <h3>公關宣傳</h3>
-          <p>熱衷於把遊戲中的內容分享到社群媒體。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">08</div>
-          <h3>財務管理</h3>
-          <p>支出、收入、薪水分配等帳務管理。</p>
-        </article>
-
-        <article class="job">
-          <div class="num">09</div>
-          <h3>雜務組</h3>
-          <p>什麼都能做一點，哪裡需要幫忙就幫一下。</p>
+        <article class="member">
+          <img src="images/staff-3.jpg" alt="工作夥伴照片" />
+          <div class="info">
+            <p class="role">公關宣傳</p>
+            <h3>角色名稱</h3>
+            <p class="meta"><b>ID：</b>角色@伺服器</p>
+            <p class="meta"><b>遊玩時間：</b>不定期</p>
+            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
+          </div>
         </article>
 
       </div>
+      -->
+
+      <!-- ★ 舊「線上編輯版工作夥伴」容器保留備查（鐵則①）。
+           想回退：拆掉下面這段註解、並把 #staffList 兩行註解掉即可。
+      <div class="grid-members reveal" id="partnerList"></div>
+      <p class="body" id="partnerEmpty" style="text-align:center;margin-top:30px">店舖成員即將公開，敬請期待。</p>
+      -->
+
+      <!-- ★ 2026-07-11 店員名簿：直式短冊照片並列，資料由 firebase-app.js 第 13 段渲染。
+           管理方式：網址加 #admin → 登入 → ＋新增店員／⤓匯入預設店員 → 逐張 ✎編輯／✕刪除。 -->
+      <div class="staff-row reveal" id="staffList"></div>
+      <p class="body" id="staffEmpty" style="text-align:center;margin-top:30px;display:none">店員名簿整理中，敬請期待。</p>
+
+      <!-- ★ 2026-07-11：Discord 招募 CTA 已隨「店舖職務」一起移到頁面底部 -->
     </div>
   </section>
 
@@ -292,78 +293,88 @@
     </div>
   </section>
 
+  <!-- ★ 2026-07-11 區塊重排：「店員名簿」整區移到上方（服務內容之下）；「店舖職務」自上方移到此處。 -->
   <!-- ============================================================
-       B. 店員名簿（★2026-07-11 由「工作夥伴名冊」升級而來）
-       直式長條照片並列，點照片可放大看完整原圖（main.js 第 14 段燈箱）。
-       名單資料由 firebase-app.js 第 13 段渲染進 #staffList：
-       Firestore 沒資料時先顯示內建預設 8 位；管理列「⤓ 匯入預設店員」
-       寫入資料庫後即可線上編輯／新增／刪除。
+       A. 職務招募（★2026-07-11 改為 6 個職務，整區移到頁面最底部）
+       已刪除：網站設計與管理／財務管理／雜務組（原文留在下方備查註解）。
+       想增減職務：複製或刪掉一整個 <article class="job">...</article> 即可。
+       說明文字可隨時手動調整。
        ============================================================ -->
   <section class="section">
     <div class="wrap">
-      <!-- ★ 舊「工作夥伴」標題保留備查（鐵則①）：
       <div class="reveal">
-        <p class="eyebrow">Our People · 工作夥伴</p>
-        <h2>工作夥伴</h2>
-        <p class="body" style="margin-top:14px">在部屋裡一起把店開起來的夥伴們。</p>
-      </div>
-      -->
-      <div class="reveal">
-        <p class="eyebrow">Our Staff · 店員名簿</p>
-        <h2>店員名簿</h2>
-        <p class="body" style="margin-top:14px">留名於帳中的，皆是此店的一期一會。輕點照片，便能望見他們完整的身影。</p>
+        <p class="eyebrow">Positions · 招募職務</p>
+        <h2>店舖職務</h2>
+        <p class="body" style="margin-top:14px">依商店需求而定，歡迎依你的專長與興趣認領。</p>
       </div>
 
-      <!-- ★ 2026-07 暫時隱藏：佔位的工作夥伴卡（之後改用線上編輯功能補上真實成員）。
-           想先手動恢復：把這整個註解拆掉即可（鐵則①保留備查）。
-      <div class="grid-members reveal">
+      <div class="job-grid reveal">
 
-        <article class="member">
-          <img src="images/staff-1.jpg" alt="工作夥伴照片" />
-          <div class="info">
-            <p class="role">店長 · 場景設計</p>
-            <h3>角色名稱</h3>
-            <p class="meta"><b>ID：</b>角色@伺服器</p>
-            <p class="meta"><b>遊玩時間：</b>平日晚間 · 假日全天</p>
-            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
-          </div>
+        <!-- ★ 2026-07-11 刪除備查（老師指示移除）：
+        <article class="job">
+          <div class="num">01</div>
+          <h3>網站設計與管理</h3>
+          <p>商店網站的設計、更新與日常維護。</p>
+        </article>
+        -->
+
+        <article class="job">
+          <div class="num">01</div><!-- 舊編號：02 -->
+          <h3>場景設計與裝潢</h3>
+          <!-- 舊：規劃店內動線、佈景與整體氛圍裝潢。 -->
+          <p>規劃各主題包廂（診療室、教室、和室茶間、溫泉雅座…）的佈景與輪換，打造整體氛圍。</p>
         </article>
 
-        <article class="member">
-          <img src="images/staff-2.jpg" alt="工作夥伴照片" />
-          <div class="info">
-            <p class="role">店員 · 專業攝影</p>
-            <h3>角色名稱</h3>
-            <p class="meta"><b>ID：</b>角色@伺服器</p>
-            <p class="meta"><b>遊玩時間：</b>假日午後</p>
-            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
-          </div>
+        <article class="job">
+          <div class="num">02</div><!-- 舊編號：03 -->
+          <h3>商品供應</h3>
+          <!-- 舊：提供販售商品，依商店需求而定。 -->
+          <p>供應坐檯佐談的餐點、茶點與特調飲品，依商店需求備貨。</p>
         </article>
 
-        <article class="member">
-          <img src="images/staff-3.jpg" alt="工作夥伴照片" />
-          <div class="info">
-            <p class="role">公關宣傳</p>
-            <h3>角色名稱</h3>
-            <p class="meta"><b>ID：</b>角色@伺服器</p>
-            <p class="meta"><b>遊玩時間：</b>不定期</p>
-            <p style="margin-top:8px">一句簡介：把這位夥伴的特色寫在這裡。</p>
-          </div>
+        <article class="job">
+          <div class="num">03</div><!-- 舊編號：04 -->
+          <h3>家具／庭具供應</h3>
+          <p>提供店內家具與庭具，依商店需求而定。</p>
         </article>
+
+        <article class="job">
+          <div class="num">04</div><!-- 舊編號：05 -->
+          <h3>NPC 陪聊店員</h3>
+          <!-- 舊：店員／對角色扮演有興趣，負責招呼與演出，依商店需求而定。 -->
+          <p>本店主力！以指定身分（醫生、小學老師、各行各業）入席包廂坐檯陪聊，依預約單準備角色設定與話題。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">05</div><!-- 舊編號：06 -->
+          <h3>專業攝影</h3>
+          <!-- 舊：對遊戲拍照功能有研究，能拍出讓人驚豔的照片。 -->
+          <p>負責包廂合影服務：構圖打光、GPose 掌鏡與成品精修，拍出讓人驚豔的照片。</p>
+        </article>
+
+        <article class="job">
+          <div class="num">06</div><!-- 舊編號：07 -->
+          <h3>公關宣傳</h3>
+          <p>熱衷於把遊戲中的內容分享到社群媒體。</p>
+        </article>
+
+        <!-- ★ 2026-07-11 刪除備查（老師指示移除）：
+        <article class="job">
+          <div class="num">08</div>
+          <h3>財務管理</h3>
+          <p>支出、收入、薪水分配等帳務管理。</p>
+        </article>
+        -->
+
+        <!-- ★ 2026-07-11 刪除備查（老師指示移除）：
+        <article class="job">
+          <div class="num">09</div>
+          <h3>雜務組</h3>
+          <p>什麼都能做一點，哪裡需要幫忙就幫一下。</p>
+        </article>
+        -->
 
       </div>
-      -->
-
-      <!-- ★ 舊「線上編輯版工作夥伴」容器保留備查（鐵則①）。
-           想回退：拆掉下面這段註解、並把 #staffList 兩行註解掉即可。
-      <div class="grid-members reveal" id="partnerList"></div>
-      <p class="body" id="partnerEmpty" style="text-align:center;margin-top:30px">店舖成員即將公開，敬請期待。</p>
-      -->
-
-      <!-- ★ 2026-07-11 店員名簿：直式短冊照片並列，資料由 firebase-app.js 第 13 段渲染。
-           管理方式：網址加 #admin → 登入 → ＋新增店員／⤓匯入預設店員 → 逐張 ✎編輯／✕刪除。 -->
-      <div class="staff-row reveal" id="staffList"></div>
-      <p class="body" id="staffEmpty" style="text-align:center;margin-top:30px;display:none">店員名簿整理中，敬請期待。</p>
 
       <p class="body reveal" style="text-align:center;margin:44px auto 0">
         想參與 RP 商店的經營或演出？

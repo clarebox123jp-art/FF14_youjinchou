@@ -390,6 +390,7 @@ async function applyOverrides() {
         const capEl = fig.querySelector(".cap");
         capEl.textContent = d.cap || "";
         capEl.dataset.docId = d.id;          // 圖說可直接點擊編輯（存回這張照片的文件）
+        if (d.capColor) capEl.style.color = d.capColor;   // ★ 2026-07-11：圖說顏色
         box.appendChild(fig);
       } else {
         const im = document.createElement("img");
@@ -406,6 +407,11 @@ async function applyOverrides() {
       if (!el || !(v > 0)) return;
       if (!el.dataset.basePx) el.dataset.basePx = parseFloat(getComputedStyle(el).fontSize);
       el.style.fontSize = (el.dataset.basePx * v) + "px";
+    });
+    // ★ 文字顏色（color map：段落鍵 → 色碼；2026-07-11 加入，管理員色票／色碼設定）
+    Object.entries(pageData.color || {}).forEach(([k, v]) => {
+      const el = document.querySelector('[data-edit-key="' + k + '"]');
+      if (el && v) el.style.color = v;
     });
     // ★ 圖片尺寸（imgsize map：圖片鍵 → 寬度倍率，相對原本版位）
     collectImgs().forEach((im) => {
@@ -445,6 +451,18 @@ function hideImgByKey(k) {
 overridesReady = applyOverrides();
 
 /* ---------- 管理模式：文字編輯 ---------- */
+/* ★ 2026-07-11：文字顏色色票（和風九色，供編輯工具列點選） */
+const YJC_SWATCHES = [
+  { n: "墨",     v: "#2c2620" },
+  { n: "淡墨褐", v: "#6f6353" },
+  { n: "朱",     v: "#c0433a" },
+  { n: "古金",   v: "#b08d3f" },
+  { n: "藍",     v: "#2f4b6e" },
+  { n: "櫻",     v: "#d98a99" },
+  { n: "常磐綠", v: "#3a6350" },
+  { n: "江戸紫", v: "#745399" },
+  { n: "紙白",   v: "#faf4e8" },
+];
 let editingEl = null, editBar = null;
 function startEdit(el) {
   finishEdit(false);
@@ -457,6 +475,13 @@ function startEdit(el) {
   let curK = (!docMode && pageData.size && pageData.size[key]) || 1;
   const k0 = curK;
   const applyK = () => { el.style.fontSize = curK === 1 ? "" : (el.dataset.basePx * curK) + "px"; };
+  // ★ 文字顏色（2026-07-11 加入）：色票／色碼即時預覽，儲存才寫進 Firebase
+  el.dataset.beforeColor = el.style.color || "";
+  let curColor = docMode
+    ? ((imgDocs.find((d) => d.id === el.dataset.docId) || {}).capColor || "")
+    : ((pageData.color && pageData.color[key]) || "");
+  const c0 = curColor;
+  const applyColor = () => { el.style.color = curColor || ""; };
   el.contentEditable = "true";
   el.classList.add("editing");
   el.focus();
@@ -471,13 +496,42 @@ function startEdit(el) {
       '<button type="button" class="admin-btn" data-a="splus">A＋</button>') +
     '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
     '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
-    (docMode ? "" : '<button type="button" class="admin-btn" data-a="reset">回復預設</button>');
+    (docMode ? "" : '<button type="button" class="admin-btn" data-a="reset">回復預設</button>') +
+    /* ★ 2026-07-11：文字顏色列（色票＋色碼輸入＋還原色） */
+    '<div class="eb-colors"><span title="文字顏色">🎨</span>' +
+      YJC_SWATCHES.map((c) =>
+        '<button type="button" class="eb-sw" data-c="' + c.v + '" title="' + c.n + " " + c.v + '" style="background:' + c.v + '"></button>'
+      ).join("") +
+      '<input class="eb-hex" id="ebHex" placeholder="#色碼" maxlength="7" spellcheck="false" />' +
+      '<button type="button" class="admin-btn" data-a="cclear">還原色</button>' +
+    '</div>';
   document.body.appendChild(editBar);
   const pct = document.getElementById("ebPct");
   const showPct = () => { if (pct) pct.textContent = Math.round(curK * 100) + "%"; };
   showPct();
+  // ★ 2026-07-11：色碼輸入框——輸入合法色碼（#abc 或 #aabbcc）即時預覽
+  const hexInp = document.getElementById("ebHex");
+  if (hexInp) {
+    hexInp.value = curColor;
+    hexInp.addEventListener("input", () => {
+      const v = hexInp.value.trim();
+      if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) { curColor = v; applyColor(); }
+    });
+  }
   editBar.addEventListener("click", async (e) => {
+    // ★ 2026-07-11：色票點選＋還原色
+    const sw = e.target.closest(".eb-sw");
+    if (sw) {
+      curColor = sw.dataset.c; applyColor();
+      if (hexInp) hexInp.value = curColor;
+      return;
+    }
     const a = e.target.dataset.a;
+    if (a === "cclear") {
+      curColor = ""; applyColor();
+      if (hexInp) hexInp.value = "";
+      return;
+    }
     if (a === "sminus" || a === "splus") {
       curK = Math.min(3, Math.max(0.5, Math.round((curK + (a === "splus" ? 0.1 : -0.1)) * 10) / 10));
       applyK(); showPct();
@@ -486,33 +540,46 @@ function startEdit(el) {
     if (a === "cancel") {
       editingEl.innerHTML = editingEl.dataset.before;
       curK = k0; applyK();
+      curColor = c0; editingEl.style.color = editingEl.dataset.beforeColor || "";   // ★ 顏色一起還原
       finishEdit(true);
     }
     if (a === "save") {
       try {
         if (docMode) {
           const cap = editingEl.textContent.trim();
-          await updateDoc(doc(db, "siteContent", editingEl.dataset.docId), { cap });
+          // ★ 2026-07-11：圖說連同顏色一起存回照片文件（capColor）
+          await updateDoc(doc(db, "siteContent", editingEl.dataset.docId), { cap, capColor: curColor || deleteField() });
+          const rec = imgDocs.find((d) => d.id === editingEl.dataset.docId);
+          if (rec) { rec.cap = cap; if (curColor) rec.capColor = curColor; else delete rec.capColor; }
+          editingEl.style.color = curColor || "";
           const im = editingEl.closest("figure")?.querySelector("img");
           if (im) { im.alt = cap; if (im.dataset.cap !== undefined) im.dataset.cap = cap; }
         } else {
           const html = editingEl.innerHTML;
-          const payload = { text: { [key]: html }, size: { [key]: curK === 1 ? deleteField() : curK } };
+          const payload = {
+            text:  { [key]: html },
+            size:  { [key]: curK === 1 ? deleteField() : curK },
+            color: { [key]: curColor ? curColor : deleteField() },   // ★ 2026-07-11 顏色
+          };
           await setDoc(pageRef, payload, { merge: true });
           pageData.text[key] = html;
           if (!pageData.size) pageData.size = {};
           if (curK === 1) delete pageData.size[key]; else pageData.size[key] = curK;
+          if (!pageData.color) pageData.color = {};
+          if (curColor) pageData.color[key] = curColor; else delete pageData.color[key];
         }
         finishEdit(true);
       } catch (err) { alert("儲存失敗：" + (err.message || err)); }
     }
     if (a === "reset") {
       try {
-        await setDoc(pageRef, { text: { [key]: deleteField() }, size: { [key]: deleteField() } }, { merge: true });
+        await setDoc(pageRef, { text: { [key]: deleteField() }, size: { [key]: deleteField() }, color: { [key]: deleteField() } }, { merge: true });
         delete pageData.text[key];
         if (pageData.size) delete pageData.size[key];
+        if (pageData.color) delete pageData.color[key];   // ★ 2026-07-11 顏色一併回復
         editingEl.innerHTML = textDefaults[key] || editingEl.dataset.before;
         editingEl.style.fontSize = "";
+        editingEl.style.color = "";
         finishEdit(true);
       } catch (err) { alert("回復失敗：" + (err.message || err)); }
     }
@@ -528,7 +595,7 @@ function finishEdit(clean) {
   }
   document.body.classList.remove("yjc-editing");
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && editingEl) { editingEl.innerHTML = editingEl.dataset.before; finishEdit(true); } });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && editingEl) { editingEl.innerHTML = editingEl.dataset.before; editingEl.style.color = editingEl.dataset.beforeColor || ""; finishEdit(true); } });   // ★ 2026-07-11：Esc 也把顏色還原
 
 /* ---------- 管理模式：圖片 隱藏／復原／更換 ---------- */
 async function toggleHideImg(im) {
@@ -725,6 +792,17 @@ async function exportOverrides() {
     lines.push("・" + (im ? (im.alt || d.key) : d.key));
   });
 
+  /* ★ 2026-07-11：改過顏色的文字也列進匯出，方便 Claude 併回 HTML 預設 */
+  const colKeys = Object.keys(pageData.color || {});
+  lines.push("");
+  lines.push("【改過顏色的文字】" + (colKeys.length ? "" : "（無）"));
+  colKeys.forEach((k) => {
+    const el = document.querySelector('[data-edit-key="' + k + '"]');
+    const txt = el ? el.textContent.replace(/\s+/g, " ").trim().slice(0, 40) : "";
+    lines.push("・" + (txt ? "「" + txt + "」" : "（段落鍵 " + k + "）") + " → 顏色 " + pageData.color[k]);
+    if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能預設文字已被改過而脫鉤）");
+  });
+
   lines.push("");
   lines.push("【照片自動優化（轉 WebP 輕量版）】" + (optReport.length ? "" : "（這頁的線上照片都已是輕量版，無需處理）"));
   optReport.forEach((s) => lines.push("・" + s));
@@ -834,17 +912,40 @@ async function optimizeStoredImages() {
    同步成新預設之後），舊紀錄變成孤兒、只會在匯出清單裡當雜訊。
    只清文字紀錄；隱藏圖片、新增照片、更換圖片都不會動。
    ============================================================ */
+/* ★ 2026-07-11 升級：連失效的「字級」「顏色」紀錄一起清（原本只清文字）。
+   舊版備查：
+   async function cleanStaleEdits() {
+     const keys = Object.keys(pageData.text || {});
+     const stale = keys.filter((k) => !document.querySelector('[data-edit-key="' + k + '"]'));
+     if (!stale.length) { alert("這一頁沒有失效的編輯紀錄，很乾淨！"); return; }
+     if (!confirm("找到 " + stale.length + " 筆失效的文字編輯紀錄（頁面上已沒有對應段落）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
+     try {
+       const patch = {};
+       stale.forEach((k) => { patch[k] = deleteField(); });
+       await setDoc(pageRef, { text: patch }, { merge: true });
+       stale.forEach((k) => delete pageData.text[k]);
+       alert("已清理 " + stale.length + " 筆。");
+     } catch (e) { alert("清理失敗：" + (e.message || e)); }
+   }
+*/
 async function cleanStaleEdits() {
-  const keys = Object.keys(pageData.text || {});
-  const stale = keys.filter((k) => !document.querySelector('[data-edit-key="' + k + '"]'));
-  if (!stale.length) { alert("這一頁沒有失效的編輯紀錄，很乾淨！"); return; }
-  if (!confirm("找到 " + stale.length + " 筆失效的文字編輯紀錄（頁面上已沒有對應段落）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
+  const gone   = (k) => !document.querySelector('[data-edit-key="' + k + '"]');
+  const staleT = Object.keys(pageData.text  || {}).filter(gone);
+  const staleS = Object.keys(pageData.size  || {}).filter(gone);
+  const staleC = Object.keys(pageData.color || {}).filter(gone);
+  const total  = staleT.length + staleS.length + staleC.length;
+  if (!total) { alert("這一頁沒有失效的編輯紀錄，很乾淨！"); return; }
+  if (!confirm("找到 " + total + " 筆失效紀錄（文字 " + staleT.length + "、字級 " + staleS.length + "、顏色 " + staleC.length + "）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
   try {
-    const patch = {};
-    stale.forEach((k) => { patch[k] = deleteField(); });
-    await setDoc(pageRef, { text: patch }, { merge: true });
-    stale.forEach((k) => delete pageData.text[k]);
-    alert("已清理 " + stale.length + " 筆。");
+    const payload = {};
+    if (staleT.length) { payload.text  = {}; staleT.forEach((k) => { payload.text[k]  = deleteField(); }); }
+    if (staleS.length) { payload.size  = {}; staleS.forEach((k) => { payload.size[k]  = deleteField(); }); }
+    if (staleC.length) { payload.color = {}; staleC.forEach((k) => { payload.color[k] = deleteField(); }); }
+    await setDoc(pageRef, payload, { merge: true });
+    staleT.forEach((k) => delete pageData.text[k]);
+    staleS.forEach((k) => { if (pageData.size)  delete pageData.size[k]; });
+    staleC.forEach((k) => { if (pageData.color) delete pageData.color[k]; });
+    alert("已清理 " + total + " 筆。");
   } catch (e) { alert("清理失敗：" + (e.message || e)); }
 }
 

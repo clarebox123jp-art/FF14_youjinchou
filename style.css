@@ -1001,7 +1001,7 @@ img { -webkit-user-drag: none; user-select: none; }
   color: var(--shu); font-size: .82rem; font-weight: 700;
   margin-top: 4px; letter-spacing: .08em;
 }
-.staff-card .staff-serv { color: var(--muted); font-size: .78rem; margin-top: 2px; line-height: 1.5; }
+.staff-card .staff-serv { color: var(--ink); font-size: .78rem; margin-top: 2px; line-height: 1.5; } /* ★2026-07-11 加深；舊值：var(--muted) */
 .staff-card .admin-actions { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
 .staff-card .admin-actions button {
   border: none; border-radius: 8px; padding: 4px 8px; font-size: .74rem;
@@ -1016,3 +1016,27 @@ img { -webkit-user-drag: none; user-select: none; }
   .staff-card { width: 100px; }
   .staff-card h3 { font-size: .98rem; }
 }
+
+/* ============================================================
+   ★ 2026-07-11 追加：編輯工具列的「文字顏色」色票列
+   - 出現在管理員點字編輯時的 .edit-bar 第二排
+   - 九色和風色票＋色碼輸入框＋還原色鈕（firebase-app.js 第 4 段）
+   ============================================================ */
+.edit-bar .eb-colors {
+  flex-basis: 100%;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  padding-top: 6px; margin-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, .3);
+}
+.edit-bar .eb-sw {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+  cursor: pointer; padding: 0; flex: 0 0 auto;
+}
+.edit-bar .eb-sw:hover { transform: scale(1.15); }
+.edit-bar .eb-hex {
+  width: 84px; padding: 3px 6px; border-radius: 8px; border: none;
+  font-size: .8rem; font-family: monospace;
+}
+/* 覆寫原 .edit-bar（不動原規則）：允許換行，色票列才能折到第二排 */
+.edit-bar { flex-wrap: wrap; justify-content: center; max-width: min(92vw, 560px); }

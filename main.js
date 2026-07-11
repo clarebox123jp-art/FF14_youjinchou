@@ -444,7 +444,8 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 /* ------------------------------------------------------------
    13) 歌詞平滑捲動引擎（取代第 11 段的 CSS 動畫；11 段仍負責
        複製歌詞做無縫循環、隱藏提示、bgm-on 狀態）
-   - 每句 6.8 秒（＝原 3.4 秒放慢 50%；想調快慢改 SEC_PER_LINE）
+   - 速率以「整首歌 3 分 20 秒」估算：一輪歌詞恰好 200 秒捲完，
+     歌曲與歌詞盡量同時結束；每次歌曲重頭，歌詞也回到第一句
    - 音樂播放時自動往上捲；滑鼠拖曳／滾輪／觸控可自由看整份歌詞，
      放開約 1.2 秒後自動接續上捲；無縫循環不會捲到底
 ------------------------------------------------------------ */
@@ -452,28 +453,39 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   const view  = document.querySelector(".lyrics-view");
   const track = document.getElementById("lyricsTrack");
   if (!view || !track) return;
-  const SEC_PER_LINE = 6.8;
+  const SONG_SECONDS = 200;   // ★ 整首歌 3 分 20 秒＝200 秒：歌詞恰好在這段時間內捲完一輪（想微調快慢改這個數字）
   let paused = false, resumeT = null, dragging = false, startY = 0, startTop = 0;
+  let pos = 0;                // ★ 用 JS 變數累積捲動量（scrollTop 只收整數，直接 += 小數會被捨去＝之前不會動的原因）
 
   const halfH = () => track.scrollHeight / 2;             // 內容有複製一份，一半＝一輪
-  const speed = () => {                                    // px / 毫秒
-    const lines = track.children.length / 2 || 1;
-    return halfH() / (lines * SEC_PER_LINE * 1000);
-  };
+  const speed = () => halfH() / (SONG_SECONDS * 1000);    // px / 毫秒：一輪歌詞 ÷ 一首歌的時間
 
   let last = performance.now();
   (function step(now) {
     const dt = Math.min(now - last, 100); last = now;      // 分頁切走再回來不暴衝
-    if (!paused && !dragging && document.body.classList.contains("bgm-on")) {
-      view.scrollTop += speed() * dt;
-    }
     const h = halfH();
-    if (h > 0) {                                           // 無縫循環
-      if (view.scrollTop >= h) view.scrollTop -= h;
-      else if (view.scrollTop < 0) view.scrollTop += h;
+    const autoOn = !paused && !dragging && document.body.classList.contains("bgm-on");
+    if (autoOn) {
+      pos += speed() * dt;
+      if (h > 0) { if (pos >= h) pos -= h; else if (pos < 0) pos += h; }
+      view.scrollTop = pos;                                // 整數化交給瀏覽器，pos 保留小數繼續累積
+    } else {
+      // 玩家手動捲動中：跟著實際位置走，放開後從這裡續捲
+      if (h > 0 && !dragging) {                            // 拖曳中不跳接縫，放開才處理（避免位置打架）
+        if (view.scrollTop >= h) view.scrollTop -= h;
+        else if (view.scrollTop < 0) view.scrollTop += h;
+      }
+      pos = view.scrollTop;
     }
     requestAnimationFrame(step);
   })(last);
+
+  // 歌曲每播完一輪（loop 重頭），歌詞回到第一句重新對齊
+  let lastTime = 0;
+  bgm.addEventListener("timeupdate", function () {
+    if (bgm.currentTime < lastTime - 2 && !dragging) { pos = 0; view.scrollTop = 0; }
+    lastTime = bgm.currentTime;
+  });
 
   function pauseThenResume() {
     paused = true; clearTimeout(resumeT);

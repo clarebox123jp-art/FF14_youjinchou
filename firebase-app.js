@@ -293,8 +293,9 @@ const pageRef = doc(db, "siteContent", "page-" + PAGE);
 
 function h32(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
 
-/* 可編輯文字的範圍（排除動態產生與管理介面本身） */
-const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inner h1,.hero-inner p,.footer p,.footer h3";
+/* 可編輯文字的範圍（排除動態產生與管理介面本身）
+   ※ .photo .cap ＝ 相簿照片的和紙標籤圖說（不論在不在 .wrap 內都涵蓋） */
+const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inner h1,.hero-inner p,.footer p,.footer h3,.photo .cap";
 const EXCLUDE = "#partnerList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
 
 const textDefaults = {};                 // 每段的預設內容（供「回復預設」）
@@ -351,7 +352,9 @@ async function applyOverrides() {
         fig.innerHTML = '<div class="photo-frame"><img loading="lazy" /></div><figcaption class="cap"></figcaption>';
         const im = fig.querySelector("img");
         im.src = d.src; im.alt = d.cap || "";
-        fig.querySelector(".cap").textContent = d.cap || "";
+        const capEl = fig.querySelector(".cap");
+        capEl.textContent = d.cap || "";
+        capEl.dataset.docId = d.id;          // 圖說可直接點擊編輯（存回這張照片的文件）
         box.appendChild(fig);
       } else {
         const im = document.createElement("img");
@@ -382,6 +385,7 @@ let editingEl = null, editBar = null;
 function startEdit(el) {
   finishEdit(false);
   editingEl = el;
+  const docMode = !el.dataset.editKey && !!el.dataset.docId;   // 線上新增照片的圖說：存回該照片文件
   el.dataset.before = el.innerHTML;
   el.contentEditable = "true";
   el.classList.add("editing");
@@ -393,16 +397,23 @@ function startEdit(el) {
     '<span>✎ 正在編輯文字</span>' +
     '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
     '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
-    '<button type="button" class="admin-btn" data-a="reset">回復預設</button>';
+    (docMode ? "" : '<button type="button" class="admin-btn" data-a="reset">回復預設</button>');
   document.body.appendChild(editBar);
   editBar.addEventListener("click", async (e) => {
     const a = e.target.dataset.a;
     if (a === "cancel") { editingEl.innerHTML = editingEl.dataset.before; finishEdit(true); }
     if (a === "save") {
-      const key = editingEl.dataset.editKey, html = editingEl.innerHTML;
       try {
-        await setDoc(pageRef, { text: { [key]: html } }, { merge: true });
-        pageData.text[key] = html;
+        if (docMode) {
+          const cap = editingEl.textContent.trim();
+          await updateDoc(doc(db, "siteContent", editingEl.dataset.docId), { cap });
+          const im = editingEl.closest("figure")?.querySelector("img");
+          if (im) { im.alt = cap; if (im.dataset.cap !== undefined) im.dataset.cap = cap; }
+        } else {
+          const key = editingEl.dataset.editKey, html = editingEl.innerHTML;
+          await setDoc(pageRef, { text: { [key]: html } }, { merge: true });
+          pageData.text[key] = html;
+        }
         finishEdit(true);
       } catch (err) { alert("儲存失敗：" + (err.message || err)); }
     }
@@ -512,7 +523,7 @@ async function enableEditing() {
   document.addEventListener("click", (e) => {
     if (!isAdmin) return;
     if (e.target.closest(".img-badge,.edit-bar,.admin-bar,.admin-modal")) return;
-    const el = e.target.closest("[data-edit-key]");
+    const el = e.target.closest("[data-edit-key], figcaption[data-doc-id]");
     if (!el || editingEl === el) return;
     e.preventDefault();
     startEdit(el);
@@ -536,6 +547,7 @@ async function enableEditing() {
 function refreshBadges() {
   document.querySelectorAll(".img-badge").forEach((b) => b.remove());
   if (!isAdmin) return;
+  document.querySelectorAll("figcaption[data-doc-id]").forEach((c) => c.classList.add("edit-able")); // 線上新增照片的圖說也給編輯提示
   collectImgs().forEach((im) => {
     if (im.closest(".about-slides") && !im.classList.contains("is-on") && !im.getAttribute("data-yjc-hidden")) return; // 疊圖只標當前那張
     const host = im.closest(".photo, .about-figure, .member, figure") || im.parentElement;

@@ -246,11 +246,13 @@ function buildAdminBar(email) {
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
     <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
+    <button type="button" id="abClean" class="admin-btn">🧹 清理失效編輯</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
   document.body.appendChild(bar);
   const add = document.getElementById("abAdd");
   if (add) add.onclick = () => openPartnerForm();
   document.getElementById("abExport").onclick = exportOverrides;
+  document.getElementById("abClean").onclick = cleanStaleEdits;
   document.getElementById("abOut").onclick = () => signOut(auth);
 }
 function removeAdminBar() {
@@ -306,8 +308,11 @@ function collectEditables() {
   const seen = {}; const out = [];
   document.querySelectorAll(EDIT_SEL).forEach((el) => {
     if (el.closest(EXCLUDE)) return;
+    if (el.dataset.docId) return;   // 線上新增照片的圖說走「照片文件」路線，不給文字鍵（避免訪客看不到編輯）
     if (!el.dataset.editKey) {
-      const base = "t" + h32(el.textContent.trim().slice(0, 80) + "|" + el.tagName);
+      // ★ 鍵值以「壓掉空白後的內容」計算：搬區塊、改縮排都不會讓線上編輯脫鉤
+      const norm = el.textContent.replace(/\s+/g, " ").trim().slice(0, 80);
+      const base = "t" + h32(norm + "|" + el.tagName);
       const n = (seen[base] = (seen[base] || 0) + 1);
       el.dataset.editKey = n > 1 ? base + "-" + n : base;
       textDefaults[el.dataset.editKey] = el.innerHTML;
@@ -735,4 +740,25 @@ async function optimizeStoredImages() {
   }
   if (report.length && partnerList) renderPartners();
   return report;
+}
+
+/* ============================================================
+   7) 清理失效編輯（管理列「🧹 清理失效編輯」）
+   刪掉「在目前頁面上已找不到對應段落」的文字編輯紀錄——
+   通常出現在：該段的預設文字已由 Claude 更新（例如把線上編輯
+   同步成新預設之後），舊紀錄變成孤兒、只會在匯出清單裡當雜訊。
+   只清文字紀錄；隱藏圖片、新增照片、更換圖片都不會動。
+   ============================================================ */
+async function cleanStaleEdits() {
+  const keys = Object.keys(pageData.text || {});
+  const stale = keys.filter((k) => !document.querySelector('[data-edit-key="' + k + '"]'));
+  if (!stale.length) { alert("這一頁沒有失效的編輯紀錄，很乾淨！"); return; }
+  if (!confirm("找到 " + stale.length + " 筆失效的文字編輯紀錄（頁面上已沒有對應段落）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
+  try {
+    const patch = {};
+    stale.forEach((k) => { patch[k] = deleteField(); });
+    await setDoc(pageRef, { text: patch }, { merge: true });
+    stale.forEach((k) => delete pageData.text[k]);
+    alert("已清理 " + stale.length + " 筆。");
+  } catch (e) { alert("清理失敗：" + (e.message || e)); }
 }

@@ -1077,3 +1077,24 @@ img { -webkit-user-drag: none; user-select: none; }
   }
   .car-track .photo .photo-frame img { max-height: 40vh !important; }
 }
+
+/* ============================================================
+   ★ 2026-07-11 追加：燈箱左右切換箭頭（相簿＋店員名簿共用）
+   ============================================================ */
+.lightbox .lb-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 52px; height: 52px; border-radius: 50%; border: none;
+  background: rgba(250, 244, 232, 0.92); color: var(--ink);
+  font-size: 2rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: background 0.2s;
+}
+.lightbox .lb-nav:hover { background: #fff; }
+.lightbox .lb-nav.prev { left: 20px; }
+.lightbox .lb-nav.next { right: 20px; }
+@media (max-width: 560px) {
+  .lightbox .lb-nav { width: 42px; height: 42px; font-size: 1.6rem; }
+  .lightbox .lb-nav.prev { left: 8px; }
+  .lightbox .lb-nav.next { right: 8px; }
+}

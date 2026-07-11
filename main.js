@@ -164,9 +164,10 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 })();
 
 /* ------------------------------------------------------------
-   5) 相簿：點照片放大（燈箱 Lightbox），可關閉
+   5) 相簿：點照片放大（燈箱 Lightbox）＋★2026-07-11 上一張／下一張
    - 只在有相簿照片的頁面作用，其他頁自動略過
-   - 關閉方式：右上角 ×、點灰色背景、按 Esc
+   - 切換範圍＝同一條軌道（.car-track）；隱藏中的照片自動跳過；循環輪播
+   - 關閉：右上角 ×、點灰色背景、Esc　　切換：左右箭頭鈕、鍵盤 ← →、手機左右滑
 ------------------------------------------------------------ */
 (function () {
   const imgs = document.querySelectorAll(".photo .photo-frame img");
@@ -176,48 +177,80 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   lb.className = "lightbox";
   lb.innerHTML =
     '<button class="lb-close" aria-label="關閉放大">×</button>' +
+    '<button class="lb-nav prev" aria-label="上一張">‹</button>' +
     '<img class="lb-img" alt="" />' +
+    '<button class="lb-nav next" aria-label="下一張">›</button>' +
     '<p class="lb-cap"></p>';
   document.body.appendChild(lb);
 
   const lbImg = lb.querySelector(".lb-img");
   const lbCap = lb.querySelector(".lb-cap");
   const closeBtn = lb.querySelector(".lb-close");
+  const prevBtn = lb.querySelector(".lb-nav.prev");
+  const nextBtn = lb.querySelector(".lb-nav.next");
 
-  function openLB(src, alt, cap) {
-    lbImg.src = src;
-    lbImg.alt = alt || "";
-    lbCap.textContent = cap || "";
+  let group = [];      // 目前這條軌道可見的 .photo 清單
+  let idx = 0;         // 目前顯示第幾張
+
+  // 取某張照片所屬軌道裡「目前可見」的照片（隱藏的跳過）
+  function siblingsOf(fig) {
+    const scope = fig.closest(".car-track") || document;
+    return Array.from(scope.querySelectorAll(".photo"))
+      .filter((p) => p.style.display !== "none" && p.querySelector(".photo-frame img"));
+  }
+  function showAt(i) {
+    if (!group.length) return;
+    idx = (i + group.length) % group.length;   // 循環
+    const fig = group[idx];
+    const img = fig.querySelector(".photo-frame img");
+    const capEl = fig.querySelector(".cap");
+    lbImg.src = img.currentSrc || img.src;
+    lbImg.alt = img.alt || "";
+    lbCap.textContent = capEl ? capEl.textContent : "";
+    const multi = group.length > 1;
+    prevBtn.style.display = multi ? "" : "none";   // 只有一張就藏箭頭
+    nextBtn.style.display = multi ? "" : "none";
+  }
+  function openFrom(fig) {
+    group = siblingsOf(fig);
+    const start = group.indexOf(fig);
+    showAt(start < 0 ? 0 : start);
     lb.classList.add("open");
-    document.body.style.overflow = "hidden"; // 放大時鎖住背景捲動
+    document.body.style.overflow = "hidden";  // 放大時鎖住背景捲動
   }
   function closeLB() {
     lb.classList.remove("open");
     document.body.style.overflow = "";
     lbImg.removeAttribute("src");
+    group = [];
   }
 
-  /* 舊：逐張綁定（新加入的照片不會有燈箱，保留備查，鐵則①）
-  imgs.forEach(function (img) {
-    img.addEventListener("click", function () {
-      const fig = img.closest(".photo");
-      const capEl = fig ? fig.querySelector(".cap") : null;
-      openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
-    });
-  }); */
-  // 新：事件委派——之後線上新增的照片也自動有燈箱
+  // 事件委派——之後線上新增的照片也自動有燈箱
   document.addEventListener("click", function (e) {
     const img = e.target.closest(".photo .photo-frame img");
     if (!img || document.body.classList.contains("yjc-editing")) return;
     const fig = img.closest(".photo");
-    const capEl = fig ? fig.querySelector(".cap") : null;
-    openLB(img.currentSrc || img.src, img.alt, capEl ? capEl.textContent : "");
+    if (fig) openFrom(fig);
   });
   closeBtn.addEventListener("click", closeLB);
+  prevBtn.addEventListener("click", function (e) { e.stopPropagation(); showAt(idx - 1); });
+  nextBtn.addEventListener("click", function (e) { e.stopPropagation(); showAt(idx + 1); });
   lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); }); // 點背景關閉
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+    if (!lb.classList.contains("open")) return;
+    if (e.key === "Escape") closeLB();
+    else if (e.key === "ArrowLeft") showAt(idx - 1);
+    else if (e.key === "ArrowRight") showAt(idx + 1);
   });
+  // 手機左右滑動切換
+  let sx = null;
+  lb.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener("touchend", function (e) {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 45) showAt(idx + (dx < 0 ? 1 : -1));
+    sx = null;
+  }, { passive: true });
 })();
 
 /* ------------------------------------------------------------
@@ -517,10 +550,12 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
 /* ------------------------------------------------------------
    14) RP 商店「店員名簿」燈箱：點長條照片 → 放大看完整原圖
+        ＋★2026-07-11 上一張／下一張
    - 只在有 #staffList 的頁面（shop.html）作用
    - 卡片由 firebase-app.js 第 13 段動態產生 → 用事件委派，
      之後線上新增／編輯的店員照片也自動有燈箱
-   - 沿用第 5 段的 .lightbox 樣式；關閉：右上 ×、點背景、Esc
+   - 切換範圍＝店員名簿裡有照片的卡片，循環輪播；沿用 .lightbox 樣式
+   - 關閉：右上 ×、點背景、Esc　　切換：左右箭頭鈕、鍵盤 ← →、手機左右滑
 ------------------------------------------------------------ */
 (function () {
   if (!document.getElementById("staffList")) return;
@@ -529,36 +564,73 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   lb.className = "lightbox";
   lb.innerHTML =
     '<button class="lb-close" aria-label="關閉放大">×</button>' +
+    '<button class="lb-nav prev" aria-label="上一張">‹</button>' +
     '<img class="lb-img" alt="" />' +
+    '<button class="lb-nav next" aria-label="下一張">›</button>' +
     '<p class="lb-cap"></p>';
   document.body.appendChild(lb);
 
   const lbImg = lb.querySelector(".lb-img");
   const lbCap = lb.querySelector(".lb-cap");
+  const prevBtn = lb.querySelector(".lb-nav.prev");
+  const nextBtn = lb.querySelector(".lb-nav.next");
 
-  function closeLB() {
-    lb.classList.remove("open");
-    document.body.style.overflow = "";
-    lbImg.removeAttribute("src");
+  let group = [];   // 有照片的 .staff-photo 清單
+  let idx = 0;
+
+  function photoBoxes() {
+    return Array.from(document.querySelectorAll("#staffList .staff-photo"))
+      .filter((b) => b.querySelector("img"));   // 「印」佔位（無照片）不列入
   }
-
-  document.addEventListener("click", function (e) {
-    const box = e.target.closest("#staffList .staff-photo");
-    if (!box) return;
+  function showAt(i) {
+    if (!group.length) return;
+    idx = (i + group.length) % group.length;    // 循環
+    const box = group[idx];
     const img = box.querySelector("img");
-    if (!img) return;                       // 「印」佔位（無照片）不放大
     lbImg.src = img.currentSrc || img.src;
     lbImg.alt = img.alt || "";
     const name = box.dataset.name || "";
     const role = box.dataset.role || "";
     lbCap.textContent = name && role ? name + " · " + role : name;
+    const multi = group.length > 1;
+    prevBtn.style.display = multi ? "" : "none";
+    nextBtn.style.display = multi ? "" : "none";
+  }
+  function openFrom(box) {
+    group = photoBoxes();
+    const start = group.indexOf(box);
+    showAt(start < 0 ? 0 : start);
     lb.classList.add("open");
-    document.body.style.overflow = "hidden"; // 放大時鎖住背景捲動
-  });
+    document.body.style.overflow = "hidden";
+  }
+  function closeLB() {
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+    lbImg.removeAttribute("src");
+    group = [];
+  }
 
+  document.addEventListener("click", function (e) {
+    const box = e.target.closest("#staffList .staff-photo");
+    if (!box || !box.querySelector("img")) return;
+    openFrom(box);
+  });
   lb.querySelector(".lb-close").addEventListener("click", closeLB);
+  prevBtn.addEventListener("click", function (e) { e.stopPropagation(); showAt(idx - 1); });
+  nextBtn.addEventListener("click", function (e) { e.stopPropagation(); showAt(idx + 1); });
   lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && lb.classList.contains("open")) closeLB();
+    if (!lb.classList.contains("open")) return;
+    if (e.key === "Escape") closeLB();
+    else if (e.key === "ArrowLeft") showAt(idx - 1);
+    else if (e.key === "ArrowRight") showAt(idx + 1);
   });
+  let sx = null;
+  lb.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener("touchend", function (e) {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 45) showAt(idx + (dx < 0 ? 1 : -1));
+    sx = null;
+  }, { passive: true });
 })();

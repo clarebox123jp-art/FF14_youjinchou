@@ -255,6 +255,7 @@ function buildAdminBar(email) {
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
     <button type="button" id="abBg" class="admin-btn">🖼 背景設定</button>
+    <button type="button" id="abFonts" class="admin-btn">🖋 字型庫</button>
     <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
     <button type="button" id="abClean" class="admin-btn">🧹 清理失效編輯</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
@@ -275,6 +276,9 @@ function buildAdminBar(email) {
   if (bkBtn) bkBtn.onclick = openBookingConfig;
   document.getElementById("abSheet").onclick = openSheetLink;
   document.getElementById("abBg").onclick = openBgConfig;
+  /* ★ 2026-07-11：字型庫（Google Fonts 名單，實作在第 4 段尾） */
+  document.getElementById("abFonts").onclick = openFontLibrary;
+  fetchLibFonts();   // 先把名單抓好，開編輯工具列時字型選單直接就緒
   document.getElementById("abExport").onclick = exportOverrides;
   document.getElementById("abClean").onclick = cleanStaleEdits;
   document.getElementById("abOut").onclick = () => signOut(auth);
@@ -391,6 +395,7 @@ async function applyOverrides() {
         capEl.textContent = d.cap || "";
         capEl.dataset.docId = d.id;          // 圖說可直接點擊編輯（存回這張照片的文件）
         if (d.capColor) capEl.style.color = d.capColor;   // ★ 2026-07-11：圖說顏色
+        if (d.capFont) { ensureFontLoaded(d.capFont); capEl.style.fontFamily = fontStack(d.capFont); }   // ★ 圖說字型
         box.appendChild(fig);
       } else {
         const im = document.createElement("img");
@@ -412,6 +417,11 @@ async function applyOverrides() {
     Object.entries(pageData.color || {}).forEach(([k, v]) => {
       const el = document.querySelector('[data-edit-key="' + k + '"]');
       if (el && v) el.style.color = v;
+    });
+    // ★ 字型（font map：段落鍵 → 字型家族名；2026-07-11 加入，含字型庫的 Google Fonts）
+    Object.entries(pageData.font || {}).forEach(([k, v]) => {
+      const el = document.querySelector('[data-edit-key="' + k + '"]');
+      if (el && v) { ensureFontLoaded(v); el.style.fontFamily = fontStack(v); }
     });
     // ★ 圖片尺寸（imgsize map：圖片鍵 → 寬度倍率，相對原本版位）
     collectImgs().forEach((im) => {
@@ -463,7 +473,41 @@ const YJC_SWATCHES = [
   { n: "江戸紫", v: "#745399" },
   { n: "紙白",   v: "#faf4e8" },
 ];
+/* ★ 2026-07-11：字型系統
+   - 內建四種＝五頁本來就載入的字型，選了即生效
+   - 字型庫（管理列「🖋 字型庫」）＝老師自己加的 Google Fonts 名單，
+     存 siteContent/config-fonts {list:[…]}；用到時才動態掛 <link> 載入 */
+const YJC_FONTS_BUILTIN = [
+  { n: "文楷（標題預設）", f: "LXGW WenKai TC" },
+  { n: "粉圓（內文預設）", f: "jf-openhuninn" },
+  { n: "思源黑體",         f: "Noto Sans TC" },
+  { n: "思源宋體",         f: "Noto Serif TC" },
+];
+let libFonts = [];                 // 字型庫名單（Google Fonts 家族名）
+let libFontsLoaded = false;
+const loadedFontLinks = new Set();
+function fontStack(f) { return "'" + f + "', 'Noto Sans TC', sans-serif"; }
+function ensureFontLoaded(f) {
+  if (!f || YJC_FONTS_BUILTIN.some((x) => x.f === f)) return;   // 內建的頁面已載
+  if (loadedFontLinks.has(f)) return;
+  loadedFontLinks.add(f);
+  const l = document.createElement("link");
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=" +
+           encodeURIComponent(f).replace(/%20/g, "+") + ":wght@400;700&display=swap";
+  document.head.appendChild(l);
+}
+async function fetchLibFonts() {
+  if (libFontsLoaded) return;
+  try {
+    const s = await getDoc(doc(db, "siteContent", "config-fonts"));
+    libFonts = (s.exists() && Array.isArray(s.data().list)) ? s.data().list : [];
+  } catch (_) { libFonts = []; }
+  libFontsLoaded = true;
+}
+
 let editingEl = null, editBar = null;
+let editSelCleanup = null;   // ★ 2026-07-11：結束編輯時解除「選取範圍追蹤」
 function startEdit(el) {
   finishEdit(false);
   editingEl = el;
@@ -482,6 +526,38 @@ function startEdit(el) {
     : ((pageData.color && pageData.color[key]) || "");
   const c0 = curColor;
   const applyColor = () => { el.style.color = curColor || ""; };
+  // ★ 字型（2026-07-11 加入）：每段可個別換字型，選單含內建四種＋字型庫
+  el.dataset.beforeFont = el.style.fontFamily || "";
+  let curFont = docMode
+    ? ((imgDocs.find((d) => d.id === el.dataset.docId) || {}).capFont || "")
+    : ((pageData.font && pageData.font[key]) || "");
+  const f0 = curFont;
+  const applyFont = () => {
+    if (curFont) { ensureFontLoaded(curFont); el.style.fontFamily = fontStack(curFont); }
+    else el.style.fontFamily = "";
+  };
+  // ★ 選取變色（2026-07-11 加入）：追蹤編輯中最後一次的文字選取，
+  //   點色票時若有選取＝只改選到的字（<span style="color:…"> 存進文字內容），沒選取＝整段變色
+  let lastRange = null;
+  const selWatch = () => {
+    const sel = window.getSelection();
+    if (sel.rangeCount && !sel.isCollapsed && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
+      lastRange = sel.getRangeAt(0).cloneRange();
+    } else if (sel.rangeCount && sel.isCollapsed && el.contains(sel.anchorNode)) {
+      lastRange = null;   // 在段落內點一下（取消選取）＝回到「整段變色」模式
+    }
+  };
+  document.addEventListener("selectionchange", selWatch);
+  editSelCleanup = () => document.removeEventListener("selectionchange", selWatch);
+  const paintSel = (color) => {
+    if (!lastRange || lastRange.collapsed) return false;
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(lastRange);
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand("foreColor", false, color || "inherit");   // 空色＝清回繼承色
+    if (sel.rangeCount) lastRange = sel.getRangeAt(0).cloneRange();
+    return true;
+  };
   el.contentEditable = "true";
   el.classList.add("editing");
   el.focus();
@@ -497,8 +573,10 @@ function startEdit(el) {
     '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
     '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
     (docMode ? "" : '<button type="button" class="admin-btn" data-a="reset">回復預設</button>') +
-    /* ★ 2026-07-11：文字顏色列（色票＋色碼輸入＋還原色） */
-    '<div class="eb-colors"><span title="文字顏色">🎨</span>' +
+    /* ★ 2026-07-11：文字顏色列（色票＋色碼輸入＋還原色）＋字型選單 */
+    '<div class="eb-colors">' +
+      '<span title="字型">🖋</span><select id="ebFont" class="eb-font"></select>' +
+      '<span title="文字顏色">🎨</span>' +
       YJC_SWATCHES.map((c) =>
         '<button type="button" class="eb-sw" data-c="' + c.v + '" title="' + c.n + " " + c.v + '" style="background:' + c.v + '"></button>'
       ).join("") +
@@ -509,26 +587,51 @@ function startEdit(el) {
   const pct = document.getElementById("ebPct");
   const showPct = () => { if (pct) pct.textContent = Math.round(curK * 100) + "%"; };
   showPct();
-  // ★ 2026-07-11：色碼輸入框——輸入合法色碼（#abc 或 #aabbcc）即時預覽
+  // ★ 2026-07-11：色碼輸入框——沒選字時輸入即整段預覽；選了字則打完色碼「按 Enter」套用到選取範圍
   const hexInp = document.getElementById("ebHex");
+  const HEXRE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
   if (hexInp) {
     hexInp.value = curColor;
     hexInp.addEventListener("input", () => {
       const v = hexInp.value.trim();
-      if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) { curColor = v; applyColor(); }
+      if (HEXRE.test(v) && (!lastRange || lastRange.collapsed)) { curColor = v; applyColor(); }
+    });
+    hexInp.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const v = hexInp.value.trim();
+      if (!HEXRE.test(v)) { alert("色碼格式：#f60 或 #ff6600"); return; }
+      if (!paintSel(v)) { curColor = v; applyColor(); }
     });
   }
+  // ★ 2026-07-11：字型選單（內建四種＋字型庫；字型庫載入後補進選單）
+  const fontSel = document.getElementById("ebFont");
+  const buildFontOptions = () => {
+    if (!fontSel) return;
+    const opts = [["", "預設字型"]]
+      .concat(YJC_FONTS_BUILTIN.map((x) => [x.f, x.n]))
+      .concat(libFonts.map((f) => [f, f + "（字型庫）"]));
+    fontSel.innerHTML = opts.map(([v, n]) =>
+      '<option value="' + esc(v) + '"' + (v === curFont ? " selected" : "") + ">" + esc(n) + "</option>").join("");
+  };
+  buildFontOptions();
+  fetchLibFonts().then(buildFontOptions);
+  if (fontSel) fontSel.addEventListener("change", () => { curFont = fontSel.value; applyFont(); });
+  // ★ 點色票前先擋掉預設的搶焦點行為，才不會弄丟正在選取的文字
+  editBar.addEventListener("mousedown", (e) => {
+    if (e.target.closest('.eb-sw,[data-a="cclear"]')) e.preventDefault();
+  });
   editBar.addEventListener("click", async (e) => {
-    // ★ 2026-07-11：色票點選＋還原色
+    // ★ 2026-07-11：色票點選＋還原色（有選取＝只改選到的字；沒選取＝整段）
     const sw = e.target.closest(".eb-sw");
     if (sw) {
-      curColor = sw.dataset.c; applyColor();
-      if (hexInp) hexInp.value = curColor;
+      if (!paintSel(sw.dataset.c)) { curColor = sw.dataset.c; applyColor(); }
+      if (hexInp) hexInp.value = sw.dataset.c;
       return;
     }
     const a = e.target.dataset.a;
     if (a === "cclear") {
-      curColor = ""; applyColor();
+      if (!paintSel("")) { curColor = ""; applyColor(); }
       if (hexInp) hexInp.value = "";
       return;
     }
@@ -541,17 +644,24 @@ function startEdit(el) {
       editingEl.innerHTML = editingEl.dataset.before;
       curK = k0; applyK();
       curColor = c0; editingEl.style.color = editingEl.dataset.beforeColor || "";   // ★ 顏色一起還原
+      curFont = f0; editingEl.style.fontFamily = editingEl.dataset.beforeFont || "";   // ★ 字型一起還原
       finishEdit(true);
     }
     if (a === "save") {
       try {
         if (docMode) {
           const cap = editingEl.textContent.trim();
-          // ★ 2026-07-11：圖說連同顏色一起存回照片文件（capColor）
-          await updateDoc(doc(db, "siteContent", editingEl.dataset.docId), { cap, capColor: curColor || deleteField() });
+          // ★ 2026-07-11：圖說連同顏色、字型一起存回照片文件（capColor／capFont）
+          await updateDoc(doc(db, "siteContent", editingEl.dataset.docId),
+            { cap, capColor: curColor || deleteField(), capFont: curFont || deleteField() });
           const rec = imgDocs.find((d) => d.id === editingEl.dataset.docId);
-          if (rec) { rec.cap = cap; if (curColor) rec.capColor = curColor; else delete rec.capColor; }
+          if (rec) {
+            rec.cap = cap;
+            if (curColor) rec.capColor = curColor; else delete rec.capColor;
+            if (curFont)  rec.capFont  = curFont;  else delete rec.capFont;
+          }
           editingEl.style.color = curColor || "";
+          editingEl.style.fontFamily = curFont ? fontStack(curFont) : "";
           const im = editingEl.closest("figure")?.querySelector("img");
           if (im) { im.alt = cap; if (im.dataset.cap !== undefined) im.dataset.cap = cap; }
         } else {
@@ -560,6 +670,7 @@ function startEdit(el) {
             text:  { [key]: html },
             size:  { [key]: curK === 1 ? deleteField() : curK },
             color: { [key]: curColor ? curColor : deleteField() },   // ★ 2026-07-11 顏色
+            font:  { [key]: curFont ? curFont : deleteField() },     // ★ 2026-07-11 字型
           };
           await setDoc(pageRef, payload, { merge: true });
           pageData.text[key] = html;
@@ -567,25 +678,30 @@ function startEdit(el) {
           if (curK === 1) delete pageData.size[key]; else pageData.size[key] = curK;
           if (!pageData.color) pageData.color = {};
           if (curColor) pageData.color[key] = curColor; else delete pageData.color[key];
+          if (!pageData.font) pageData.font = {};
+          if (curFont) pageData.font[key] = curFont; else delete pageData.font[key];
         }
         finishEdit(true);
       } catch (err) { alert("儲存失敗：" + (err.message || err)); }
     }
     if (a === "reset") {
       try {
-        await setDoc(pageRef, { text: { [key]: deleteField() }, size: { [key]: deleteField() }, color: { [key]: deleteField() } }, { merge: true });
+        await setDoc(pageRef, { text: { [key]: deleteField() }, size: { [key]: deleteField() }, color: { [key]: deleteField() }, font: { [key]: deleteField() } }, { merge: true });
         delete pageData.text[key];
         if (pageData.size) delete pageData.size[key];
         if (pageData.color) delete pageData.color[key];   // ★ 2026-07-11 顏色一併回復
+        if (pageData.font)  delete pageData.font[key];    // ★ 2026-07-11 字型一併回復
         editingEl.innerHTML = textDefaults[key] || editingEl.dataset.before;
         editingEl.style.fontSize = "";
         editingEl.style.color = "";
+        editingEl.style.fontFamily = "";
         finishEdit(true);
       } catch (err) { alert("回復失敗：" + (err.message || err)); }
     }
   });
 }
 function finishEdit(clean) {
+  if (editSelCleanup) { editSelCleanup(); editSelCleanup = null; }   // ★ 2026-07-11：解除選取追蹤
   if (editBar) { editBar.remove(); editBar = null; }
   if (editingEl) {
     editingEl.contentEditable = "false";
@@ -595,7 +711,7 @@ function finishEdit(clean) {
   }
   document.body.classList.remove("yjc-editing");
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && editingEl) { editingEl.innerHTML = editingEl.dataset.before; editingEl.style.color = editingEl.dataset.beforeColor || ""; finishEdit(true); } });   // ★ 2026-07-11：Esc 也把顏色還原
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && editingEl) { editingEl.innerHTML = editingEl.dataset.before; editingEl.style.color = editingEl.dataset.beforeColor || ""; editingEl.style.fontFamily = editingEl.dataset.beforeFont || ""; finishEdit(true); } });   // ★ 2026-07-11：Esc 也把顏色、字型還原
 
 /* ---------- 管理模式：圖片 隱藏／復原／更換 ---------- */
 async function toggleHideImg(im) {
@@ -766,8 +882,31 @@ async function exportOverrides() {
     const now = pageData.text[k].replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
     const was = (textDefaults[k] || "").replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
     lines.push("・目前顯示：「" + now + "」");
+    if (/color\s*:/.test(pageData.text[k])) lines.push("　（此段內含「局部文字變色」，樣式已存在文字內容裡，會隨文字一併併回）");
     if (was) lines.push("　（網頁預設原是：「" + was.slice(0, 60) + (was.length > 60 ? "…" : "") + "」）");
     if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能預設文字已被改過而脫鉤）");
+  });
+  lines.push("");
+
+  /* ★ 2026-07-11：字級也列進匯出（原本漏了） */
+  const sizeKeys = Object.keys(pageData.size || {});
+  lines.push("【調整過字級的文字】" + (sizeKeys.length ? "" : "（無）"));
+  sizeKeys.forEach((k) => {
+    const el = document.querySelector('[data-edit-key="' + k + '"]');
+    const txt = el ? el.textContent.replace(/\s+/g, " ").trim().slice(0, 40) : "";
+    lines.push("・" + (txt ? "「" + txt + "」" : "（段落鍵 " + k + "）") + " → 字級 " + Math.round(pageData.size[k] * 100) + "%");
+    if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能已脫鉤）");
+  });
+  lines.push("");
+
+  /* ★ 2026-07-11：字型設定 */
+  const fontKeys = Object.keys(pageData.font || {});
+  lines.push("【調整過字型的文字】" + (fontKeys.length ? "" : "（無）"));
+  fontKeys.forEach((k) => {
+    const el = document.querySelector('[data-edit-key="' + k + '"]');
+    const txt = el ? el.textContent.replace(/\s+/g, " ").trim().slice(0, 40) : "";
+    lines.push("・" + (txt ? "「" + txt + "」" : "（段落鍵 " + k + "）") + " → 字型 " + pageData.font[k]);
+    if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能已脫鉤）");
   });
   lines.push("");
 
@@ -782,7 +921,12 @@ async function exportOverrides() {
 
   const adds = imgDocs.filter((d) => d.kind === "add");
   lines.push("【線上新增的照片】" + (adds.length ? "" : "（無）"));
-  adds.forEach((d) => lines.push("・容器 " + d.container + "：「" + (d.cap || "（無說明）") + "」"));
+  adds.forEach((d) => {
+    let extra = "";
+    if (d.capColor) extra += "／圖說顏色 " + d.capColor;
+    if (d.capFont)  extra += "／圖說字型 " + d.capFont;
+    lines.push("・容器 " + d.container + "：「" + (d.cap || "（無說明）") + "」" + extra);
+  });
   lines.push("");
 
   const reps = imgDocs.filter((d) => d.kind === "replace");
@@ -802,6 +946,37 @@ async function exportOverrides() {
     lines.push("・" + (txt ? "「" + txt + "」" : "（段落鍵 " + k + "）") + " → 顏色 " + pageData.color[k]);
     if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能預設文字已被改過而脫鉤）");
   });
+
+  /* ★ 2026-07-11：圖片尺寸、歌詞、本頁背景（含濾鏡）、全站字型庫——完整修改細節一次匯齊 */
+  const imszKeys = Object.keys(pageData.imgsize || {});
+  lines.push("");
+  lines.push("【調整過大小的圖片】" + (imszKeys.length ? "" : "（無）"));
+  imszKeys.forEach((k) => {
+    const im = document.querySelector('[data-img-key="' + k + '"]') || collectImgs().find((x) => imgKeyOf(x) === k);
+    lines.push("・" + (im ? (im.alt || im.getAttribute("src") || k) : k + "（頁面上找不到）") + " → 寬度 " + Math.round(pageData.imgsize[k] * 100) + "%");
+  });
+
+  lines.push("");
+  lines.push("【歌詞設定（about 專用）】" + (pageData.lyrics ? "" : "（無自訂）"));
+  if (pageData.lyrics) {
+    if (Array.isArray(pageData.lyrics.lines)) lines.push("・自訂歌詞 " + pageData.lyrics.lines.length + " 行（完整內容以頁面顯示為準）");
+    if (pageData.lyrics.size > 0) lines.push("・歌詞字級 " + Math.round(pageData.lyrics.size * 100) + "%");
+  }
+
+  lines.push("");
+  lines.push("【本頁背景】");
+  lines.push("・自訂背景圖：" + (bgHasCustomSrc ? "有（線上上傳）" : "無（使用網頁預設）"));
+  if (bgFxCache) {
+    const f = Object.assign({ op: 100, br: 100, sa: 100 }, bgFxCache);
+    lines.push("・背景濾鏡：透明度 " + f.op + "%／明亮度 " + f.br + "%／彩度 " + f.sa + "%");
+  } else {
+    lines.push("・背景濾鏡：未調整（全部 100%）");
+  }
+
+  await fetchLibFonts();
+  lines.push("");
+  lines.push("【字型庫（全站共用）】" + (libFonts.length ? "" : "（空）"));
+  libFonts.forEach((f) => lines.push("・" + f));
 
   lines.push("");
   lines.push("【照片自動優化（轉 WebP 輕量版）】" + (optReport.length ? "" : "（這頁的線上照片都已是輕量版，無需處理）"));
@@ -933,20 +1108,91 @@ async function cleanStaleEdits() {
   const staleT = Object.keys(pageData.text  || {}).filter(gone);
   const staleS = Object.keys(pageData.size  || {}).filter(gone);
   const staleC = Object.keys(pageData.color || {}).filter(gone);
-  const total  = staleT.length + staleS.length + staleC.length;
+  const staleF = Object.keys(pageData.font  || {}).filter(gone);   // ★ 2026-07-11 字型
+  const total  = staleT.length + staleS.length + staleC.length + staleF.length;
   if (!total) { alert("這一頁沒有失效的編輯紀錄，很乾淨！"); return; }
-  if (!confirm("找到 " + total + " 筆失效紀錄（文字 " + staleT.length + "、字級 " + staleS.length + "、顏色 " + staleC.length + "）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
+  if (!confirm("找到 " + total + " 筆失效紀錄（文字 " + staleT.length + "、字級 " + staleS.length + "、顏色 " + staleC.length + "、字型 " + staleF.length + "）。\n清掉它們嗎？目前顯示的內容不會有任何變化。")) return;
   try {
     const payload = {};
     if (staleT.length) { payload.text  = {}; staleT.forEach((k) => { payload.text[k]  = deleteField(); }); }
     if (staleS.length) { payload.size  = {}; staleS.forEach((k) => { payload.size[k]  = deleteField(); }); }
     if (staleC.length) { payload.color = {}; staleC.forEach((k) => { payload.color[k] = deleteField(); }); }
+    if (staleF.length) { payload.font  = {}; staleF.forEach((k) => { payload.font[k]  = deleteField(); }); }
     await setDoc(pageRef, payload, { merge: true });
     staleT.forEach((k) => delete pageData.text[k]);
     staleS.forEach((k) => { if (pageData.size)  delete pageData.size[k]; });
     staleC.forEach((k) => { if (pageData.color) delete pageData.color[k]; });
+    staleF.forEach((k) => { if (pageData.font)  delete pageData.font[k]; });
     alert("已清理 " + total + " 筆。");
   } catch (e) { alert("清理失敗：" + (e.message || e)); }
+}
+
+/* ★ 2026-07-11：字型庫（管理列「🖋 字型庫」）
+   - 老師去 fonts.google.com 逛（語言篩 Chinese (Traditional) 或 Japanese），
+     把字型「名稱」原樣貼進來（大小寫、空格要一致，例：Kiwi Maru）
+   - 加入時會即時載入並顯示試打字樣，確認有中文再儲存
+   - 名單存 siteContent/config-fonts {list:[…]}，全站五頁的字型選單共用 */
+function openFontLibrary() {
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>🖋 字型庫（全站共用）</h3>' +
+    '<p style="font-size:0.82rem;color:var(--muted)">到 fonts.google.com（語言篩選 Chinese (Traditional) / Japanese）找喜歡的字型，' +
+    '把「字型名稱」原樣貼進下面加入。加入後會出現在編輯工具列的字型選單。<br>※ 名稱大小寫與空格要一致；純英文字型套在中文段落只有英數字會變。</p>' +
+    '<div id="flList" style="margin:10px 0"></div>' +
+    '<label>新增字型名稱：<input id="flName" placeholder="例：Kiwi Maru" spellcheck="false" /></label>' +
+    '<p id="flPrev" style="font-size:1.15rem;margin:8px 0;min-height:1.6em"></p>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn" data-a="try">試載入</button>' +
+    '<button type="button" class="admin-btn primary" data-a="add">加入名單</button>' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button></div></div>';
+  document.body.appendChild(wrap);
+  let pending = libFonts.slice();                      // 先改副本，按「儲存」才寫入
+  const listEl = wrap.querySelector("#flList");
+  const nameEl = wrap.querySelector("#flName");
+  const prevEl = wrap.querySelector("#flPrev");
+  const renderList = () => {
+    listEl.innerHTML = pending.length
+      ? pending.map((f, i) =>
+          '<p style="display:flex;align-items:center;gap:8px;margin:4px 0">' +
+          '<button type="button" class="admin-btn" data-del="' + i + '">✕</button>' +
+          '<span style="font-family:' + fontStack(f).replace(/"/g, "&quot;") + '">' + esc(f) + '　永遠的幻想 Aa123</span></p>').join("")
+      : '<p style="color:var(--muted);font-size:0.84rem">（字型庫還是空的）</p>';
+    pending.forEach((f) => ensureFontLoaded(f));
+  };
+  fetchLibFonts().then(() => { pending = libFonts.slice(); renderList(); });
+  renderList();
+  const tryLoad = () => {
+    const f = nameEl.value.trim();
+    if (!f) { prevEl.textContent = ""; return ""; }
+    ensureFontLoaded(f);
+    prevEl.style.fontFamily = fontStack(f);
+    prevEl.textContent = f + "：永遠的幻想 帳中留名 Aa123（字有變樣＝載入成功）";
+    return f;
+  };
+  wrap.addEventListener("click", async (e) => {
+    const del = e.target.dataset.del;
+    if (del !== undefined) { pending.splice(Number(del), 1); renderList(); return; }
+    const a = e.target.dataset.a;
+    if (e.target === wrap || a === "cancel") { wrap.remove(); return; }
+    if (a === "try") { tryLoad(); return; }
+    if (a === "add") {
+      const f = tryLoad();
+      if (!f) { alert("請先輸入字型名稱。"); return; }
+      if (pending.includes(f)) { alert("這個字型已經在名單裡了。"); return; }
+      pending.push(f); nameEl.value = ""; renderList();
+      return;
+    }
+    if (a === "save") {
+      try {
+        await setDoc(doc(db, "siteContent", "config-fonts"), { list: pending, updated: Date.now() });
+        libFonts = pending.slice();
+        alert("✅ 字型庫已更新（" + libFonts.length + " 套）。");
+        wrap.remove();
+      } catch (err) { alert("儲存失敗：" + (err.message || err)); }
+    }
+  });
 }
 
 /* ============================================================
@@ -1176,8 +1422,10 @@ async function openSheetLink(e) {
   } catch (err) { alert("開啟失敗：" + (err.message || err)); }
 }
 
-/* ---------- 10d) 每頁背景線上更換 ---------- */
+/* ---------- 10d) 每頁背景線上更換＋★2026-07-11 背景濾鏡（透明度／明亮度／彩度） ---------- */
 const bgRef = doc(db, "siteContent", "bg-" + PAGE);
+let bgFxCache = null;          // 目前濾鏡設定 {op,br,sa}（百分比）
+let bgHasCustomSrc = false;    // 這頁是否有自訂背景圖（供匯出報告）
 
 function applyCustomBg(src) {
   let st = document.getElementById("yjcBgStyle");
@@ -1190,10 +1438,28 @@ function applyCustomBg(src) {
   if (!css) css = "body{background-image:" + u + " !important;background-size:cover !important;background-position:center !important;background-attachment:fixed !important;}";
   st.textContent = css;
 }
+/* ★ 濾鏡加在「背景容器」（#homeBg／#pageBg 本體）上：
+   輪播淡入淡出做在容器裡的 .pbg-slide，所以照常運作、只是整體被調色 */
+function applyBgFx(fx) {
+  let st = document.getElementById("yjcBgFxStyle");
+  const v = Object.assign({ op: 100, br: 100, sa: 100 }, fx || {});
+  const isDefault = Number(v.op) === 100 && Number(v.br) === 100 && Number(v.sa) === 100;
+  if (isDefault) { if (st) st.remove(); return; }
+  if (!st) { st = document.createElement("style"); st.id = "yjcBgFxStyle"; document.head.appendChild(st); }
+  const rule = "{opacity:" + (v.op / 100) + " !important;filter:brightness(" + (v.br / 100) + ") saturate(" + (v.sa / 100) + ") !important;}";
+  let css = "";
+  if (document.getElementById("homeBg")) css += "#homeBg" + rule;
+  if (document.getElementById("pageBg")) css += "#pageBg" + rule;
+  st.textContent = css;
+}
 (async () => {
   try {
     const snap = await getDoc(bgRef);
-    if (snap.exists() && snap.data().src) applyCustomBg(snap.data().src);
+    if (snap.exists()) {
+      if (snap.data().src) { applyCustomBg(snap.data().src); bgHasCustomSrc = true; }
+      bgFxCache = snap.data().fx || null;
+      applyBgFx(bgFxCache);
+    }
   } catch (e) { console.warn("自訂背景讀取失敗（顯示預設背景）：", e); }
 })();
 
@@ -1205,6 +1471,10 @@ function openBgConfig() {
     '<p style="font-size:0.84rem;color:var(--muted)">照片（JPG/PNG/WebP）會自動壓成 WebP；GIF 動圖原樣儲存、檔案需 ≤ 700KB。</p>' +
     '<label>選擇新背景：<input id="bgFile" type="file" accept="image/*" /></label>' +
     '<p id="bgMsg" style="font-size:0.8rem;color:var(--muted)"></p>' +
+    /* ★ 2026-07-11：背景濾鏡三滑桿（不換圖也能單獨調；拖動即時預覽，儲存才寫入） */
+    '<label>透明度 <b id="fxOpV"></b><input id="fxOp" type="range" min="20" max="100" step="5" /></label>' +
+    '<label>明亮度 <b id="fxBrV"></b><input id="fxBr" type="range" min="40" max="160" step="5" /></label>' +
+    '<label>彩度 <b id="fxSaV"></b>（0＝黑白）<input id="fxSa" type="range" min="0" max="200" step="10" /></label>' +
     '<div class="admin-modal-btns">' +
     '<button type="button" class="admin-btn primary" data-a="save">儲存並套用</button>' +
     '<button type="button" class="admin-btn" data-a="reset">回復預設背景</button>' +
@@ -1212,6 +1482,17 @@ function openBgConfig() {
   document.body.appendChild(wrap);
   let pendingSrc = "";
   const msg = wrap.querySelector("#bgMsg");
+  /* ★ 2026-07-11：濾鏡滑桿——帶入現值、拖動即時預覽 */
+  const fx0 = Object.assign({ op: 100, br: 100, sa: 100 }, bgFxCache || {});
+  const sliders = { op: wrap.querySelector("#fxOp"), br: wrap.querySelector("#fxBr"), sa: wrap.querySelector("#fxSa") };
+  const vals    = { op: wrap.querySelector("#fxOpV"), br: wrap.querySelector("#fxBrV"), sa: wrap.querySelector("#fxSaV") };
+  const readFx  = () => ({ op: Number(sliders.op.value), br: Number(sliders.br.value), sa: Number(sliders.sa.value) });
+  const paintFxLabels = () => { const f = readFx(); vals.op.textContent = f.op + "%"; vals.br.textContent = f.br + "%"; vals.sa.textContent = f.sa + "%"; };
+  Object.keys(sliders).forEach((k) => {
+    sliders[k].value = fx0[k];
+    sliders[k].addEventListener("input", () => { paintFxLabels(); applyBgFx(readFx()); });
+  });
+  paintFxLabels();
   wrap.querySelector("#bgFile").addEventListener("change", async (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1236,14 +1517,24 @@ function openBgConfig() {
   wrap.addEventListener("click", async (e) => {
     if (e.target === wrap || e.target.dataset.a === "cancel") {
       wrap.remove();
-      // 取消＝把預覽還原成 Firestore 現況
-      try { const s = await getDoc(bgRef); applyCustomBg(s.exists() ? s.data().src : ""); } catch (_) {}
+      // 取消＝把預覽（背景圖＋濾鏡）還原成 Firestore 現況
+      try {
+        const s = await getDoc(bgRef);
+        applyCustomBg(s.exists() ? s.data().src : "");
+        applyBgFx(s.exists() ? s.data().fx : null);
+      } catch (_) {}
       return;
     }
     if (e.target.dataset.a === "save") {
-      if (!pendingSrc) { alert("請先選擇一張圖片。"); return; }
+      /* ★ 2026-07-11：不換圖也能只存濾鏡（merge 寫入，不會蓋掉已存的背景圖） */
       try {
-        await setDoc(bgRef, { src: pendingSrc, updated: Date.now() });
+        const fx = readFx();
+        const payload = { fx, updated: Date.now() };
+        if (pendingSrc) payload.src = pendingSrc;
+        await setDoc(bgRef, payload, { merge: true });
+        bgFxCache = fx;
+        if (pendingSrc) bgHasCustomSrc = true;
+        applyBgFx(fx);
         wrap.remove();
       } catch (err) { alert("儲存失敗：" + (err.message || err)); }
     }
@@ -1251,6 +1542,8 @@ function openBgConfig() {
       try {
         await deleteDoc(bgRef);
         applyCustomBg("");
+        applyBgFx(null);                        // ★ 濾鏡一併回復
+        bgFxCache = null; bgHasCustomSrc = false;
         wrap.remove();
       } catch (err) { alert("還原失敗：" + (err.message || err)); }
     }

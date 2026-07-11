@@ -253,6 +253,8 @@ function buildAdminBar(email) {
     <button type="button" id="abClean" class="admin-btn">🧹 清理失效編輯</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
   document.body.appendChild(bar);
+  /* ★ 2026-07-11：直式選單可收合——套用上次記住的收合狀態（點標題列切換，見第 12 段） */
+  try { if (localStorage.getItem("yjcAdminFold") === "1") bar.classList.add("folded"); } catch (_) {}
   const add = document.getElementById("abAdd");
   if (add) add.onclick = () => openPartnerForm();
   const lyBtn = document.getElementById("abLyrics");
@@ -1165,3 +1167,16 @@ function openBgConfig() {
     console.log("本站內容（文字／圖片／設計）© 幻想友人帳，請勿盜用。網站異動皆有紀錄。");
   } catch (_) {}
 })();
+
+/* ============================================================
+   12) 管理列收合開關
+   - 點管理列最上方「🔧 管理模式（信箱）」那一列 → 收合／展開
+   - 狀態存 localStorage（yjcAdminFold），換頁、下次登入都記得
+   ============================================================ */
+document.addEventListener("click", (e) => {
+  const sp = e.target.closest("#adminBar > span");
+  if (!sp) return;
+  const bar = document.getElementById("adminBar");
+  const folded = bar.classList.toggle("folded");
+  try { localStorage.setItem("yjcAdminFold", folded ? "1" : "0"); } catch (_) {}
+});

@@ -939,3 +939,27 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px) {
   .admin-bar { left: 10px; right: 10px; bottom: 10px; max-width: none; }
 }
+
+/* ============================================================
+   ★ 2026-07-11 追加 v2：管理列改「直式選單」＋可收合
+   - 一行一個功能；點最上方「🔧 管理模式」列可收合／展開
+   - 收合後只剩一小條，完全不擋內容；狀態會記住（localStorage）
+   - 上一版「移到左下」規則保留，這裡再覆蓋成直式
+   ============================================================ */
+.admin-bar {
+  flex-direction: column; align-items: stretch; gap: 8px;
+  width: max-content; max-width: 232px; padding: 10px 12px;
+}
+.admin-bar > span {
+  cursor: pointer; user-select: none;
+  font-size: 0.8rem; line-height: 1.5; word-break: break-all;
+  padding-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,0.18);
+}
+.admin-bar > span::after { content: "　▲ 收合"; color: #9c9c9c; font-size: 0.74rem; white-space: nowrap; }
+.admin-bar .admin-btn { width: 100%; text-align: left; }
+.admin-bar.folded > .admin-btn { display: none; }
+.admin-bar.folded > span { border-bottom: none; padding-bottom: 0; }
+.admin-bar.folded > span::after { content: "　▼ 展開"; }
+@media (max-width: 640px) {
+  .admin-bar { left: 10px; right: auto; max-width: 78vw; }
+}

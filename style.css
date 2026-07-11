@@ -926,3 +926,16 @@ img { -webkit-user-drag: none; user-select: none; }
 .carousel.is-empty .car-arrow,
 .carousel.is-empty .car-counter { display: none; }
 .carousel.is-empty .car-empty { display: block; }
+
+/* ============================================================
+   ★ 2026-07-11 追加：管理列移到網頁左下角（原本置中蓋住內容）
+   - 原規則在上方 .admin-bar（left:50% 置中）保留未動，這裡檔尾覆蓋
+   - 手機窄螢幕：貼齊左右兩側、按鈕自動換行，不會爆出畫面
+   ============================================================ */
+.admin-bar {
+  left: 18px; right: auto; transform: none;
+  max-width: min(92vw, 720px); flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .admin-bar { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+}

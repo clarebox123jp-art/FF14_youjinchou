@@ -144,7 +144,8 @@ function compressImage(file, maxSide = 900, quality = 0.82) {
       const cv = document.createElement("canvas");
       cv.width = w; cv.height = h;
       cv.getContext("2d").drawImage(im, 0, 0, w, h);
-      const dataUrl = cv.toDataURL("image/jpeg", quality);
+      // 優先輸出 WebP（比 JPEG 輕約 25%）；少數不支援的瀏覽器自動退回 JPEG
+      const dataUrl = cv.toDataURL(WEBP_OK ? "image/webp" : "image/jpeg", quality);
       if (dataUrl.length > 900_000) reject(new Error("照片壓縮後仍太大，請換一張或先裁小一點。"));
       else resolve(dataUrl);
     };
@@ -244,10 +245,12 @@ function buildAdminBar(email) {
   bar.innerHTML = `
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
+    <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
   document.body.appendChild(bar);
   const add = document.getElementById("abAdd");
   if (add) add.onclick = () => openPartnerForm();
+  document.getElementById("abExport").onclick = exportOverrides;
   document.getElementById("abOut").onclick = () => signOut(auth);
 }
 function removeAdminBar() {
@@ -575,3 +578,161 @@ onAuthStateChanged(auth, (user) => {
   if (user && user.email === ADMIN_EMAIL) enableEditing();
   else { finishEdit(true); refreshBadges(); }
 });
+
+/* ============================================================
+   5) 匯出線上編輯（管理列「📋 匯出內容」）
+   把「這一頁」所有線上編輯整理成一份文字，複製貼給 Claude，
+   Claude 之後改網頁時就會以這份為準，不會把老師的編輯改倒退。
+   ============================================================ */
+async function exportOverrides() {
+  // ★ 匯出前先自動優化：把這一頁線上儲存的照片轉成輕量 WebP（非 webp 或過大者），
+  //   替換 Firebase 裡的檔案並同步畫面；結果列在下方報告裡。
+  const btn = document.getElementById("abExport");
+  let optReport = [];
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ 檢查照片中…"; }
+    optReport = await optimizeStoredImages();
+  } catch (e) {
+    optReport = ["⚠ 優化過程發生問題：" + (e.message || e)];
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "📋 匯出內容"; }
+  }
+  const lines = [];
+  lines.push("=== 幻想友人帳 線上編輯匯出 ===");
+  lines.push("頁面：" + PAGE + ".html　　匯出時間：" + new Date().toLocaleString("zh-TW"));
+  lines.push("");
+
+  const textKeys = Object.keys(pageData.text || {});
+  lines.push("【改過的文字】" + (textKeys.length ? "" : "（無）"));
+  textKeys.forEach((k) => {
+    const el = document.querySelector('[data-edit-key="' + k + '"]');
+    const now = pageData.text[k].replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
+    const was = (textDefaults[k] || "").replace(/<br\s*\/?>/gi, "／").replace(/<[^>]+>/g, "").trim();
+    lines.push("・目前顯示：「" + now + "」");
+    if (was) lines.push("　（網頁預設原是：「" + was.slice(0, 60) + (was.length > 60 ? "…" : "") + "」）");
+    if (!el) lines.push("　⚠ 此段在目前頁面上找不到（可能預設文字已被改過而脫鉤）");
+  });
+  lines.push("");
+
+  const hid = pageData.hidden || [];
+  lines.push("【隱藏的圖片】" + (hid.length ? "" : "（無）"));
+  hid.forEach((k) => {
+    const rec = hiddenHosts[k];
+    const alt = rec && rec.im ? (rec.im.alt || rec.im.getAttribute("src") || k) : k;
+    lines.push("・" + alt);
+  });
+  lines.push("");
+
+  const adds = imgDocs.filter((d) => d.kind === "add");
+  lines.push("【線上新增的照片】" + (adds.length ? "" : "（無）"));
+  adds.forEach((d) => lines.push("・容器 " + d.container + "：「" + (d.cap || "（無說明）") + "」"));
+  lines.push("");
+
+  const reps = imgDocs.filter((d) => d.kind === "replace");
+  lines.push("【線上更換過的圖片】" + (reps.length ? "" : "（無）"));
+  reps.forEach((d) => {
+    const im = document.querySelector('[data-img-key="' + d.key + '"]');
+    lines.push("・" + (im ? (im.alt || d.key) : d.key));
+  });
+
+  lines.push("");
+  lines.push("【照片自動優化（轉 WebP 輕量版）】" + (optReport.length ? "" : "（這頁的線上照片都已是輕量版，無需處理）"));
+  optReport.forEach((s) => lines.push("・" + s));
+
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>📋 匯出線上編輯（' + PAGE + '.html）</h3>' +
+    '<p class="admin-hint" style="color:var(--muted)">全選複製下面的內容，貼給 Claude 當作「目前版本」的依據。每一頁要分別匯出。</p>' +
+    '<textarea readonly rows="14" style="width:100%;margin-top:8px;font-size:0.82rem"></textarea>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" data-a="copy">複製全部</button>' +
+    '<button type="button" class="admin-btn" data-a="close">關閉</button></div></div>';
+  wrap.querySelector("textarea").value = lines.join("\n");
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => {
+    if (e.target === wrap || e.target.dataset.a === "close") wrap.remove();
+    if (e.target.dataset.a === "copy") {
+      const ta = wrap.querySelector("textarea");
+      ta.select();
+      navigator.clipboard?.writeText(ta.value).then(
+        () => { e.target.textContent = "✓ 已複製"; },
+        () => { document.execCommand("copy"); e.target.textContent = "✓ 已複製"; }
+      );
+    }
+  });
+}
+
+/* ============================================================
+   6) 照片自動優化（「📋 匯出內容」時自動執行）
+   - 檢查對象：這一頁線上「新增／更換」的照片＋商店夥伴照片
+   - 條件：不是 WebP 格式，或超過約 450KB
+   - 動作：瀏覽器端重新壓成 WebP（不支援 WebP 的瀏覽器用 JPEG），
+           確定有省下至少 15% 才替換 Firebase 裡的檔案並同步畫面
+   ※ 只處理存在 Firebase 的線上照片；GitHub images/ 裡的檔案
+     另由 Claude 轉檔（老師提供原圖 → Claude 交付 webp）。
+   ============================================================ */
+const WEBP_OK = (() => {
+  try { return document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp"); }
+  catch (e) { return false; }
+})();
+const dataUrlKB = (s) => Math.round((s.length * 3) / 4 / 1024);
+
+function recompressDataUrl(src, maxSide = 1400, quality = 0.8) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => {
+      let { width: w, height: h } = im;
+      if (Math.max(w, h) > maxSide) {
+        const k = maxSide / Math.max(w, h);
+        w = Math.round(w * k); h = Math.round(h * k);
+      }
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(im, 0, 0, w, h);
+      resolve(cv.toDataURL(WEBP_OK ? "image/webp" : "image/jpeg", quality));
+    };
+    im.onerror = () => resolve(null);
+    im.src = src;
+  });
+}
+
+async function optimizeStoredImages() {
+  const report = [];
+  const fmt = WEBP_OK ? "WebP" : "JPEG（此瀏覽器不支援輸出 WebP）";
+  const needsWork = (s) =>
+    typeof s === "string" && s.startsWith("data:image/") &&
+    (!s.startsWith("data:image/webp") || dataUrlKB(s) > 450);
+
+  // 這一頁的 新增／更換 圖片文件
+  for (const d of imgDocs) {
+    if (!needsWork(d.src)) continue;
+    const nu = await recompressDataUrl(d.src, d.kind === "add" ? 1400 : 1400);
+    if (!nu || nu.length >= d.src.length * 0.85) continue;   // 省不到 15% 就不折騰
+    await updateDoc(doc(db, "siteContent", d.id), { src: nu });
+    const label = d.kind === "add" ? '新增照片「' + (d.cap || d.container) + '」' : "更換過的圖片";
+    report.push(label + "：" + dataUrlKB(d.src) + " KB → " + dataUrlKB(nu) + " KB（" + fmt + "）");
+    // 同步目前畫面
+    if (d.kind === "add") {
+      const n = document.querySelector('[data-doc-id="' + d.id + '"] img, img[data-doc-id="' + d.id + '"]');
+      if (n) n.src = nu;
+    } else {
+      const n = document.querySelector('[data-img-key="' + d.key + '"]');
+      if (n) n.src = nu;
+    }
+    d.src = nu;
+  }
+
+  // 商店夥伴照片（僅商店頁有資料）
+  for (const rec of partnersCache) {
+    const p = rec.data;
+    if (!needsWork(p.photo)) continue;
+    const nu = await recompressDataUrl(p.photo, 900);
+    if (!nu || nu.length >= p.photo.length * 0.85) continue;
+    await updateDoc(doc(db, "shopPartners", rec.id), { photo: nu });
+    report.push('夥伴「' + p.name + '」照片：' + dataUrlKB(p.photo) + " KB → " + dataUrlKB(nu) + " KB（" + fmt + "）");
+    p.photo = nu;
+  }
+  if (report.length && partnerList) renderPartners();
+  return report;
+}

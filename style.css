@@ -974,7 +974,7 @@ img { -webkit-user-drag: none; user-select: none; }
   display: flex; flex-wrap: wrap; justify-content: center;
   gap: 28px 16px; margin-top: 38px;
 }
-.staff-card { width: 122px; flex: 0 0 auto; text-align: center; }
+.staff-card { width: 170px; flex: 0 0 auto; text-align: center; } /* ★2026-07-11 放大；舊值：122px */
 .staff-photo {
   width: 100%; aspect-ratio: 3 / 7; overflow: hidden; position: relative;
   border-radius: 12px; border: 1px solid rgba(176, 141, 63, .5); /* 古金細框 */
@@ -1013,7 +1013,7 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 @media (max-width: 640px) {
   .staff-row { gap: 22px 10px; }
-  .staff-card { width: 100px; }
+  .staff-card { width: 130px; } /* ★2026-07-11 放大；舊值：100px */
   .staff-card h3 { font-size: .98rem; }
 }
 
@@ -1050,3 +1050,30 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 .admin-modal-card input[type="range"] { width: 100%; margin-top: 4px; }
 .admin-modal-card label b { color: var(--shu); font-family: monospace; }
+
+/* ============================================================
+   ★ 2026-07-11 追加：相簿照片尺寸「釘死」——四個軌道統一與小屋景緻同大
+   - 藝術攝影／搞怪專區實測顯示異常縮小（樣式競合），
+     這裡用最高優先權統一釘住，保證所有 .car-track 照片一致
+   - 直式照片預覽裁 3:2 橫式（取中段），點開燈箱仍是完整原圖
+   ============================================================ */
+.car-track .photo {
+  flex: 0 0 min(62%, 330px) !important;
+  width: min(62%, 330px) !important;
+  max-width: 330px !important;
+  min-width: 0;
+}
+.car-track .photo .photo-frame { width: 100% !important; }
+.car-track .photo .photo-frame img {
+  width: 100% !important; height: auto !important;
+  aspect-ratio: 3 / 2 !important; object-fit: cover !important;
+  max-height: min(46vh, 260px) !important;
+}
+@media (max-width: 560px) {
+  .car-track .photo {
+    flex: 0 0 70% !important;
+    width: 70% !important;
+    max-width: none !important;
+  }
+  .car-track .photo .photo-frame img { max-height: 40vh !important; }
+}

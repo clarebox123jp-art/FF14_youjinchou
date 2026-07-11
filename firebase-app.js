@@ -353,8 +353,10 @@ function collectEditables() {
   return out;
 }
 function collectImgs() {
+  /* ★ 2026-07-11：加入 #staffList——店員照片由「✎編輯」表單管理，不吃隱藏/換圖/⊞尺寸徽章。
+     舊值備查："#partnerList,.admin-modal" */
   return Array.from(document.querySelectorAll(".wrap img, .hero-inner img"))
-    .filter((im) => !im.closest("#partnerList,.admin-modal"));
+    .filter((im) => !im.closest("#partnerList,#staffList,.admin-modal"));
 }
 const imgKeyOf = (im) => im.dataset.imgKey || (im.dataset.imgKey = "i" + h32(im.getAttribute("src") || ""));
 

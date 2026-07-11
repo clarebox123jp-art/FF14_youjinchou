@@ -912,3 +912,17 @@ body.bgm-on .lyrics-track { animation-play-state: running; }
    ※ 誠實說明：這只能擋「隨手複製」，真正的防竄改是 Firestore 規則＋GitHub 帳號安全
    ============================================================ */
 img { -webkit-user-drag: none; user-select: none; }
+
+/* ============================================================
+   ★ 2026-07-11 追加：相簿新區塊（藝術攝影／KUSO專區）空軌道狀態
+   - 引擎在 main.js 第 6 段：軌道沒照片時跑馬燈掛 .is-empty
+   ============================================================ */
+.car-empty {
+  display: none; text-align: center; color: var(--muted);
+  font-size: 0.94rem; letter-spacing: 0.04em; padding: 34px 16px;
+  border: 1px dashed var(--line); border-radius: 14px;
+  background: rgba(255, 252, 244, 0.5);
+}
+.carousel.is-empty .car-arrow,
+.carousel.is-empty .car-counter { display: none; }
+.carousel.is-empty .car-empty { display: block; }

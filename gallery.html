@@ -134,6 +134,40 @@
         <p class="car-counter"><span class="cur">1</span> / <span class="total">4</span></p>
       </div>
 
+      <!-- ============================================================
+           ★ 2026-07-11 新增：第三區 藝術攝影 ＋ 第四區 KUSO專區
+           - 兩區出廠時是「空軌道」：畫面顯示「敬請期待」提示、箭頭與計數自動隱藏
+           - 照片全部走線上新增：#admin 登入 → 對應區塊下方「＋ 加照片」
+             （引擎已改為空軌道也待命，加了第一張照片會自動醒來，見 main.js 第 6 段）
+           - 也可手動加：在 car-track 內複製一個 <figure class="photo">（格式同上排）
+           ============================================================ -->
+
+      <!-- ── 第三區:藝術攝影 ── -->
+      <div class="reveal" style="text-align:center;margin:46px 0 2px">
+        <p class="eyebrow">Art · 藝術攝影</p>
+      </div>
+      <div class="carousel reveal" id="galleryArt">
+        <button class="car-arrow prev" aria-label="上一張">‹</button>
+        <div class="car-track" data-imglist="gallery-art">
+        </div>
+        <button class="car-arrow next" aria-label="下一張">›</button>
+        <p class="car-counter"><span class="cur">1</span> / <span class="total">0</span></p>
+        <p class="car-empty">快門已就位，光影正在路上——藝術攝影作品即將上架，敬請期待。</p>
+      </div>
+
+      <!-- ── 第四區:KUSO專區 ── -->
+      <div class="reveal" style="text-align:center;margin:46px 0 2px">
+        <p class="eyebrow">Kuso · KUSO專區</p>
+      </div>
+      <div class="carousel reveal" id="galleryKuso">
+        <button class="car-arrow prev" aria-label="上一張">‹</button>
+        <div class="car-track" data-imglist="gallery-kuso">
+        </div>
+        <button class="car-arrow next" aria-label="下一張">›</button>
+        <p class="car-counter"><span class="cur">1</span> / <span class="total">0</span></p>
+        <p class="car-empty">沙雕名場面搜集中——公會的爆笑瞬間即將在此公開處刑，敬請期待。</p>
+      </div>
+
       <!-- 舊版（兩大類 grid）與佔位圖說明，保留備查（鐵則①）：
            分類一 曾經的回憶點滴：表演 / 三店員調酒
            分類二 溫馨的公會小屋：house-stage-clair / 公會的小溪發現河童

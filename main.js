@@ -267,10 +267,13 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     const totalEl = car.querySelector(".total");
     const prev = car.querySelector(".prev");
     const next = car.querySelector(".next");
-    if (!slides().length) return;
+    // 舊：if (!slides().length) return;（空軌道直接不初始化——線上加了照片也不會醒來，保留備查，鐵則①）
+    // 新（2026-07-11）：空軌道也照常初始化＝「待命」；update() 用 is-empty 類別
+    //   隱藏箭頭與計數、顯示「敬請期待」提示（.car-empty），第一張照片加入後自動醒來。
 
     function currentIndex() {
       const list = slides();
+      if (!list.length) return 0;
       const center = track.scrollLeft + track.clientWidth / 2;
       let best = 0, bestDist = Infinity;
       list.forEach(function (s, i) {
@@ -282,6 +285,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     }
     function update() {
       const list = slides();
+      car.classList.toggle("is-empty", !list.length);   // 空軌道：藏箭頭計數、顯示敬請期待
       const i = currentIndex();
       if (totalEl) totalEl.textContent = list.length;
       if (curEl) curEl.textContent = Math.min(i + 1, list.length);

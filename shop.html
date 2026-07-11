@@ -52,6 +52,22 @@
     </div>
   </section>
 
+  <!-- ============================================================
+       ★ 2026-07-11 新增：預約系統入口
+       - 開關存在 Firestore「siteContent/config-shop」{ bookingOpen, bookingUrl }
+       - 預設關閉＝顯示「敬請期待！」；管理員登入後用管理列「🏮 預約開關」
+         可隨時切換開放、並填入 Google 預約表單網址
+       - 按鈕文字與連結由 firebase-app.js 第 10 段動態設定，不要直接改這裡的字
+       ============================================================ -->
+  <section class="section" style="padding-top:0;padding-bottom:34px">
+    <div class="wrap reveal" style="text-align:center">
+      <a id="bookingBtn" class="booking-btn is-closed sfx" href="#" rel="noopener">🏮 預約系統｜敬請期待！</a>
+      <p class="body booking-note" style="margin:16px auto 0">
+        帳裡的席次尚在鋪陳。待門前燈籠點亮之日，即可在此留下您的名字。
+      </p>
+    </div>
+  </section>
+
   <hr class="divider" />
 
   <!-- ============================================================
@@ -135,6 +151,92 @@
       <figure class="feather-img reveal">
         <img src="images/shop-cocktail-illust.webp" alt="三店員調酒（插畫版）" loading="lazy" />
       </figure>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       ★ 2026-07-11 新增：活動告示板（開幕特惠＋節慶活動）
+       - 文字全部走線上編輯（登入後點字即改），過期活動直接改字輪替
+       - 想增減告示：複製或刪掉一整個 <article class="notice">...</article>
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">News · 活動告示板</p>
+        <h2>活動告示板</h2>
+        <p class="body" style="margin-top:14px">帳中近期的祭事與優惠，皆張貼於此。</p>
+      </div>
+      <div class="notice-board reveal">
+        <article class="notice">
+          <p class="notice-tag">🎊 開幕特惠</p>
+          <h3>開帳誌慶 · 首月同慶</h3>
+          <p>開幕首月光臨的每一位旅人，餐點一律八折，並附贈本店特調飲品一杯；預約拍照服務者，加贈精修照片一張。</p>
+        </article>
+        <article class="notice">
+          <p class="notice-tag">🌸 節慶活動</p>
+          <h3>當季祭事 · 籌備中</h3>
+          <p>新年初詣、櫻花祭、盂蘭盆納涼祭——四季的祭事正在籌備中，詳情將於此告示板與 Discord 同步公告。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       ★ 2026-07-11 新增：貴賓優待（VIP 分級）
+       - 沿用 .job-grid / .job 卡片樣式；門檻與禮遇為範例，登入後點字即可線上修改
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">VIP · 貴賓優待</p>
+        <h2>貴賓優待</h2>
+        <p class="body" style="margin-top:14px">凡於帳中留下足跡的旅人，皆會記在友人帳上；緣分越深，回禮越厚。</p>
+      </div>
+      <div class="job-grid reveal">
+        <article class="job">
+          <div class="num">壹</div>
+          <h3>結緣 · 白帳</h3>
+          <p>累積消費 100,000 Gil——每次光臨贈特調飲品一杯，並優先收到節慶活動通知。</p>
+        </article>
+        <article class="job">
+          <div class="num">貳</div>
+          <h3>深緣 · 朱帳</h3>
+          <p>累積消費 300,000 Gil——享白帳全部禮遇，拍照服務免費一次，餐點常年九折。</p>
+        </article>
+        <article class="job">
+          <div class="num">參</div>
+          <h3>摯緣 · 金帳</h3>
+          <p>累積消費 600,000 Gil——享朱帳全部禮遇，包廂與 NPC 陪聊時段優先預留，並登上貴客榜。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       ★ 2026-07-11 新增：貴客榜（消費排行 前五名）
+       - 每一行是一個 <p class="rank-line">，登入後點整行即可線上改名字／金額／稱號
+       - 樣式在 style.css 檔尾 .rank-board
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Ranking · 貴客榜</p>
+        <h2>貴客榜</h2>
+        <p class="body" style="margin-top:14px">感謝與本帳結緣最深的貴客們。榜單由掌櫃每月更新。</p>
+      </div>
+      <div class="rank-board reveal">
+        <p class="rank-line r1"><span class="rank-no">壹</span><b>虛位以待</b><span class="rank-amt">——— Gil</span><span class="rank-badge">金帳貴客</span></p>
+        <p class="rank-line r2"><span class="rank-no">貳</span><b>虛位以待</b><span class="rank-amt">——— Gil</span><span class="rank-badge">朱帳貴客</span></p>
+        <p class="rank-line r3"><span class="rank-no">參</span><b>虛位以待</b><span class="rank-amt">——— Gil</span><span class="rank-badge">朱帳貴客</span></p>
+        <p class="rank-line"><span class="rank-no">肆</span><b>虛位以待</b><span class="rank-amt">——— Gil</span><span class="rank-badge">常連さん</span></p>
+        <p class="rank-line"><span class="rank-no">伍</span><b>虛位以待</b><span class="rank-amt">——— Gil</span><span class="rank-badge">常連さん</span></p>
+      </div>
     </div>
   </section>
 

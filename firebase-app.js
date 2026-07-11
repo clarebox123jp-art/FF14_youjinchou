@@ -246,6 +246,9 @@ function buildAdminBar(email) {
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
+    ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
+    <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
+    <button type="button" id="abBg" class="admin-btn">🖼 背景設定</button>
     <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
     <button type="button" id="abClean" class="admin-btn">🧹 清理失效編輯</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
@@ -254,6 +257,11 @@ function buildAdminBar(email) {
   if (add) add.onclick = () => openPartnerForm();
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
+  /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
+  const bkBtn = document.getElementById("abBooking");
+  if (bkBtn) bkBtn.onclick = openBookingConfig;
+  document.getElementById("abSheet").onclick = openSheetLink;
+  document.getElementById("abBg").onclick = openBgConfig;
   document.getElementById("abExport").onclick = exportOverrides;
   document.getElementById("abClean").onclick = cleanStaleEdits;
   document.getElementById("abOut").onclick = () => signOut(auth);
@@ -958,3 +966,202 @@ function openImgSize(im) {
     }
   });
 }
+
+/* ============================================================
+   10) 預約系統開關＋內部排班表連結＋每頁背景線上更換
+   ------------------------------------------------------------
+   資料存法（都在 siteContent 集合，規則已涵蓋、不必改規則）：
+   - siteContent/config-shop  ：{ bookingOpen: 布林, bookingUrl: Google表單網址 }
+   - siteContent/config-admin ：{ sheetUrl: 內部試算表網址 }
+     ※ 誠實提醒：Firestore 的 siteContent 全站可讀，網址本身藏不住；
+       真正的鎖是試算表權限設「僅限受邀者」——連結外流路人也打不開。
+   - siteContent/bg-{頁名}    ：{ src: 背景圖 dataURL（WebP 或 ≤700KB 的 GIF）}
+     背景以 !important 樣式覆蓋，時段背景／內頁輪播照常運作但被蓋住；
+     「回復預設」刪掉文件即恢復原本背景，零風險。
+   ============================================================ */
+
+/* ---------- 10a) 預約按鈕：讀開關、切換「敬請期待／立即預約」 ---------- */
+const bookingBtnEl = document.getElementById("bookingBtn");
+let bookingCfg = { bookingOpen: false, bookingUrl: "" };
+
+function paintBooking() {
+  if (!bookingBtnEl) return;
+  const open = !!(bookingCfg.bookingOpen && bookingCfg.bookingUrl);
+  bookingBtnEl.textContent = open ? "🏮 立即預約" : "🏮 預約系統｜敬請期待！";
+  bookingBtnEl.classList.toggle("is-closed", !open);
+  if (open) {
+    bookingBtnEl.href = bookingCfg.bookingUrl;
+    bookingBtnEl.target = "_blank";
+    bookingBtnEl.removeAttribute("aria-disabled");
+  } else {
+    bookingBtnEl.href = "#";
+    bookingBtnEl.removeAttribute("target");
+    bookingBtnEl.setAttribute("aria-disabled", "true");
+  }
+}
+if (bookingBtnEl) {
+  bookingBtnEl.addEventListener("click", (e) => {
+    if (bookingBtnEl.classList.contains("is-closed")) e.preventDefault();  // 關閉時點了不跳
+  });
+  (async () => {
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-shop"));
+      if (snap.exists()) bookingCfg = Object.assign(bookingCfg, snap.data());
+    } catch (e) { console.warn("預約開關讀取失敗（維持敬請期待）：", e); }
+    paintBooking();
+  })();
+}
+
+/* ---------- 10b) 管理列「🏮 預約開關」：開／關＋填表單網址 ---------- */
+function openBookingConfig() {
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>🏮 預約系統開關</h3>' +
+    '<label><input type="radio" name="bkSw" value="off"' + (bookingCfg.bookingOpen ? "" : " checked") + ' /> 關閉（顯示「敬請期待！」）</label>' +
+    '<label><input type="radio" name="bkSw" value="on"' + (bookingCfg.bookingOpen ? " checked" : "") + ' /> 開放（按鈕連到預約表單）</label>' +
+    '<label>Google 預約表單網址：<input id="bkUrl" type="url" placeholder="https://forms.gle/…" value="' + esc(bookingCfg.bookingUrl || "") + '" /></label>' +
+    '<p style="font-size:0.8rem;color:var(--muted)">※ 選「開放」但沒填網址時，前台仍會顯示敬請期待。</p>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button></div></div>';
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", async (e) => {
+    if (e.target === wrap || e.target.dataset.a === "cancel") { wrap.remove(); return; }
+    if (e.target.dataset.a !== "save") return;
+    try {
+      const openSel = wrap.querySelector('input[name="bkSw"]:checked').value === "on";
+      const url = wrap.querySelector("#bkUrl").value.trim();
+      if (url && !/^https:\/\//.test(url)) { alert("表單網址請以 https:// 開頭。"); return; }
+      await setDoc(doc(db, "siteContent", "config-shop"), { bookingOpen: openSel, bookingUrl: url }, { merge: true });
+      bookingCfg = { bookingOpen: openSel, bookingUrl: url };
+      paintBooking();
+      wrap.remove();
+    } catch (err) { alert("儲存失敗：" + (err.message || err)); }
+  });
+}
+
+/* ---------- 10c) 管理列「📊 排班表」：開內部試算表（Shift＋點＝重設網址） ---------- */
+async function openSheetLink(e) {
+  try {
+    const ref = doc(db, "siteContent", "config-admin");
+    const snap = await getDoc(ref);
+    let url = snap.exists() ? (snap.data().sheetUrl || "") : "";
+    if (!url || (e && e.shiftKey)) {
+      const nu = prompt("貼上內部試算表（Google Sheets）網址：", url);
+      if (nu === null) return;
+      url = nu.trim();
+      if (url && !/^https:\/\//.test(url)) { alert("網址請以 https:// 開頭。"); return; }
+      await setDoc(ref, { sheetUrl: url }, { merge: true });
+      if (!url) return;
+    }
+    window.open(url, "_blank", "noopener");
+  } catch (err) { alert("開啟失敗：" + (err.message || err)); }
+}
+
+/* ---------- 10d) 每頁背景線上更換 ---------- */
+const bgRef = doc(db, "siteContent", "bg-" + PAGE);
+
+function applyCustomBg(src) {
+  let st = document.getElementById("yjcBgStyle");
+  if (!src) { if (st) st.remove(); return; }
+  if (!st) { st = document.createElement("style"); st.id = "yjcBgStyle"; document.head.appendChild(st); }
+  const u = 'url("' + src + '")';
+  let css = "";
+  if (document.getElementById("homeBg")) css += "#homeBg{background-image:" + u + " !important;}";
+  if (document.getElementById("pageBg")) css += "#pageBg .pbg-slide{background-image:" + u + " !important;}";
+  if (!css) css = "body{background-image:" + u + " !important;background-size:cover !important;background-position:center !important;background-attachment:fixed !important;}";
+  st.textContent = css;
+}
+(async () => {
+  try {
+    const snap = await getDoc(bgRef);
+    if (snap.exists() && snap.data().src) applyCustomBg(snap.data().src);
+  } catch (e) { console.warn("自訂背景讀取失敗（顯示預設背景）：", e); }
+})();
+
+function openBgConfig() {
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>🖼 背景設定（' + PAGE + '.html）</h3>' +
+    '<p style="font-size:0.84rem;color:var(--muted)">照片（JPG/PNG/WebP）會自動壓成 WebP；GIF 動圖原樣儲存、檔案需 ≤ 700KB。</p>' +
+    '<label>選擇新背景：<input id="bgFile" type="file" accept="image/*" /></label>' +
+    '<p id="bgMsg" style="font-size:0.8rem;color:var(--muted)"></p>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存並套用</button>' +
+    '<button type="button" class="admin-btn" data-a="reset">回復預設背景</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button></div></div>';
+  document.body.appendChild(wrap);
+  let pendingSrc = "";
+  const msg = wrap.querySelector("#bgMsg");
+  wrap.querySelector("#bgFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    msg.textContent = "處理中…";
+    try {
+      if (f.type === "image/gif") {
+        if (f.size > 700 * 1024) throw new Error("GIF 超過 700KB，請先用線上工具（如 ezgif.com）壓縮。");
+        pendingSrc = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = () => rej(new Error("讀不到這個 GIF 檔。"));
+          r.readAsDataURL(f);
+        });
+        if (pendingSrc.length > 950_000) throw new Error("GIF 編碼後仍太大，請再壓小一點。");
+      } else {
+        pendingSrc = await compressImage(f, 1600, 0.78);   // 背景用大圖：最長邊 1600
+      }
+      msg.textContent = "✅ 已就緒（約 " + Math.round(pendingSrc.length / 1024) + " KB），按「儲存並套用」生效。";
+      applyCustomBg(pendingSrc);                            // 即時預覽
+    } catch (err) { pendingSrc = ""; msg.textContent = "⚠️ " + (err.message || err); }
+  });
+  wrap.addEventListener("click", async (e) => {
+    if (e.target === wrap || e.target.dataset.a === "cancel") {
+      wrap.remove();
+      // 取消＝把預覽還原成 Firestore 現況
+      try { const s = await getDoc(bgRef); applyCustomBg(s.exists() ? s.data().src : ""); } catch (_) {}
+      return;
+    }
+    if (e.target.dataset.a === "save") {
+      if (!pendingSrc) { alert("請先選擇一張圖片。"); return; }
+      try {
+        await setDoc(bgRef, { src: pendingSrc, updated: Date.now() });
+        wrap.remove();
+      } catch (err) { alert("儲存失敗：" + (err.message || err)); }
+    }
+    if (e.target.dataset.a === "reset") {
+      try {
+        await deleteDoc(bgRef);
+        applyCustomBg("");
+        wrap.remove();
+      } catch (err) { alert("還原失敗：" + (err.message || err)); }
+    }
+  });
+}
+
+/* ============================================================
+   11) 內容保護（防隨手複製圖片＋主控台警語）
+   ------------------------------------------------------------
+   ※ 誠實說明：網頁原始碼與圖片天生是公開的，這一段只能「勸退隨手右鍵
+     另存／拖曳」的訪客，擋不了有心人截圖或看原始碼。
+     真正防「駭客竄改網站」的是：
+     ① Firestore 規則（只有 ADMIN_EMAIL 能寫入）——已上線；
+     ② GitHub 帳號密碼＋兩步驟驗證（2FA）——請務必開啟；
+     ③ Google 帳號安全（管理員信箱本身的 2FA）。
+   管理模式編輯不受影響（管理員登入後放行右鍵）。
+   ============================================================ */
+(function contentGuard() {
+  document.addEventListener("contextmenu", (e) => {
+    if (isAdmin) return;                                  // 管理員照常用右鍵
+    if (e.target.closest("img, .page-bg, .home-petals")) e.preventDefault();
+  });
+  document.addEventListener("dragstart", (e) => {
+    if (isAdmin) return;
+    if (e.target.closest("img")) e.preventDefault();
+  });
+  try {
+    console.log("%c幻想友人帳", "font-size:20px;color:#b03a2e;font-weight:bold");
+    console.log("本站內容（文字／圖片／設計）© 幻想友人帳，請勿盜用。網站異動皆有紀錄。");
+  } catch (_) {}
+})();

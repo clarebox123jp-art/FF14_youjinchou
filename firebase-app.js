@@ -245,12 +245,15 @@ function buildAdminBar(email) {
   bar.innerHTML = `
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
+    ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
     <button type="button" id="abClean" class="admin-btn">🧹 清理失效編輯</button>
     <button type="button" id="abOut" class="admin-btn">登出</button>`;
   document.body.appendChild(bar);
   const add = document.getElementById("abAdd");
   if (add) add.onclick = () => openPartnerForm();
+  const lyBtn = document.getElementById("abLyrics");
+  if (lyBtn) lyBtn.onclick = openLyricsEditor;
   document.getElementById("abExport").onclick = exportOverrides;
   document.getElementById("abClean").onclick = cleanStaleEdits;
   document.getElementById("abOut").onclick = () => signOut(auth);
@@ -372,6 +375,35 @@ async function applyOverrides() {
     });
     // 隱藏的圖
     (pageData.hidden || []).forEach((k) => hideImgByKey(k));
+
+    // ★ 字級調整（size map：段落鍵 → 倍率）
+    Object.entries(pageData.size || {}).forEach(([k, v]) => {
+      const el = document.querySelector('[data-edit-key="' + k + '"]');
+      if (!el || !(v > 0)) return;
+      if (!el.dataset.basePx) el.dataset.basePx = parseFloat(getComputedStyle(el).fontSize);
+      el.style.fontSize = (el.dataset.basePx * v) + "px";
+    });
+    // ★ 圖片尺寸（imgsize map：圖片鍵 → 寬度倍率，相對原本版位）
+    collectImgs().forEach((im) => {
+      const v = (pageData.imgsize || {})[imgKeyOf(im)];
+      if (!v) return;
+      im.style.width = (v * 100) + "%"; im.style.height = "auto";
+      im.style.display = "block"; im.style.marginLeft = "auto"; im.style.marginRight = "auto";
+    });
+    // ★ 歌詞排版（lyrics：{lines:[每行文字], size:字級倍率}）
+    const lyTrack = document.getElementById("lyricsTrack");
+    if (lyTrack) {
+      if (!defaultLyricsHTML) defaultLyricsHTML = lyTrack.innerHTML;   // 先留預設，供「回復預設」
+      const ly = pageData.lyrics;
+      if (ly) {
+        if (Array.isArray(ly.lines) && ly.lines.length) {
+          const html = ly.lines.map(renderLyricLine).join("");
+          lyTrack.innerHTML = html + html;                             // 自帶複製一份＝無縫循環
+        }
+        if (ly.size > 0) lyTrack.style.setProperty("--lyr-k", ly.size);
+      }
+    }
+
     document.dispatchEvent(new Event("yjc-overrides"));
   } catch (e) {
     console.warn("線上內容載入失敗（顯示網頁預設）：", e);
@@ -394,7 +426,13 @@ function startEdit(el) {
   finishEdit(false);
   editingEl = el;
   const docMode = !el.dataset.editKey && !!el.dataset.docId;   // 線上新增照片的圖說：存回該照片文件
+  const key = el.dataset.editKey;
   el.dataset.before = el.innerHTML;
+  // ★ 字級調整（2026-07 加入）：以載入時的原始字級為基準做倍率
+  if (!el.dataset.basePx) el.dataset.basePx = parseFloat(getComputedStyle(el).fontSize);
+  let curK = (!docMode && pageData.size && pageData.size[key]) || 1;
+  const k0 = curK;
+  const applyK = () => { el.style.fontSize = curK === 1 ? "" : (el.dataset.basePx * curK) + "px"; };
   el.contentEditable = "true";
   el.classList.add("editing");
   el.focus();
@@ -402,14 +440,30 @@ function startEdit(el) {
   editBar = document.createElement("div");
   editBar.className = "edit-bar";
   editBar.innerHTML =
-    '<span>✎ 正在編輯文字</span>' +
+    '<span>✎ 正在編輯</span>' +
+    (docMode ? "" :
+      '<button type="button" class="admin-btn" data-a="sminus">A−</button>' +
+      '<span class="eb-pct" id="ebPct"></span>' +
+      '<button type="button" class="admin-btn" data-a="splus">A＋</button>') +
     '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
     '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
     (docMode ? "" : '<button type="button" class="admin-btn" data-a="reset">回復預設</button>');
   document.body.appendChild(editBar);
+  const pct = document.getElementById("ebPct");
+  const showPct = () => { if (pct) pct.textContent = Math.round(curK * 100) + "%"; };
+  showPct();
   editBar.addEventListener("click", async (e) => {
     const a = e.target.dataset.a;
-    if (a === "cancel") { editingEl.innerHTML = editingEl.dataset.before; finishEdit(true); }
+    if (a === "sminus" || a === "splus") {
+      curK = Math.min(3, Math.max(0.5, Math.round((curK + (a === "splus" ? 0.1 : -0.1)) * 10) / 10));
+      applyK(); showPct();
+      return;
+    }
+    if (a === "cancel") {
+      editingEl.innerHTML = editingEl.dataset.before;
+      curK = k0; applyK();
+      finishEdit(true);
+    }
     if (a === "save") {
       try {
         if (docMode) {
@@ -418,19 +472,23 @@ function startEdit(el) {
           const im = editingEl.closest("figure")?.querySelector("img");
           if (im) { im.alt = cap; if (im.dataset.cap !== undefined) im.dataset.cap = cap; }
         } else {
-          const key = editingEl.dataset.editKey, html = editingEl.innerHTML;
-          await setDoc(pageRef, { text: { [key]: html } }, { merge: true });
+          const html = editingEl.innerHTML;
+          const payload = { text: { [key]: html }, size: { [key]: curK === 1 ? deleteField() : curK } };
+          await setDoc(pageRef, payload, { merge: true });
           pageData.text[key] = html;
+          if (!pageData.size) pageData.size = {};
+          if (curK === 1) delete pageData.size[key]; else pageData.size[key] = curK;
         }
         finishEdit(true);
       } catch (err) { alert("儲存失敗：" + (err.message || err)); }
     }
     if (a === "reset") {
-      const key = editingEl.dataset.editKey;
       try {
-        await setDoc(pageRef, { text: { [key]: deleteField() } }, { merge: true });
+        await setDoc(pageRef, { text: { [key]: deleteField() }, size: { [key]: deleteField() } }, { merge: true });
         delete pageData.text[key];
+        if (pageData.size) delete pageData.size[key];
         editingEl.innerHTML = textDefaults[key] || editingEl.dataset.before;
+        editingEl.style.fontSize = "";
         finishEdit(true);
       } catch (err) { alert("回復失敗：" + (err.message || err)); }
     }
@@ -564,14 +622,17 @@ function refreshBadges() {
     const b = document.createElement("div");
     b.className = "img-badge";
     const hidden = !!im.getAttribute("data-yjc-hidden");
+    const sizable = !im.closest(".car-track,.about-slides");   // 跑馬燈與輪播內尺寸統一，不個別調
     b.innerHTML =
       '<button type="button" data-a="hide">' + (hidden ? "↩ 復原" : "✕ 隱藏") + "</button>" +
-      (hidden ? "" : '<button type="button" data-a="rep">↻ 換圖</button>');
+      (hidden ? "" : '<button type="button" data-a="rep">↻ 換圖</button>') +
+      (hidden || !sizable ? "" : '<button type="button" data-a="size">⊞ 尺寸</button>');
     b.addEventListener("click", (e) => {
       e.stopPropagation();
       const target = im.closest(".about-slides") ? im.closest(".about-slides").querySelector("img.is-on") || im : im;
       if (e.target.dataset.a === "hide") toggleHideImg(target);
       if (e.target.dataset.a === "rep") replaceImg(target);
+      if (e.target.dataset.a === "size") openImgSize(im);
     });
     host.appendChild(b);
   });
@@ -761,4 +822,139 @@ async function cleanStaleEdits() {
     stale.forEach((k) => delete pageData.text[k]);
     alert("已清理 " + stale.length + " 筆。");
   } catch (e) { alert("清理失敗：" + (e.message || e)); }
+}
+
+/* ============================================================
+   8) 歌詞排版編輯（管理列「🎼 歌詞設定」，僅公會介紹頁出現）
+   - 一行＝一句歌詞；行尾的（中文）自動顯示成小字翻譯
+   - 可自由增刪行、改字、換行；字級 50%～200%
+   - 存於 page-about 文件的 lyrics 欄位；「回復預設」清掉即回原歌詞
+   ============================================================ */
+let defaultLyricsHTML = "";   // 載入時的預設歌詞（applyOverrides 會填）
+
+function renderLyricLine(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  const m = s.match(/^(.*?)\s*[（(]([^）)]*)[）)]\s*$/);   // 行尾（中文）→ 小字
+  if (m && m[1]) return "<p>" + esc(m[1]) + " <span>(" + esc(m[2]) + ")</span></p>";
+  return "<p>" + esc(s) + "</p>";
+}
+
+function openLyricsEditor() {
+  const track = document.getElementById("lyricsTrack");
+  if (!track) return;
+  // 目前顯示的歌詞 → 還原成「一行一句」文字（取前半，內容有複製一份）
+  const ps = Array.from(track.children).slice(0, track.children.length / 2);
+  const lines = ps.map((p) => {
+    const span = p.querySelector("span");
+    const cn = span ? span.textContent.replace(/^\(|\)$/g, "") : "";
+    const jp = (span ? p.textContent.replace(span.textContent, "") : p.textContent).trim();
+    return cn ? jp + " (" + cn + ")" : jp;
+  });
+  const curSize = (pageData.lyrics && pageData.lyrics.size) || 1;
+
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>🎼 歌詞設定</h3>' +
+    '<p class="admin-hint" style="color:var(--muted)">一行＝一句。想在句中換行就拆成兩行；行尾用（　）包住的字會顯示成小字中文翻譯。</p>' +
+    '<textarea id="lyTa" rows="14" style="width:100%;margin-top:6px;font-size:0.84rem"></textarea>' +
+    '<label style="margin-top:10px">歌詞字級：<b id="lyPct">' + Math.round(curSize * 100) + '%</b>' +
+    '<input id="lySize" type="range" min="50" max="200" step="5" value="' + Math.round(curSize * 100) + '" style="width:100%" /></label>' +
+    '<p class="admin-hint" id="lyMsg"></p>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
+    '<button type="button" class="admin-btn" data-a="reset">回復預設</button></div></div>';
+  wrap.querySelector("#lyTa").value = lines.join("\n");
+  document.body.appendChild(wrap);
+  const sizeInp = wrap.querySelector("#lySize");
+  sizeInp.addEventListener("input", () => {
+    wrap.querySelector("#lyPct").textContent = sizeInp.value + "%";
+    track.style.setProperty("--lyr-k", sizeInp.value / 100);   // 即時預覽
+  });
+  wrap.addEventListener("click", async (e) => {
+    if (e.target === wrap || e.target.dataset.a === "cancel") {
+      track.style.setProperty("--lyr-k", curSize);             // 還原預覽
+      wrap.remove(); return;
+    }
+    const a = e.target.dataset.a;
+    if (a === "save") {
+      try {
+        const newLines = wrap.querySelector("#lyTa").value.split("\n").map((s) => s.trim()).filter(Boolean);
+        if (!newLines.length) throw new Error("歌詞不能是空的。");
+        const size = sizeInp.value / 100;
+        await setDoc(pageRef, { lyrics: { lines: newLines, size } }, { merge: true });
+        pageData.lyrics = { lines: newLines, size };
+        const html = newLines.map(renderLyricLine).join("");
+        track.innerHTML = html + html;
+        track.style.setProperty("--lyr-k", size);
+        wrap.remove();
+      } catch (err) { wrap.querySelector("#lyMsg").textContent = "❌ " + (err.message || err); }
+    }
+    if (a === "reset") {
+      if (!confirm("回復成網頁預設的歌詞與字級？")) return;
+      try {
+        await setDoc(pageRef, { lyrics: deleteField() }, { merge: true });
+        delete pageData.lyrics;
+        if (defaultLyricsHTML) track.innerHTML = defaultLyricsHTML;
+        track.style.removeProperty("--lyr-k");
+        wrap.remove();
+      } catch (err) { wrap.querySelector("#lyMsg").textContent = "❌ " + (err.message || err); }
+    }
+  });
+}
+
+/* ============================================================
+   9) 圖片尺寸調整（圖片徽章「⊞ 尺寸」）
+   - 以原本版位寬度為 100%，可調 30%～200%，即時預覽
+   - 跑馬燈與輪播內的照片尺寸統一，不提供個別調整
+   ============================================================ */
+function openImgSize(im) {
+  const k = imgKeyOf(im);
+  const cur = ((pageData.imgsize || {})[k] || 1) * 100;
+  const orig = { w: im.style.width, h: im.style.height, d: im.style.display, ml: im.style.marginLeft, mr: im.style.marginRight };
+  const preview = (v) => {
+    im.style.width = v + "%"; im.style.height = "auto";
+    im.style.display = "block"; im.style.marginLeft = "auto"; im.style.marginRight = "auto";
+  };
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.innerHTML =
+    '<div class="admin-modal-card"><h3>⊞ 圖片尺寸</h3>' +
+    '<label>寬度：<b id="isPct">' + Math.round(cur) + '%</b>（100%＝原本版位大小）' +
+    '<input id="isRange" type="range" min="30" max="200" step="5" value="' + Math.round(cur) + '" style="width:100%" /></label>' +
+    '<div class="admin-modal-btns">' +
+    '<button type="button" class="admin-btn primary" data-a="save">儲存</button>' +
+    '<button type="button" class="admin-btn" data-a="cancel">取消</button>' +
+    '<button type="button" class="admin-btn" data-a="reset">還原 100%</button></div></div>';
+  document.body.appendChild(wrap);
+  const rng = wrap.querySelector("#isRange");
+  rng.addEventListener("input", () => {
+    wrap.querySelector("#isPct").textContent = rng.value + "%";
+    preview(rng.value);
+  });
+  const restore = () => { Object.assign(im.style, { width: orig.w, height: orig.h, display: orig.d, marginLeft: orig.ml, marginRight: orig.mr }); };
+  wrap.addEventListener("click", async (e) => {
+    if (e.target === wrap || e.target.dataset.a === "cancel") { restore(); wrap.remove(); return; }
+    const a = e.target.dataset.a;
+    if (a === "save") {
+      try {
+        const v = rng.value / 100;
+        await setDoc(pageRef, { imgsize: { [k]: v === 1 ? deleteField() : v } }, { merge: true });
+        if (!pageData.imgsize) pageData.imgsize = {};
+        if (v === 1) { delete pageData.imgsize[k]; restore(); im.style.width = ""; }
+        else { pageData.imgsize[k] = v; preview(rng.value); }
+        wrap.remove();
+      } catch (err) { alert("儲存失敗：" + (err.message || err)); }
+    }
+    if (a === "reset") {
+      try {
+        await setDoc(pageRef, { imgsize: { [k]: deleteField() } }, { merge: true });
+        if (pageData.imgsize) delete pageData.imgsize[k];
+        restore(); im.style.width = ""; im.style.height = ""; im.style.display = ""; im.style.marginLeft = ""; im.style.marginRight = "";
+        wrap.remove();
+      } catch (err) { alert("還原失敗：" + (err.message || err)); }
+    }
+  });
 }

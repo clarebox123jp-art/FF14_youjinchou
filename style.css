@@ -831,3 +831,11 @@ body.bgm-on .lyrics-track { animation-play-state: running; }
 .yjc-ghost { opacity: 0.35; filter: grayscale(0.6); }
 
 .imglist-add { display: block; margin: 14px auto 0; }
+
+/* ============================================================
+   ★ 2026-07 追加：線上編輯之字級／圖片尺寸／歌詞排版
+   ============================================================ */
+/* 歌詞字級改吃變數（管理員可線上調整，預設 1＝0.74rem） */
+.lyrics-track p { font-size: calc(0.74rem * var(--lyr-k, 1)); }
+/* 編輯列上的字級百分比顯示 */
+.edit-bar .eb-pct { min-width: 46px; text-align: center; opacity: 0.9; }

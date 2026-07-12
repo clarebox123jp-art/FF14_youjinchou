@@ -1544,3 +1544,33 @@ img { -webkit-user-drag: none; user-select: none; }
 .rp-level-line strong { letter-spacing: .12em; }
 .order-notice-rp { font-size: .86rem; line-height: 1.8; margin-bottom: 6px; color: var(--ink); }
 .order-notice-rp strong { color: var(--shu, #b3402a); letter-spacing: .1em; }
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：①價目表版面優化 ③服務卡柔焦背景照
+   ============================================================ */
+/* ① 價目表：名稱與價錢同列不換行、卡片加寬 */
+.price-card { max-width: 760px; }
+.price-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 18px; flex-wrap: nowrap;
+}
+.price-name { flex: 1 1 auto; font-size: .95rem; line-height: 1.7; }
+.price-val  { flex: 0 0 auto; white-space: nowrap; font-size: 1.08rem; }
+@media (max-width: 560px) {
+  .price-name { font-size: .88rem; }
+  .price-val  { font-size: 1rem; }
+}
+
+/* ③ 服務內容四卡：對應包廂照片柔焦鋪底，文字浮於其上 */
+.job.job-photo { position: relative; overflow: hidden; }
+.job.job-photo::before {
+  content: "";
+  position: absolute; inset: -12px;               /* 外擴避免模糊邊緣露白 */
+  background-image: var(--jobbg);
+  background-size: cover; background-position: center;
+  filter: blur(4px) saturate(.85) brightness(1.08);
+  opacity: .32;
+  z-index: 0;
+  pointer-events: none;
+}
+.job.job-photo > * { position: relative; z-index: 1; }

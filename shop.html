@@ -92,23 +92,23 @@
         <p class="body rp-level-line">本店定位為<strong>輕〜中度 RP</strong>：以輕鬆聊天與情境點綴為主，想淺淺入戲或純聊天都歡迎，不強求演技、也不做重度連續劇情。</p>
       </div>
       <div class="job-grid reveal">
-        <article class="job">
+        <article class="job job-photo" style="--jobbg:url('images/rooms/rain-cafe.webp')"><!-- ★ 2026-07-13 背景照 -->
           <div class="num">主</div>
           <!-- 舊預設（2026-07-11 二次同步）：💬 NPC 坐檯陪聊 -->
           <h3>💬 坐檯陪聊</h3>
           <p>以各種身分入席對坐——溫柔醫生、小學老師、攻略嚮導、居酒屋老闆娘……市井百業任君指定。可挑選包廂場景（診療室、教室、和室茶間、溫泉雅座等），以 20 分鐘為一單位計時。<!-- 舊：30 分鐘（2026-07-12 改制） --></p>
         </article>
-        <article class="job">
+        <article class="job job-photo" style="--jobbg:url('images/rooms/dream-garden.webp')"><!-- ★ 2026-07-13 背景照 -->
           <div class="num">主</div>
           <h3>📸 包廂合影</h3>
           <p>由專業攝影師入廂掌鏡，與您指定的 NPC 在主題包廂裡留下合影，成品精修後交付。</p>
         </article>
-        <article class="job">
+        <article class="job job-photo" style="--jobbg:url('images/rooms/cafe-counter.webp')"><!-- ★ 2026-07-13 背景照 -->
           <div class="num">佐</div>
           <h3>🍱 佐談餐點</h3>
           <p>坐檯期間可隨時點餐——和風膳食、茶點與特調飲品，讓話題在杯盞之間更盡興。</p>
         </article>
-        <article class="job">
+        <article class="job job-photo" style="--jobbg:url('images/rooms/stage-vip.webp')"><!-- ★ 2026-07-13 背景照 -->
           <div class="num">彩</div>
           <h3>🎵 演奏加碼</h3>
           <p>不定期邀請演奏家蒞臨現場即興加演；預約時可許願，依演奏家檔期安排，不另收費時視為本店招待。</p>
@@ -412,9 +412,15 @@
         </div>
 
         <div class="order-field">
-          <span class="order-label">扮演身分（參考選項，也可自行輸入）</span>
+          <span class="order-label">店員扮演身分（勾選參考選項，或自行輸入）</span>
           <div id="odRoleBox" class="order-choice-wrap"></div>
-          <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂身分（選填，例：占星術士）" />
+          <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂店員身分（選填，例：占星術士）" />
+        </div>
+
+        <!-- ★ 2026-07-13 新增：顧客扮演身分（顧客自行輸入，不影響計價） -->
+        <div class="order-field">
+          <span class="order-label">顧客扮演身分（選填，自行輸入——想以什麼身分入席？）</span>
+          <input type="text" id="odGuestRole" maxlength="30" placeholder="例：迷路的吟遊詩人、剛下副本的冒險者" />
         </div>
 
         <div class="order-field">

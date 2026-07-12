@@ -1415,3 +1415,65 @@ img { -webkit-user-drag: none; user-select: none; }
    （覆寫前一段的古金色設定；舊值 var(--gold) 備查）
    ============================================================ */
 .menu-subcat { color: var(--ink, #2c2620); }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：包廂・雅座＋預約 v2（勾選介面）
+   ============================================================ */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 22px;
+  margin-top: 18px;
+}
+.room-card {
+  margin: 0;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(176,141,63,.35);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+.room-card .photo-frame { aspect-ratio: 16/9; overflow: hidden; position: relative; }
+.room-card .photo-frame img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.room-card.is-picked { border-color: var(--shu, #b3402a); box-shadow: 0 0 0 2px rgba(179,64,42,.35); }
+.room-card.is-closed .photo-frame img { filter: grayscale(.8) brightness(.75); }
+.room-closed-veil {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.05rem; letter-spacing: .3em;
+  background: rgba(40,36,30,.45); pointer-events: none;
+}
+.room-body { padding: 12px 14px 14px; }
+.room-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.room-name { font-family: var(--font-display); font-size: 1.06rem; color: var(--ink); }
+.room-price { color: var(--shu, #b3402a); font-weight: 700; white-space: nowrap; }
+.room-capline { font-size: .8rem; color: var(--muted, #8a857d); margin: 4px 0 2px; }
+.room-desc { font-size: .88rem; line-height: 1.7; margin-top: 6px; }
+.room-pick {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding: 6px 14px;
+  border: 1px solid rgba(176,141,63,.5); border-radius: 999px;
+  cursor: pointer; font-size: .9rem; user-select: none;
+  background: rgba(255,255,255,.6);
+}
+.room-pick:has(input:checked) {
+  background: rgba(179,64,42,.1); border-color: var(--shu, #b3402a); color: var(--shu, #b3402a);
+}
+
+/* 店員卡片上的「指名」勾選列 */
+.staff-pick {
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px dashed rgba(120,115,108,.3);
+  font-size: .85rem;
+}
+.staff-pick label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.staff-pick small { color: var(--muted, #8a857d); }
+.staff-pick-off { color: #9a9186; font-size: .82rem; }
+.staff-badge {
+  display: inline-block; margin: 2px 0 4px; padding: 2px 10px;
+  font-size: .74rem; letter-spacing: .14em;
+  color: var(--gold, #b08d3f); border: 1px solid currentColor; border-radius: 3px;
+}
+.staff-badge.is-off { color: #8a857d; }
+.order-picked { font-size: .9rem; color: var(--shu, #b3402a); margin: 6px 0 4px; }
+.admin-check { display: flex; align-items: center; gap: 8px; }

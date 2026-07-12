@@ -313,31 +313,42 @@
        - data-fee-*＝測試用預設單價（Gil）；data-min-order＝低消門檻
          正式定價後改這裡的數字即可（或請 Claude 改）
        ============================================================ -->
+  <!-- ============================================================
+       ★ 2026-07-12 v2 改版：預約流程重構（原 v1 三步結構已由本版取代）
+       流程：壹 餐點（上方餐單按＋）→ 貳 店員與服務（店員名簿卡片直接勾選指名）
+             → 參 包廂擇一（#roomList 由第 18 段渲染）→ 肆 明細與送出
+       - data-fee-seat＝「不指名（隨緣）」每 20 分鐘時段的坐檯費
+       - data-fee-named＝「指名」每位店員每時段的預設費（店員個別費用可在名簿設定）
+       - data-fee-photo＝加拍每張；data-min-order＝單點料理低消
+       ============================================================ -->
   <section class="section" id="orderSection"
-           data-fee-seat="1000" data-fee-named="500" data-fee-photo="1000" data-min-order="5000">
+           data-fee-seat="800" data-fee-named="1200" data-fee-photo="1000" data-min-order="5000">
     <div class="wrap">
       <div class="reveal">
-        <p class="eyebrow">Order · 線上點餐</p>
-        <h2>線上點餐・試營運測試</h2>
+        <p class="eyebrow">Order · 線上預約點餐</p>
+        <h2>線上預約・試營運測試</h2>
       </div>
 
       <div class="order-test-banner reveal">
-        ⚠ 本店<strong>尚未正式營業</strong>——此點餐選單目前<strong>僅供功能測試</strong>，
+        ⚠ 本店<strong>尚未正式營業</strong>——此預約選單目前<strong>僅供功能測試</strong>，
         送出不會成立任何訂單、不會有店員與您聯繫；所有價格皆為測試預設值，正式價目以開幕公告為準。
       </div>
 
-      <!-- 步驟一：料理 -->
+      <!-- 壹：料理（必選，低消 5000） -->
       <div class="order-step reveal">
-        <h3 class="order-step-title">壹 · 挑選料理</h3>
-        <p class="body">請捲回上方「茶點・餐單」，在想吃的餐點卡片上按「＋」加入；此處會即時列出已點內容。
-          <span class="order-note">單點料理低消 5,000 Gil；未標價餐點暫不計入金額。</span></p>
+        <h3 class="order-step-title">壹 · 挑選料理（必選）</h3>
+        <p class="body">請捲回上方「茶點・餐單」，在餐點卡片上按「＋」加入；此處即時列出已點內容。
+          <span class="order-note">單點料理低消 5,000 Gil（未標價餐點暫不計入金額）。</span></p>
         <div id="orderDishList" class="order-dish-list"><p class="order-empty">尚未點選任何餐點。</p></div>
         <p id="orderMinNote" class="order-min-note"></p>
       </div>
 
-      <!-- 步驟二：店員服務 -->
+      <!-- 貳：店員與服務 -->
       <div class="order-step reveal">
-        <h3 class="order-step-title">貳 · 店員服務</h3>
+        <h3 class="order-step-title">貳 · 店員與服務</h3>
+        <p class="body">指名請直接在上方「店員名簿」卡片勾選「☑ 指名」（最多 3 位）；
+          <strong>不勾選＝隨緣</strong>，由店家安排一位店員（隨緣與指名為不同價目）。</p>
+        <p class="order-picked" id="odPickedNote">目前指名：0 位（隨緣）</p>
 
         <div class="order-field">
           <span class="order-label">陪聊時長（20 分鐘為一個時段，每位顧客以 60 分鐘為限）</span>
@@ -349,13 +360,26 @@
         </div>
 
         <div class="order-field">
-          <span class="order-label">指名店員（最多 3 位；不指名請勾「隨緣」）</span>
-          <div id="odStaffBox" class="order-choice-wrap"><!-- JS 依店員名簿產生 --></div>
+          <span class="order-label">服務模式</span>
+          <div class="order-choice-wrap">
+            <label class="order-chip"><input type="radio" name="odMode" value="店員1對1服務" checked />店員 1 對 1</label>
+            <label class="order-chip"><input type="radio" name="odMode" value="店員1對多服務（同行共享）" />1 對多（同行共享）</label>
+            <label class="order-chip"><input type="radio" name="odMode" value="多位店員對1服務" />多對 1（眾星拱月）</label>
+          </div>
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">同行人數（含您本人）</span>
+          <select id="odGuests">
+            <option value="1">1 位</option><option value="2">2 位</option>
+            <option value="3">3 位</option><option value="4">4 位</option>
+          </select>
+          <p class="order-note">包廂各有容納上限，超過將無法送出。</p>
         </div>
 
         <div class="order-field">
           <span class="order-label">扮演身分（參考選項，也可自行輸入）</span>
-          <div id="odRoleBox" class="order-choice-wrap"><!-- JS 產生 --></div>
+          <div id="odRoleBox" class="order-choice-wrap"></div>
           <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂身分（選填，例：占星術士）" />
         </div>
 
@@ -370,7 +394,7 @@
 
         <div class="order-field">
           <span class="order-label">服務風格（個性；也可自行輸入）</span>
-          <div id="odStyleBox" class="order-choice-wrap"><!-- JS 產生 --></div>
+          <div id="odStyleBox" class="order-choice-wrap"></div>
           <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" />
         </div>
 
@@ -390,33 +414,41 @@
           </div>
           <p class="order-note">加拍費用將支付給配合入鏡的店員與攝影師。</p>
         </div>
+      </div>
 
-        <div class="order-field">
-          <span class="order-label">顧客暱稱與備註（選填）</span>
-          <input type="text" id="odNick" maxlength="20" placeholder="您的暱稱（角色名）" />
-          <textarea id="odMemo" rows="2" maxlength="200" placeholder="其他備註（包廂偏好、話題禁區…）"></textarea>
+      <!-- 參：包廂（擇一） -->
+      <div class="order-step reveal">
+        <h3 class="order-step-title">參 · 挑選包廂（擇一）</h3>
+        <p class="body">每間包廂各有風景與容納人數；點照片可放大瀏覽、左右換間。</p>
+        <!-- ★ 包廂卡由 firebase-app.js 第 18 段渲染；拿掉 reveal 以免動態容器隱形 -->
+        <div class="room-grid" id="roomList"></div>
+        <p class="body" id="roomEmpty" style="text-align:center;margin-top:20px;display:none">包廂籌備中，敬請期待。</p>
+      </div>
+
+      <!-- 肆：明細與送出 -->
+      <div class="order-step reveal">
+        <h3 class="order-step-title">肆 · 明細與送出</h3>
+        <div class="order-totals">
+          <div><span>料理小計</span><b id="odDishTotal">0 Gil</b></div>
+          <div><span>店員服務小計</span><b id="odServiceTotal">0 Gil</b></div>
+          <div><span>包廂費</span><b id="odRoomTotal">0 Gil</b></div>
+          <div class="order-grand"><span>總計</span><b id="odGrandTotal">0 Gil</b></div>
         </div>
-
+        <p class="order-note" id="odFeeNote"></p>
+        <div class="order-field">
+          <span class="order-label">顧客暱稱與特殊需求（選填）</span>
+          <input type="text" id="odNick" maxlength="20" placeholder="您的暱稱（角色名）" />
+          <textarea id="odMemo" rows="2" maxlength="200" placeholder="特殊需求（話題禁區、慶生驚喜、飲食偏好…）"></textarea>
+        </div>
         <label class="order-consent">
           <input type="checkbox" id="odAgree" />
           我已閱讀「帳前約定」入店須知，並同意自訂內容符合善良風俗。
         </label>
-      </div>
-
-      <!-- 步驟三：明細與總額 -->
-      <div class="order-step reveal">
-        <h3 class="order-step-title">參 · 明細與總額</h3>
-        <div class="order-totals">
-          <div><span>料理小計</span><b id="odDishTotal">0 Gil</b></div>
-          <div><span>服務小計</span><b id="odServiceTotal">0 Gil</b></div>
-          <div class="order-grand"><span>總計</span><b id="odGrandTotal">0 Gil</b></div>
-        </div>
-        <p class="order-note" id="odFeeNote"><!-- JS 填測試單價說明 --></p>
-        <button type="button" class="btn primary" id="odGenerate">產生訂單明細（測試）</button>
+        <button type="button" class="btn primary" id="odGenerate">送出預約訂單（測試）</button>
         <div id="odResultWrap" style="display:none">
-          <textarea id="odResult" rows="12" readonly></textarea>
+          <textarea id="odResult" rows="14" readonly></textarea>
           <button type="button" class="btn" id="odCopy">📋 複製明細</button>
-          <p class="order-note">測試模式：複製後不會送出。正式營業後，此明細可貼到 Discord 預約區或預約表單。</p>
+          <p class="order-note">測試模式：僅產生明細供複製，不會真正送出。正式營業後，此明細可貼到 Discord 預約區或預約表單。</p>
         </div>
       </div>
     </div>

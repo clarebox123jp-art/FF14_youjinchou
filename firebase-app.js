@@ -89,7 +89,7 @@ async function loadPartners() {
        舊寫法備查：partnersCache = snap.docs.map((d) => ({ id: d.id, data: d.data() })); */
     partnersCache = snap.docs
       .map((d) => ({ id: d.id, data: d.data() }))
-      .filter((x) => x.data.kind !== "staff" && x.data.kind !== "menu");
+      .filter((x) => x.data.kind !== "staff" && x.data.kind !== "menu" && x.data.kind !== "room");
   } catch (e) {
     console.warn("讀取工作夥伴失敗：", e);
     partnersCache = [];
@@ -252,6 +252,7 @@ function buildAdminBar(email) {
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
     ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abMenuAdd" class="admin-btn primary">＋ 新增餐點</button><button type="button" id="abMenuSeed" class="admin-btn">⤓ 匯入預設餐單</button>' : ""}
+    ${document.getElementById("roomList") ? '<button type="button" id="abRoomAdd" class="admin-btn primary">＋ 新增包廂</button><button type="button" id="abRoomSeed" class="admin-btn">⤓ 匯入預設包廂</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
@@ -275,6 +276,11 @@ function buildAdminBar(email) {
   if (mAdd) mAdd.onclick = () => openMenuForm();
   const mSeed = document.getElementById("abMenuSeed");
   if (mSeed) mSeed.onclick = seedDefaultMenu;
+  /* ★ 2026-07-12：包廂（實作在第 18 段） */
+  const rAdd = document.getElementById("abRoomAdd");
+  if (rAdd) rAdd.onclick = () => openRoomForm();
+  const rSeed = document.getElementById("abRoomSeed");
+  if (rSeed) rSeed.onclick = seedDefaultRooms;
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -317,6 +323,7 @@ onAuthStateChanged(auth, (user) => {
   renderPartners();                  // 依身分重畫（顯示／隱藏編輯鈕）
   renderStaff();                     // ★ 2026-07-11：店員名簿同樣依身分重畫（第 13 段）
   renderMenu();                      // ★ 2026-07-12：餐單同樣依身分重畫（第 16 段）
+  renderRooms();                     // ★ 2026-07-12：包廂同樣依身分重畫（第 17 段）
 });
 
 /* ============================================================
@@ -1697,6 +1704,7 @@ function renderStaff() {
     card.innerHTML = `
       <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${inner}${dots}</div>
       <h3>${esc(s.name)}</h3>
+      ${s.badge ? `<p class="staff-badge${s.available === false ? " is-off" : ""}">${esc(s.badge)}</p>` : ""}
       <p class="staff-role">${esc(s.role)}</p>
       <p class="staff-serv">${esc(s.services)}</p>
       ${persona ? `<button type="button" class="staff-persona-btn">看角色設定 ▾</button>
@@ -1752,6 +1760,15 @@ function openStaffForm(id = null, s = {}) {
       <label>玩家 ID（例：小克瑞爾）<input id="sfName" value="${esc(s.name)}" /></label>
       <label>職務名稱（例：帳簿主）<input id="sfRole" value="${esc(s.role)}" /></label>
       <label>服務項目（例：公會長 · 網站維護）<input id="sfServ" value="${esc(s.services)}" /></label>
+      <label>指名費（Gil／每 20 分鐘時段；留空＝採用店內預設指名價）<input id="sfFee" value="${esc(s.fee || "")}" placeholder="例：1500" /></label>
+      <label>狀態標籤（顯示在卡片上；例：本日休假、新人見習，留空＝不顯示）
+        <input id="sfBadge" list="sfBadgeOpts" value="${esc(s.badge || "")}" placeholder="例：本日休假" />
+        <datalist id="sfBadgeOpts">
+          <option value="本日休假"></option>
+          <option value="新人見習"></option>
+          <option value="人氣店員"></option>
+        </datalist></label>
+      <label class="admin-check"><input id="sfAvail" type="checkbox" ${s.available === false ? "" : "checked"} /> 開放被指名（取消勾選＝顧客無法勾選此店員）</label>
       <label>角色設定・人設（可多行，選填；訪客點「看角色設定」展開）
         <textarea id="sfPersona" rows="4" placeholder="例：白銀鄉小店的帳簿主，總在櫃檯後細數著往來的緣分……">${esc(s.persona || "")}</textarea></label>
       <label>照片（可多張，會在卡片上自動輪播）<input id="sfPhoto" type="file" accept="image/*" multiple /></label>
@@ -1807,6 +1824,9 @@ function openStaffForm(id = null, s = {}) {
         name:     document.getElementById("sfName").value.trim(),
         role:     document.getElementById("sfRole").value.trim(),
         services: document.getElementById("sfServ").value.trim(),
+        fee:      document.getElementById("sfFee").value.trim(),        // ★ 個別指名費
+        badge:    document.getElementById("sfBadge").value.trim(),      // ★ 狀態標籤
+        available: document.getElementById("sfAvail").checked,          // ★ 可否被指名
         persona:  document.getElementById("sfPersona").value.trim(),   // ★ 人設
         photos:   photos,                                              // ★ 多張照片
         photo:    photos[0] || "",                                     // 相容舊欄位（封面）
@@ -2260,16 +2280,204 @@ async function seedDefaultMenu() {
 }
 
 /* ============================================================
-   17) ★ 2026-07-12：線上點餐・試營運測試（只在有 #orderSection 的頁面＝shop.html）
+   17) ★ 2026-07-12：包廂・雅座（kind:"room"；只在有 #roomList 的頁面＝shop.html）
    ------------------------------------------------------------
-   - 純前端試算：不寫入 Firestore（訪客本來就沒有寫入權限），
-     「產生訂單明細」只組出一段文字讓顧客複製、貼到 Discord／表單
-   - 料理數量鈕由 decorateMenu() 長在第 16 段畫出的每張餐點卡上；
-     renderMenu / renderStaff 重畫時會回呼本模組，數量與勾選都會保留
-   - 單價與低消讀 #orderSection 的 data-fee-seat / data-fee-named /
-     data-fee-photo / data-min-order（目前為測試預設值）
-   - 服務小計＝店員人數 × 時段數 × 坐檯費 ＋ 指名人數 × 指名費
-                ＋ 加拍張數 × 加拍費（隨緣＝1 位店員、指名費 0）
+   - 沿用 shopPartners 集合，kind:"room"（不必動規則）
+   - 卡片走 .photo/.photo-frame 結構 → 自動吃 main.js 第 5 段燈箱（左右切換範圍＝.room-grid）
+   - 管理員可 ✎ 編輯名稱/介紹/容納人數/包廂費/狀態標籤/是否開放勾選、✕ 刪除、＋新增
+   - 勾選（預約用 radio）由第 18 段點餐模組負責
+   ============================================================ */
+const roomList  = document.getElementById("roomList");
+const roomEmpty = document.getElementById("roomEmpty");
+
+const DEFAULT_ROOMS = [
+  { name: "雨幕咖啡廳雅座",   cap: 3, desc: "窗外雨絲垂落花影，暖燈下一席茶座——雨聲是最好的伴談。",         price: "", available: true, badge: "", photo: "images/rooms/rain-cafe.webp",      order: 1 },
+  { name: "咖啡廳吧檯雅座",   cap: 2, desc: "彩繪玻璃與香草吊燈下的吧檯座，看店員在眼前調理一杯緣分。",     price: "", available: true, badge: "", photo: "images/rooms/cafe-counter.webp",   order: 2 },
+  { name: "和風別墅",         cap: 2, desc: "圍爐燒水、竹影搖曳，褟褟米上的私語時光。",                     price: "", available: true, badge: "", photo: "images/rooms/wafu-villa.webp",     order: 3 },
+  { name: "知識天井澡堂",     cap: 2, desc: "天光自玻璃頂灑落，書香與湯煙共蒸騰的祕湯書齋。",               price: "", available: true, badge: "", photo: "images/rooms/skylight-bath.webp",  order: 4 },
+  { name: "中央舞台貴賓席",   cap: 3, desc: "紅幕與薔薇簇擁的最佳視野，把整間店的燈火盡收眼底。",           price: "", available: true, badge: "", photo: "images/rooms/stage-vip.webp",      order: 5 },
+  { name: "夢幻花叢",         cap: 1, desc: "白花如雪、彩鯉悠游，吊椅輕晃的一人份夢境。",                   price: "", available: true, badge: "", photo: "images/rooms/dream-garden.webp",   order: 6 },
+  { name: "金碧輝煌主沙發",   cap: 1, desc: "金磚與典籍環繞的豪奢一隅，貓咪掌櫃偶爾同席。",                 price: "", available: true, badge: "", photo: "images/rooms/golden-lounge.webp",  order: 7 },
+  { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
+  { name: "大電視沙發客廳",   cap: 1, desc: "爐火、白沙發與巨幕——窩進來看一部片的距離。",                   price: "", available: true, badge: "", photo: "images/rooms/tv-lounge.webp",      order: 9 },
+  { name: "海景大浴室",       cap: 2, desc: "落日沉入海平線，湯煙裊裊的私人觀景湯屋。",                     price: "", available: true, badge: "", photo: "images/rooms/ocean-bath.webp",     order: 10 },
+];
+
+let roomCache = [];
+let roomUsingDefault = true;
+
+async function loadRooms() {
+  if (!roomList) return;
+  try {
+    const snap = await getDocs(query(collection(db, "shopPartners"), orderBy("order")));
+    roomCache = snap.docs
+      .map((d) => ({ id: d.id, data: d.data() }))
+      .filter((x) => x.data.kind === "room");
+    roomUsingDefault = roomCache.length === 0;
+  } catch (e) {
+    console.warn("讀取包廂失敗：", e);
+    roomCache = []; roomUsingDefault = true;
+  }
+  renderRooms();
+}
+
+function renderRooms() {
+  if (!roomList) return;
+  roomList.classList.add("in");   /* 防 reveal 門檻造成隱形（同餐單） */
+  roomList.innerHTML = "";
+  const rows = roomUsingDefault
+    ? DEFAULT_ROOMS.map((d) => ({ id: null, data: d }))
+    : roomCache;
+  if (roomEmpty) roomEmpty.style.display = rows.length ? "none" : "";
+  for (const { id, data: r } of rows) {
+    const card = document.createElement("figure");
+    card.className = "room-card photo" + (r.available === false ? " is-closed" : "");
+    card.dataset.room = r.name;
+    const priceHtml = r.price
+      ? `<span class="room-price${isAdmin ? " menu-price-edit" : ""}">${esc(r.price)}</span>`
+      : (isAdmin ? `<span class="room-price menu-price-edit is-empty">＋標價</span>` : "");
+    card.innerHTML = `
+      <div class="photo-frame">
+        ${r.photo ? `<img src="${r.photo}" alt="${esc(r.name)}" loading="lazy" />` : `<div class="menu-noimg"><span>房</span></div>`}
+        ${r.available === false ? `<div class="room-closed-veil">暫停開放</div>` : ""}
+      </div>
+      <span class="cap" hidden style="display:none">${esc(r.name)}（最多 ${Number(r.cap) || 1} 位）</span>
+      <figcaption class="room-body">
+        <div class="room-head"><span class="room-name">${esc(r.name)}</span>${priceHtml}</div>
+        <p class="room-capline">最多同時容納 ${Number(r.cap) || 1} 位客人</p>
+        ${r.badge ? `<div class="menu-badge">${esc(r.badge)}</div>` : ""}
+        <p class="room-desc">${esc(r.desc || "")}</p>
+        <div class="room-pickslot"></div>
+      </figcaption>`;
+    if (isAdmin) {
+      const pe = card.querySelector(".menu-price-edit");
+      if (pe) pe.onclick = async (ev) => {
+        ev.stopPropagation();
+        if (!id) { alert("目前顯示的是內建預設包廂。請先按管理列「⤓ 匯入預設包廂」寫進資料庫，才能標價。"); return; }
+        const v = prompt(`「${r.name}」的包廂費（每次；例：3,000 Gil；留空＝不標價）`, r.price || "");
+        if (v === null) return;
+        try { await updateDoc(doc(db, "shopPartners", id), { price: v.trim() }); loadRooms(); }
+        catch (e) { alert("❌ 價格更新失敗：" + (e.message || e)); }
+      };
+    }
+    if (isAdmin && id) {
+      const btns = document.createElement("div");
+      btns.className = "staff-admin-btns";
+      btns.innerHTML = `<button type="button" class="admin-btn">✎ 編輯</button><button type="button" class="admin-btn danger">✕ 刪除</button>`;
+      const [eBtn, dBtn] = btns.querySelectorAll("button");
+      eBtn.onclick = () => openRoomForm(id, r);
+      dBtn.onclick = async () => {
+        if (!confirm(`確定要刪除包廂「${r.name}」嗎？`)) return;
+        try { await deleteDoc(doc(db, "shopPartners", id)); loadRooms(); }
+        catch (e) { alert("❌ 刪除失敗：" + (e.message || e)); }
+      };
+      card.querySelector(".room-body").appendChild(btns);
+    }
+    roomList.appendChild(card);
+  }
+  if (isAdmin && roomUsingDefault && rows.length) {
+    const hint = document.createElement("p");
+    hint.className = "staff-default-hint";
+    hint.textContent = "目前顯示內建預設包廂；按管理列「⤓ 匯入預設包廂」寫入資料庫後，才能逐間編輯／刪除、設定開放與費用。";
+    roomList.appendChild(hint);
+  }
+  if (window.YJC_ORDER) window.YJC_ORDER.refreshRooms();
+}
+
+function closeRoomForm() { document.getElementById("roomModal")?.remove(); }
+function openRoomForm(id = null, r = {}) {
+  closeRoomForm();
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.id = "roomModal";
+  wrap.innerHTML = `
+    <div class="admin-modal-card">
+      <h3>${id ? "編輯包廂" : "新增包廂"}</h3>
+      <label>包廂名稱（例：海景大浴室）<input id="rfName" value="${esc(r.name || "")}" /></label>
+      <label>介紹（一兩句話）<textarea id="rfDesc" rows="3">${esc(r.desc || "")}</textarea></label>
+      <label>最多同時容納人數<input id="rfCap" type="number" min="1" max="8" value="${Number(r.cap) || 1}" /></label>
+      <label>包廂費（每次；可留空＝暫不標價；例：3,000 Gil）<input id="rfPrice" value="${esc(r.price || "")}" /></label>
+      <label>狀態標籤（例：整修中、人氣包廂；留空＝不顯示）<input id="rfBadge" value="${esc(r.badge || "")}" /></label>
+      <label class="admin-check"><input id="rfAvail" type="checkbox" ${r.available === false ? "" : "checked"} /> 開放被勾選預約（取消勾選＝顯示「暫停開放」）</label>
+      <label>照片（可不選＝維持不變）<input id="rfPhoto" type="file" accept="image/*" /></label>
+      <label>排序（數字小的排前面）<input id="rfOrder" type="number" value="${Number.isFinite(r.order) ? r.order : (roomCache.length + 1)}" /></label>
+      <p class="admin-hint" id="rfMsg"></p>
+      <div class="admin-modal-btns">
+        <button type="button" id="rfSave" class="admin-btn primary">儲存</button>
+        <button type="button" id="rfCancel" class="admin-btn">取消</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeRoomForm(); });
+  document.getElementById("rfCancel").onclick = closeRoomForm;
+  document.getElementById("rfSave").onclick = async () => {
+    const msg = document.getElementById("rfMsg");
+    const btn = document.getElementById("rfSave");
+    try {
+      btn.disabled = true; msg.textContent = "儲存中…";
+      const data = {
+        kind:  "room",
+        name:  document.getElementById("rfName").value.trim(),
+        desc:  document.getElementById("rfDesc").value.trim(),
+        cap:   Math.max(1, Number(document.getElementById("rfCap").value) || 1),
+        price: document.getElementById("rfPrice").value.trim(),
+        badge: document.getElementById("rfBadge").value.trim(),
+        available: document.getElementById("rfAvail").checked,
+        order: Number(document.getElementById("rfOrder").value) || 0,
+      };
+      if (!data.name) throw new Error("「包廂名稱」不能空白。");
+      const file = document.getElementById("rfPhoto").files[0];
+      if (file) data.photo = await compressImage(file);
+      if (id) {
+        await updateDoc(doc(db, "shopPartners", id), data);
+      } else {
+        data.photo = data.photo || "";
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "shopPartners"), data);
+      }
+      closeRoomForm();
+      loadRooms();
+    } catch (e) {
+      btn.disabled = false;
+      msg.textContent = "❌ " + (e.message || "儲存失敗，請再試一次。");
+    }
+  };
+}
+
+/* 一鍵匯入預設包廂（同餐單模式：先問是否清掉不在名單內的舊包廂，再補匯入缺漏） */
+async function seedDefaultRooms() {
+  const names = new Set(DEFAULT_ROOMS.map((r) => r.name));
+  const stale = roomCache.filter((x) => !names.has(x.data.name));
+  if (stale.length && confirm(`資料庫裡有 ${stale.length} 間不在預設名單內的包廂（例如「${stale[0].data.name}」）。\n\n按「確定」＝刪除它們換成預設名單；按「取消」＝保留、只補匯入缺漏。`)) {
+    try {
+      for (const x of stale) await deleteDoc(doc(db, "shopPartners", x.id));
+      roomCache = roomCache.filter((x) => names.has(x.data.name));
+    } catch (e) { alert("❌ 刪除失敗：" + (e.message || e)); return; }
+  }
+  const existing = new Set(roomCache.map((x) => x.data.name));
+  const missing = DEFAULT_ROOMS.filter((r) => !existing.has(r.name));
+  if (!missing.length) { alert("預設包廂都已經在資料庫了，不需要匯入。"); loadRooms(); return; }
+  if (!confirm(`要把還沒入庫的 ${missing.length} 間包廂寫進資料庫嗎？寫入後即可逐間編輯／設定開放與費用。`)) { loadRooms(); return; }
+  try {
+    for (const r of missing) {
+      await addDoc(collection(db, "shopPartners"), { kind: "room", ...r, createdAt: serverTimestamp() });
+    }
+    alert(`✔ 已匯入 ${missing.length} 間包廂。`);
+    loadRooms();
+  } catch (e) { alert("❌ 匯入失敗：" + (e.message || e)); }
+}
+
+loadRooms();
+
+/* ============================================================
+   18) ★ 2026-07-12 v2：線上預約點餐（原第 17 段 v1 已由本段取代）
+   ------------------------------------------------------------
+   - 流程：餐點(必選,低消)→店員卡片勾選指名(0~3位)→服務設定→包廂擇一→明細送出
+   - 指名與不指名分開計價：
+       不指名(隨緣)＝FEE.seat × 時段數（1 位店員）
+       指名＝Σ(各店員個別指名費，未設定則用 FEE.named) × 時段數
+   - 包廂費＝所選包廂的 price（未標價＝0 併註記）
+   - 純前端試算，僅產生明細文字供複製（測試模式，不寫入 Firestore）
    ============================================================ */
 (function () {
   const sec = document.getElementById("orderSection");
@@ -2282,17 +2490,17 @@ async function seedDefaultMenu() {
     min:   Number(sec.dataset.minOrder) || 0,
   };
   const fmt = (n) => n.toLocaleString("zh-Hant-TW") + " Gil";
+  const num = (t) => parseInt(String(t || "").replace(/[^\d]/g, ""), 10) || 0;
 
-  /* ---------- 狀態 ---------- */
-  const dishes = new Map();   // 品名 → { qty, price }
+  const dishes = new Map();
   let extraPhotos = 0;
   const pickedStaff = new Set();
-  let anyStaff = true;        // 「隨緣」預設勾選
+  let pickedRoom = null;   // { name, price, cap }
 
   const ROLES  = ["小學老師","外科醫師","心理醫師","餐飲業","導遊","股市專家","電玩遊戲業者","電玩迷","動漫迷","運動員","球類運動迷","社畜","在學生","遊戲中的NPC","隨緣"];
   const STYLES = ["溫柔內向","大方風趣","善於挑逗","火爆易怒","冷血無情","誠實正直","隨緣"];
 
-  /* ---------- 料理卡上的數量鈕 ---------- */
+  /* ---------- 料理數量鈕（長在餐點卡上） ---------- */
   function decorateMenu() {
     const list = document.getElementById("menuList");
     if (!list) return;
@@ -2317,8 +2525,7 @@ async function seedDefaultMenu() {
     const card = btn.closest(".menu-card");
     const name = card.querySelector(".menu-name")?.textContent?.trim();
     if (!name) return;
-    const priceTxt = card.querySelector(".menu-price")?.textContent || "";
-    const price = parseInt(priceTxt.replace(/[^\d]/g, ""), 10) || 0;
+    const price = num(card.querySelector(".menu-price")?.textContent);
     const cur = dishes.get(name)?.qty || 0;
     const next = Math.max(0, Math.min(20, cur + Number(btn.dataset.mo)));
     if (next === 0) dishes.delete(name); else dishes.set(name, { qty: next, price });
@@ -2326,135 +2533,179 @@ async function seedDefaultMenu() {
     updateTotals();
   });
 
-  /* ---------- 指名店員（依名簿動態產生，最多 3 位；隨緣互斥） ---------- */
-  function refreshStaff() {
-    const box = document.getElementById("odStaffBox");
-    if (!box) return;
-    const rows = (typeof staffCache !== "undefined" && staffCache.length)
+  /* ---------- 店員卡片上的「☑ 指名」（最多 3 位；0 位＝隨緣） ---------- */
+  function staffRows() {
+    return (typeof staffCache !== "undefined" && staffCache.length)
       ? staffCache.map((x) => x.data) : DEFAULT_STAFF;
-    box.innerHTML = "";
-    rows.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).forEach((s) => {
-      const lab = document.createElement("label");
-      lab.className = "order-chip";
-      const ck = pickedStaff.has(s.name) ? " checked" : "";
-      lab.innerHTML = `<input type="checkbox" class="od-staff" value="${esc(s.name)}"${ck} />${esc(s.name)}<small>${esc(s.role || "")}</small>`;
-      box.appendChild(lab);
-    });
-    const anyLab = document.createElement("label");
-    anyLab.className = "order-chip";
-    anyLab.innerHTML = `<input type="checkbox" id="odStaffAny"${anyStaff ? " checked" : ""} />🎲 隨緣`;
-    box.appendChild(anyLab);
-    box.onchange = (e) => {
-      const t = e.target;
-      if (t.id === "odStaffAny") {
-        anyStaff = t.checked;
-        if (anyStaff) { pickedStaff.clear(); box.querySelectorAll(".od-staff").forEach((c) => (c.checked = false)); }
-      } else if (t.classList.contains("od-staff")) {
-        if (t.checked && pickedStaff.size >= 3) {
-          t.checked = false;
-          alert("指名店員最多 3 位喔。");
-          return;
-        }
-        t.checked ? pickedStaff.add(t.value) : pickedStaff.delete(t.value);
-        anyStaff = pickedStaff.size === 0;
-        const anyCk = document.getElementById("odStaffAny");
-        if (anyCk) anyCk.checked = anyStaff;
+  }
+  function feeOf(name) {
+    const s = staffRows().find((x) => x.name === name);
+    return num(s && s.fee) || FEE.named;
+  }
+  function refreshStaff() {
+    const list = document.getElementById("staffList");
+    if (!list) return;
+    // 先清掉舊勾選中已不存在／已關閉的店員
+    const openNames = new Set(staffRows().filter((s) => s.available !== false).map((s) => s.name));
+    for (const n of Array.from(pickedStaff)) if (!openNames.has(n)) pickedStaff.delete(n);
+    list.querySelectorAll(".staff-card").forEach((card) => {
+      if (card.querySelector(".staff-pick")) return;
+      const name = card.querySelector("h3")?.textContent?.trim();
+      if (!name) return;
+      const s = staffRows().find((x) => x.name === name);
+      const bar = document.createElement("div");
+      bar.className = "staff-pick";
+      if (s && s.available === false) {
+        bar.innerHTML = `<span class="staff-pick-off">🚫 暫不受理指名</span>`;
+      } else {
+        const ck = pickedStaff.has(name) ? " checked" : "";
+        bar.innerHTML = `<label><input type="checkbox" class="staff-pick-ck" value="${esc(name)}"${ck} /> 指名 <small>＋${fmt(feeOf(name))}／時段</small></label>`;
+        bar.querySelector("input").onchange = (e) => {
+          if (e.target.checked && pickedStaff.size >= 3) {
+            e.target.checked = false;
+            alert("指名店員最多 3 位喔。");
+            return;
+          }
+          e.target.checked ? pickedStaff.add(name) : pickedStaff.delete(name);
+          updateTotals();
+        };
       }
-      updateTotals();
-    };
+      card.appendChild(bar);
+    });
+    updateTotals();
   }
 
-  /* ---------- 扮演身分／服務風格（單選 chips） ---------- */
+  /* ---------- 包廂 radio（長在包廂卡上；擇一） ---------- */
+  function refreshRooms() {
+    const list = document.getElementById("roomList");
+    if (!list) return;
+    const rows = (typeof roomCache !== "undefined" && roomCache.length)
+      ? roomCache.map((x) => x.data) : DEFAULT_ROOMS;
+    if (pickedRoom && !rows.some((r) => r.name === pickedRoom.name && r.available !== false)) pickedRoom = null;
+    list.querySelectorAll(".room-card").forEach((card) => {
+      const slot = card.querySelector(".room-pickslot");
+      const name = card.dataset.room;
+      const r = rows.find((x) => x.name === name);
+      if (!slot || !r) return;
+      if (r.available === false) { slot.innerHTML = ""; return; }
+      const ck = pickedRoom && pickedRoom.name === name ? " checked" : "";
+      slot.innerHTML = `<label class="room-pick"><input type="radio" name="roomPick" value="${esc(name)}"${ck} /> 選這間包廂</label>`;
+      slot.querySelector("input").onchange = () => {
+        pickedRoom = { name: r.name, price: num(r.price), rawPrice: r.price || "", cap: Number(r.cap) || 1 };
+        list.querySelectorAll(".room-card").forEach((c) => c.classList.toggle("is-picked", c.dataset.room === name));
+        updateTotals();
+      };
+    });
+    updateTotals();
+  }
+
+  /* ---------- 扮演身分／服務風格 chips ---------- */
   function buildChips(boxId, groupName, opts) {
     const box = document.getElementById(boxId);
     if (!box) return;
-    box.innerHTML = opts.map((o, i) =>
+    box.innerHTML = opts.map((o) =>
       `<label class="order-chip"><input type="radio" name="${groupName}" value="${o}"${o === "隨緣" ? " checked" : ""} />${o}</label>`).join("");
   }
   buildChips("odRoleBox",  "odRole",  ROLES);
   buildChips("odStyleBox", "odStyle", STYLES);
 
-  /* ---------- 加拍張數 ---------- */
+  /* ---------- 加拍 ---------- */
   const photoQtyEl = document.getElementById("odPhotoQty");
   document.getElementById("odPhotoPlus").onclick  = () => { extraPhotos = Math.min(10, extraPhotos + 1); photoQtyEl.textContent = extraPhotos; updateTotals(); };
   document.getElementById("odPhotoMinus").onclick = () => { extraPhotos = Math.max(0,  extraPhotos - 1); photoQtyEl.textContent = extraPhotos; updateTotals(); };
 
-  /* ---------- 即時試算 ---------- */
+  /* ---------- 試算 ---------- */
   function calc() {
     let dishTotal = 0;
     dishes.forEach((v) => { dishTotal += v.qty * v.price; });
     const units = (Number(document.getElementById("odDuration").value) || 20) / 20;
-    const staffN = anyStaff ? 1 : Math.max(1, pickedStaff.size);
-    const namedN = anyStaff ? 0 : pickedStaff.size;
-    const serviceTotal = staffN * units * FEE.seat + namedN * FEE.named + extraPhotos * FEE.photo;
-    return { dishTotal, serviceTotal, grand: dishTotal + serviceTotal, units, staffN, namedN };
+    const namedN = pickedStaff.size;
+    const staffFee = namedN > 0
+      ? Array.from(pickedStaff).reduce((sum, n) => sum + feeOf(n), 0) * units
+      : FEE.seat * units;
+    const photoFee = extraPhotos * FEE.photo;
+    const roomFee = pickedRoom ? pickedRoom.price : 0;
+    return { dishTotal, serviceTotal: staffFee + photoFee, roomFee,
+             grand: dishTotal + staffFee + photoFee + roomFee, units, namedN };
   }
   function updateTotals() {
     const c = calc();
-    /* 已點清單 */
     const listEl = document.getElementById("orderDishList");
     if (listEl) {
       if (!dishes.size) listEl.innerHTML = '<p class="order-empty">尚未點選任何餐點。</p>';
       else listEl.innerHTML = Array.from(dishes.entries()).map(([n, v]) =>
         `<div class="order-dish-row"><span>${esc(n)} × ${v.qty}</span><b>${v.price ? fmt(v.qty * v.price) : "未定價"}</b></div>`).join("");
     }
-    /* 低消 */
     const minEl = document.getElementById("orderMinNote");
     if (minEl) {
       if (!FEE.min) minEl.textContent = "";
       else if (c.dishTotal >= FEE.min) { minEl.textContent = "✔ 已達單點料理低消 " + fmt(FEE.min); minEl.className = "order-min-note ok"; }
       else { minEl.textContent = "尚差 " + fmt(FEE.min - c.dishTotal) + " 達到單點料理低消（" + fmt(FEE.min) + "）"; minEl.className = "order-min-note"; }
     }
+    const pk = document.getElementById("odPickedNote");
+    if (pk) pk.textContent = c.namedN
+      ? `目前指名：${c.namedN} 位（${Array.from(pickedStaff).join("、")}）`
+      : "目前指名：0 位（隨緣，由店家安排 1 位店員）";
     document.getElementById("odDishTotal").textContent    = fmt(c.dishTotal);
     document.getElementById("odServiceTotal").textContent = fmt(c.serviceTotal);
+    document.getElementById("odRoomTotal").textContent    = pickedRoom
+      ? (pickedRoom.price ? fmt(c.roomFee) : "價目待公告") : "未選包廂";
     document.getElementById("odGrandTotal").textContent   = fmt(c.grand);
   }
   document.getElementById("odDuration").onchange = updateTotals;
+  document.getElementById("odGuests").onchange = updateTotals;
 
-  /* 測試單價說明 */
   document.getElementById("odFeeNote").textContent =
-    `（測試預設單價：坐檯費 ${fmt(FEE.seat)}／店員／20 分鐘・指名費 ${fmt(FEE.named)}／位・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；正式價目以開幕公告為準）`;
+    `（測試預設單價：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名 ${fmt(FEE.named)}／位／時段（店員可個別定價）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。正式價目以開幕公告為準）`;
 
-  /* ---------- 產生訂單明細（測試） ---------- */
+  /* ---------- 送出（測試＝產生明細文字） ---------- */
   const pick = (nm) => document.querySelector(`input[name="${nm}"]:checked`)?.value || "隨緣";
   document.getElementById("odGenerate").onclick = () => {
-    if (!document.getElementById("odAgree").checked) { alert("請先勾選同意「帳前約定」與善良風俗聲明。"); return; }
     const c = calc();
+    if (!dishes.size) { alert("請先在上方「茶點・餐單」點選至少 1 道料理。"); return; }
     if (FEE.min && c.dishTotal < FEE.min) { alert("單點料理尚未達到低消 " + fmt(FEE.min) + "，請再加點一些餐點。"); return; }
+    if (!pickedRoom) { alert("請在「參 · 挑選包廂」勾選一間包廂。"); return; }
+    const guests = Number(document.getElementById("odGuests").value) || 1;
+    if (guests > pickedRoom.cap) { alert(`「${pickedRoom.name}」最多容納 ${pickedRoom.cap} 位，同行 ${guests} 位超過上限，請換一間包廂或調整人數。`); return; }
+    if (!document.getElementById("odAgree").checked) { alert("請先勾選同意「帳前約定」與善良風俗聲明。"); return; }
     const roleCustom  = document.getElementById("odRoleCustom").value.trim();
     const styleCustom = document.getElementById("odStyleCustom").value.trim();
     const dur = document.getElementById("odDuration").value;
     const lines = [];
-    lines.push("【幻想友人帳 RP 商店｜測試訂單】");
+    lines.push("【幻想友人帳 RP 商店｜測試預約單】");
     lines.push("※ 本店尚未正式營業，此明細僅為功能測試，不成立任何訂單。");
     lines.push("顧客暱稱：" + (document.getElementById("odNick").value.trim() || "（未填）"));
+    lines.push("同行人數：" + guests + " 位");
     lines.push("――― 料理 ―――");
     dishes.forEach((v, n) => lines.push(`　${n} × ${v.qty}${v.price ? "　" + fmt(v.qty * v.price) : "（未定價）"}`));
     lines.push("　料理小計：" + fmt(c.dishTotal) + (FEE.min ? `（低消 ${fmt(FEE.min)} ✔）` : ""));
     lines.push("――― 店員服務 ―――");
     lines.push(`　時長：${dur} 分鐘（${c.units} 個時段）`);
-    lines.push("　指名：" + (anyStaff ? "隨緣" : Array.from(pickedStaff).join("、") + `（${c.namedN} 位）`));
+    lines.push("　指名：" + (c.namedN ? Array.from(pickedStaff).map((n) => `${n}（${fmt(feeOf(n))}/時段）`).join("、") : "隨緣（不指名價）"));
+    lines.push("　服務模式：" + pick("odMode"));
     lines.push("　扮演身分：" + pick("odRole") + (roleCustom ? `／自訂：${roleCustom}` : ""));
     lines.push("　性別：" + pick("odGender"));
     lines.push("　服務風格：" + pick("odStyle") + (styleCustom ? `／自訂：${styleCustom}` : ""));
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
-    lines.push("　服務小計：" + fmt(c.serviceTotal));
+    lines.push("　店員服務小計：" + fmt(c.serviceTotal));
+    lines.push("――― 包廂 ―――");
+    lines.push(`　${pickedRoom.name}（最多 ${pickedRoom.cap} 位）：` + (pickedRoom.rawPrice ? fmt(c.roomFee) : "價目待公告"));
     lines.push("――― 總計：" + fmt(c.grand) + " ―――");
     const memo = document.getElementById("odMemo").value.trim();
-    if (memo) lines.push("備註：" + memo);
+    if (memo) lines.push("特殊需求：" + memo);
     document.getElementById("odResult").value = lines.join("\n");
     document.getElementById("odResultWrap").style.display = "";
     document.getElementById("odResult").scrollIntoView({ behavior: "smooth", block: "center" });
   };
   document.getElementById("odCopy").onclick = async () => {
     const ta = document.getElementById("odResult");
-    try { await navigator.clipboard.writeText(ta.value); alert("已複製訂單明細！"); }
-    catch { ta.select(); document.execCommand("copy"); alert("已複製訂單明細！"); }
+    try { await navigator.clipboard.writeText(ta.value); alert("已複製預約明細！"); }
+    catch { ta.select(); document.execCommand("copy"); alert("已複製預約明細！"); }
   };
 
-  /* ---------- 對外介面（給第 13／16 段回呼） ---------- */
-  window.YJC_ORDER = { decorateMenu, refreshStaff };
+  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms };
   decorateMenu();
   refreshStaff();
+  refreshRooms();
   updateTotals();
 })();

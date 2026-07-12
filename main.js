@@ -204,7 +204,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   // ★ 2026-07-12：餐單細分前菜/主餐/甜點/飲料後，改以整個大分類（.menu-group）
   //   為切換範圍，左右切換才不會被小分類切得太碎（舊值＝.menu-grid，備查）
   function siblingsOf(fig) {
-    const scope = fig.closest(".car-track, .menu-group") || document;
+    const scope = fig.closest(".car-track, .menu-group, .room-grid") || document;
     return Array.from(scope.querySelectorAll(".photo"))
       .filter((p) => p.style.display !== "none" && p.querySelector(".photo-frame img"));
   }

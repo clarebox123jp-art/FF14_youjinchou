@@ -2353,7 +2353,7 @@ const DEFAULT_ROOMS = [
      舊值備查：{ name:"中央舞台貴賓席", cap:3, desc:"紅幕與薔薇簇擁的最佳視野，把整間店的燈火盡收眼底。", price:"" } */
   /* ★ 2026-07-13：中央舞台區已不再作包廂使用，定位＝開放區域（未指定包廂者的預設入席處）
      舊值備查：desc="紅幕與薔薇簇擁的中央舞台，開放給公會成員自由歇腳掛網——不收分文，但座位有限、先到先得。" */
-  { name: "中央舞台區",       cap: 4, desc: "已不作包廂使用——紅幕與薔薇簇擁的中央舞台，開放公會成員掛網休憩；未指定包廂的客人也可在此與店員互動、觀賞台上演出。座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 5 },
+  { name: "中央舞台區",       cap: 4, desc: "已不作包廂使用——紅幕與薔薇簇擁的中央舞台，開放公會成員掛網休憩；未指定包廂的客人也可在此與店員互動、觀賞台上演出。座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 0 },   /* ★ 2026-07-13：排序改 0＝清單第一（原 5） */
   { name: "夢幻花叢",         cap: 1, desc: "白花如雪、彩鯉悠游，吊椅輕晃的一人份夢境。",                   price: "", available: true, badge: "", photo: "images/rooms/dream-garden.webp",   order: 6 },
   { name: "金碧輝煌主沙發",   cap: 1, desc: "金磚與典籍環繞的豪奢一隅，貓咪掌櫃偶爾同席。",                 price: "", available: true, badge: "", photo: "images/rooms/golden-lounge.webp",  order: 7 },
   { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
@@ -2516,6 +2516,16 @@ async function seedDefaultRooms() {
       roomCache = roomCache.filter((x) => names.has(x.data.name));
     } catch (e) { alert("❌ 刪除失敗：" + (e.message || e)); return; }
   }
+  /* ★ 2026-07-13：中央舞台區改制（開放區域＋排第一）——已入庫的舊資料一併同步 */
+  try {
+    const stage = roomCache.find((x) => x.data.name === "中央舞台區" || x.data.name === "中央舞台貴賓席");
+    const d = DEFAULT_ROOMS.find((r) => r.name === "中央舞台區");
+    if (stage && d && (stage.data.order !== d.order || stage.data.desc !== d.desc || stage.data.name !== d.name)) {
+      await updateDoc(doc(db, "shopPartners", stage.id),
+        { name: d.name, desc: d.desc, badge: d.badge, price: d.price, cap: d.cap, order: d.order });
+      stage.data = { ...stage.data, name: d.name };
+    }
+  } catch (e) { console.warn("同步中央舞台區失敗：", e); }
   const existing = new Set(roomCache.map((x) => x.data.name));
   const missing = DEFAULT_ROOMS.filter((r) => !existing.has(r.name));
   if (!missing.length) { alert("預設包廂都已經在資料庫了，不需要匯入。"); loadRooms(); return; }

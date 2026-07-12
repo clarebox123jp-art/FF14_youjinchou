@@ -1865,7 +1865,10 @@ async function seedDefaultStaff() {
    16) RP 商店「茶點・餐單」（只在有 #menuList 的頁面執行＝shop.html）
    ------------------------------------------------------------
    - 資料存既有 shopPartners 集合、以 kind:"menu" 標記（不必動規則）
-   - 分四類：main（主食）／dessert（甜點）／drink（飲品）／special（特調）
+   - ★ 2026-07-12 改版：分兩大類 wafu（和風）／yoshoku（洋食）
+     （舊四類 main/dessert/drink/special 已停用；殘留舊分類的餐點會
+      集中顯示在「其他」區，管理員按 ✎ 重新分類即可歸位）
+   - ★ 新增 tag 欄位（顯示等級與星級，例：Lv.70 ★★★），可留空
    - Firestore 沒資料時先顯示內建預設餐單（DEFAULT_MENU，皆為 FF14
      遊戲內實際料理＋咖啡廳常見飲品）；管理列「⤓ 匯入預設餐單」寫入後
      即可逐張 ✎編輯／✕刪除、線上上傳照片
@@ -1874,14 +1877,20 @@ async function seedDefaultStaff() {
 const menuList  = document.getElementById("menuList");
 const menuEmpty = document.getElementById("menuEmpty");
 
+/* ★ 2026-07-12 舊四分類（已停用，保留備查）
 const MENU_CATS = [
   { key: "main",    label: "主食" },
   { key: "dessert", label: "甜點" },
   { key: "drink",   label: "飲品" },
   { key: "special", label: "特調" },
 ];
+*/
+const MENU_CATS = [
+  { key: "wafu",    label: "和風" },
+  { key: "yoshoku", label: "洋食" },
+];
 
-/* 內建預設餐單（FF14 遊戲內實際料理／飲品；價格與照片留空，老師線上補） */
+/* ★ 2026-07-12 舊預設餐單（已停用，保留備查）
 const DEFAULT_MENU = [
   { cat: "main",    name: "鮭魚飯糰",       desc: "包入鹽漬鮭魚的和風飯糰，樸實暖心。",             price: "", order: 1 },
   { cat: "main",    name: "狐狸烏龍麵",     desc: "甜煮油豆皮鋪在熱湯烏龍上，一口暖到心底。",       price: "", order: 2 },
@@ -1895,6 +1904,48 @@ const DEFAULT_MENU = [
   { cat: "drink",   name: "鮮榨果汁",       desc: "當日新鮮水果現榨，酸甜清爽。",                   price: "", order: 10 },
   { cat: "special", name: "櫻花氣泡飲",     desc: "鹽漬櫻花漂浮於氣泡之中，粉嫩浪漫。",             price: "", order: 11 },
   { cat: "special", name: "友人帳特調",     desc: "本店原創——以緣分為名的一杯，滋味由你來訪時揭曉。", price: "", order: 12 },
+];
+*/
+/* ★ 2026-07-12 新版預設餐單（FF14 遊戲內實際料理／飲品，共 31 道）
+   - 縮圖已裁自遊戲截圖，存 images/menu/*.webp（英數檔名）
+   - tag＝遊戲內等級與星級；price 留空＝顯示「價目待公告」風格（不標價）
+   - 老師可線上按 ✎ 換更漂亮的實拍照片、改分類、補價格 */
+const DEFAULT_MENU = [
+  /* —— 和風 —— */
+  { cat: "wafu",    name: "章魚燒",         tag: "Lv.70 ★★★",  desc: "鐵板上滾出焦香圓球，柴魚花在熱氣裡輕輕起舞。",     price: "", photo: "images/menu/takoyaki.webp",             order: 1 },
+  { cat: "wafu",    name: "什錦壽司卷",     tag: "Lv.70 ★★★",  desc: "什錦餡料捲進醋飯與海苔，一刀切開便是繽紛。",       price: "", photo: "images/menu/sushi-roll.webp",           order: 2 },
+  { cat: "wafu",    name: "關東煮",         tag: "Lv.70 ★★★",  desc: "昆布高湯慢燉入味，寒夜裡最溫柔的一鍋。",           price: "", photo: "images/menu/oden.webp",                 order: 3 },
+  { cat: "wafu",    name: "茶碗蒸",         tag: "Lv.70 ★★",   desc: "滑嫩蒸蛋藏著海味珍饈，入口即化的溫潤。",           price: "", photo: "images/menu/chawanmushi.webp",          order: 4 },
+  { cat: "wafu",    name: "草原奶茶",       tag: "Lv.70 ★★",   desc: "草原游牧風味的鹹香奶茶，醇厚而質樸。",             price: "", photo: "images/menu/steppe-milktea.webp",       order: 5 },
+  { cat: "wafu",    name: "紅蓮特飲",       tag: "Lv.70 ★★★",  desc: "如紅蓮燃燒般的豔色特調，入喉一瞬暖意升騰。",       price: "", photo: "images/menu/guren-drink.webp",          order: 6 },
+  /* —— 洋食・鹹食 —— */
+  { cat: "yoshoku", name: "王室鮭魚排",     tag: "Lv.70 ★★",   desc: "嫩煎鮭魚佐宮廷醬汁，名符其實的王室待遇。",         price: "", photo: "images/menu/royal-salmon.webp",         order: 7 },
+  { cat: "yoshoku", name: "披薩",           tag: "Lv.80 ★★★★", desc: "窯烤餅皮鋪滿熔岩般的起司，趁熱拉絲最迷人。",       price: "", photo: "images/menu/pizza.webp",                order: 8 },
+  { cat: "yoshoku", name: "奶油雞肉寬麵",   tag: "Lv.80 ★★★★", desc: "寬扁麵條裹上濃郁奶油白醬，雞肉香嫩多汁。",         price: "", photo: "images/menu/chicken-pasta.webp",        order: 9 },
+  { cat: "yoshoku", name: "煙燻雞肉",       tag: "Lv.80 ★★★",  desc: "木香煙燻入骨，外皮金黃、肉質柔嫩。",               price: "", photo: "images/menu/smoked-chicken.webp",       order: 10 },
+  { cat: "yoshoku", name: "炸蟹餅",         tag: "Lv.80 ★★★",  desc: "滿滿蟹肉煎至金黃酥脆，海潮鮮味在齒間迸發。",       price: "", photo: "images/menu/crab-cake.webp",            order: 11 },
+  { cat: "yoshoku", name: "辣醬炒全蟹",     tag: "Lv.80 ★★★",  desc: "整隻鮮蟹裹上濃烈辣醬，豪邁而過癮的一皿。",         price: "", photo: "images/menu/chili-crab.webp",           order: 12 },
+  { cat: "yoshoku", name: "南瓜濃湯",       tag: "Lv.90 ★★",   desc: "金黃南瓜熬成綿密濃湯，一匙暖進心底。",             price: "", photo: "images/menu/pumpkin-potage.webp",       order: 13 },
+  { cat: "yoshoku", name: "鳳梨沙拉",       tag: "Lv.80 ★★★",  desc: "酸甜鳳梨與鮮蔬相遇，清爽開胃的南國風情。",         price: "", photo: "images/menu/pineapple-salad.webp",      order: 14 },
+  { cat: "yoshoku", name: "蘋果新薯沙拉",   tag: "Lv.80 ★★★",  desc: "蘋果的脆甜遇上新薯的綿密，樸實卻耐人尋味。",       price: "", photo: "images/menu/apple-potato-salad.webp",   order: 15 },
+  /* —— 洋食・甜點 —— */
+  { cat: "yoshoku", name: "焦糖烤布蕾",     tag: "Lv.60 ★",    desc: "敲開琥珀糖殼，滑嫩布蕾在匙尖顫動。",               price: "", photo: "images/menu/creme-brulee.webp",         order: 16 },
+  { cat: "yoshoku", name: "生日蛋糕",       tag: "Lv.60 ★",    desc: "插上蠟燭便是慶典——為特別的日子預留的一份甜。",     price: "", photo: "images/menu/birthday-cake.webp",        order: 17 },
+  { cat: "yoshoku", name: "蘋果卷",         tag: "Lv.60 ★★★",  desc: "酥皮層層裹著肉桂蘋果餡，暖香撲鼻。",               price: "", photo: "images/menu/apple-strudel.webp",        order: 18 },
+  { cat: "yoshoku", name: "仙子莓乳酪蛋糕", tag: "Lv.80 ★★",   desc: "仙子莓的酸甜點綴濃郁乳酪，夢幻般的粉紅滋味。",     price: "", photo: "images/menu/pixieberry-cheesecake.webp", order: 19 },
+  { cat: "yoshoku", name: "檸檬格子鬆餅",   tag: "Lv.80 ★★★",  desc: "格紋鬆餅淋上檸檬糖霜，酸甜清新的午後時光。",       price: "", photo: "images/menu/lemon-waffle.webp",         order: 20 },
+  { cat: "yoshoku", name: "蜂蜜牛角麵包",   tag: "Lv.80 ★★★",  desc: "千層酥皮刷上金黃蜂蜜，出爐時香氣四溢。",           price: "", photo: "images/menu/honey-croissant.webp",      order: 21 },
+  { cat: "yoshoku", name: "烏雞布丁",       tag: "Lv.80 ★★★",  desc: "烏雞蛋蒸出的絲滑布丁，蛋香濃郁、甜而不膩。",       price: "", photo: "images/menu/silkie-pudding.webp",       order: 22 },
+  { cat: "yoshoku", name: "軟果糕",         tag: "Lv.80 ★★★",  desc: "入口即化的果香軟糕，輕盈如雲朵。",                 price: "", photo: "images/menu/soft-fruit-cake.webp",      order: 23 },
+  { cat: "yoshoku", name: "白桃塔",         tag: "Lv.90 ★★",   desc: "白桃薄片如花瓣鋪展，果香與塔皮的溫柔協奏。",       price: "", photo: "images/menu/peach-tart.webp",           order: 24 },
+  { cat: "yoshoku", name: "無花果餅乾",     tag: "Lv.90 ★★",   desc: "無花果乾烘進酥餅，樸實的甜與茶最相配。",           price: "", photo: "images/menu/fig-biscuit.webp",          order: 25 },
+  /* —— 洋食・飲品 —— */
+  { cat: "yoshoku", name: "熱巧克力",       tag: "Lv.60 ★",    desc: "濃醇可可緩緩升起白霧，捧在手心便是冬日。",         price: "", photo: "images/menu/hot-chocolate.webp",        order: 26 },
+  { cat: "yoshoku", name: "果香特飲",       tag: "Lv.60 ★★★",  desc: "數種果實調和的琥珀色特飲，酸甜恰到好處。",         price: "", photo: "images/menu/fruit-drink.webp",          order: 27 },
+  { cat: "yoshoku", name: "仙子莓茶",       tag: "Lv.80 ★★",   desc: "仙子莓染紅的茶湯，莓果香氣在杯中盤旋。",           price: "", photo: "images/menu/pixieberry-tea.webp",       order: 28 },
+  { cat: "yoshoku", name: "黃金鳳梨汁",     tag: "Lv.80 ★★★",  desc: "現榨黃金鳳梨，陽光般燦爛的酸甜。",                 price: "", photo: "images/menu/pineapple-juice.webp",      order: 29 },
+  { cat: "yoshoku", name: "白桃汁",         tag: "Lv.90 ★★",   desc: "熟成白桃現榨成汁，溫柔的粉色甜香。",               price: "", photo: "images/menu/peach-juice.webp",          order: 30 },
+  { cat: "yoshoku", name: "薩維奈奶茶",     tag: "Lv.90 ★★",   desc: "南國香料燉煮的奶茶，異域風情繚繞舌尖。",           price: "", photo: "images/menu/thavnairian-chai.webp",     order: 31 },
 ];
 
 let menuCache = [];
@@ -1925,8 +1976,17 @@ function renderMenu() {
   if (menuEmpty) menuEmpty.style.display = rows.length ? "none" : "";
 
   // 依分類分組，照 MENU_CATS 順序輸出（空分類略過）
-  for (const cat of MENU_CATS) {
-    const items = rows.filter((r) => (r.data.cat || "main") === cat.key);
+  // ★ 2026-07-12：改為和風／洋食兩大類；殘留舊分類（main/dessert/drink/special
+  //   或缺 cat）的餐點集中到最後的「其他」區，避免改版後憑空消失
+  const knownCats = new Set(MENU_CATS.map((c) => c.key));
+  const groups = [
+    ...MENU_CATS,
+    { key: "__other", label: isAdmin ? "其他（請按 ✎ 重新分類為和風或洋食）" : "其他" },
+  ];
+  for (const cat of groups) {
+    const items = cat.key === "__other"
+      ? rows.filter((r) => !knownCats.has(r.data.cat || ""))
+      : rows.filter((r) => (r.data.cat || "") === cat.key);
     if (!items.length) continue;
     const group = document.createElement("div");
     group.className = "menu-group";
@@ -1946,6 +2006,7 @@ function renderMenu() {
             <span class="menu-name">${esc(m.name)}</span>
             ${m.price ? `<span class="menu-price">${esc(m.price)}</span>` : ""}
           </div>
+          ${m.tag ? `<div class="menu-tag">${esc(m.tag)}</div>` : ""}
           <p class="menu-desc">${esc(m.desc || "")}</p>
         </div>`;
       // 燈箱抓圖說用：.photo 內放一個隱藏的 .cap
@@ -1994,7 +2055,8 @@ function openMenuForm(id = null, m = {}) {
     <div class="admin-modal-card">
       <h3>${id ? "編輯餐點" : "新增餐點"}</h3>
       <label>分類<select id="mfCat">${catOpts}</select></label>
-      <label>品名（例：狐狸烏龍麵）<input id="mfName" value="${esc(m.name)}" /></label>
+      <label>品名（例：章魚燒）<input id="mfName" value="${esc(m.name)}" /></label>
+      <label>等級星級（可留空；例：Lv.70 ★★★）<input id="mfTag" value="${esc(m.tag || "")}" /></label>
       <label>簡介（一兩句話介紹）
         <textarea id="mfDesc" rows="3" placeholder="例：甜煮油豆皮鋪在熱湯烏龍上，一口暖到心底。">${esc(m.desc || "")}</textarea></label>
       <label>價格（可留空＝暫不標價；例：8,000 Gil）<input id="mfPrice" value="${esc(m.price || "")}" /></label>
@@ -2018,6 +2080,7 @@ function openMenuForm(id = null, m = {}) {
         kind:  "menu",
         cat:   document.getElementById("mfCat").value,
         name:  document.getElementById("mfName").value.trim(),
+        tag:   document.getElementById("mfTag").value.trim(),
         desc:  document.getElementById("mfDesc").value.trim(),
         price: document.getElementById("mfPrice").value.trim(),
         order: Number(document.getElementById("mfOrder").value) || 0,
@@ -2045,12 +2108,24 @@ function closeMenuForm() {
   if (m) m.remove();
 }
 
-/* ---------- 一鍵匯入預設餐單（只補缺漏，以品名去重） ---------- */
+/* ---------- 一鍵匯入預設餐單（只補缺漏，以品名去重） ----------
+   ★ 2026-07-12：改版換餐單後，若資料庫裡還有「不在新預設名單內」的舊餐點，
+   會先詢問要不要一併刪除（確定＝整份換新；取消＝保留舊的、只補缺漏） */
 async function seedDefaultMenu() {
+  const defaultNames = new Set(DEFAULT_MENU.map((m) => m.name));
+  const stale = menuCache.filter((x) => !defaultNames.has(x.data.name));
+  if (stale.length) {
+    if (confirm(`資料庫裡有 ${stale.length} 道不在新版餐單內的舊餐點（例如「${stale[0].data.name}」）。\n\n按「確定」＝刪除這些舊餐點、換成全新餐單；\n按「取消」＝保留舊餐點，只補匯入新的品項。`)) {
+      try {
+        for (const x of stale) await deleteDoc(doc(db, "shopPartners", x.id));
+        menuCache = menuCache.filter((x) => defaultNames.has(x.data.name));
+      } catch (e) { alert("❌ 刪除舊餐點失敗：" + (e.message || e)); return; }
+    }
+  }
   const existing = new Set(menuCache.map((x) => x.data.name));
   const missing  = DEFAULT_MENU.filter((m) => !existing.has(m.name));
-  if (!missing.length) { alert("預設餐單裡的餐點都已經在資料庫了，不需要匯入。"); return; }
-  if (!confirm(`要把還沒入庫的 ${missing.length} 道餐點寫進資料庫嗎？寫入後即可逐張編輯／刪除、上傳照片。`)) return;
+  if (!missing.length) { alert("預設餐單裡的餐點都已經在資料庫了，不需要匯入。"); loadMenu(); return; }
+  if (!confirm(`要把還沒入庫的 ${missing.length} 道餐點寫進資料庫嗎？寫入後即可逐張編輯／刪除、上傳照片。`)) { loadMenu(); return; }
   try {
     for (const m of missing) {
       await addDoc(collection(db, "shopPartners"), { kind: "menu", ...m, createdAt: serverTimestamp() });

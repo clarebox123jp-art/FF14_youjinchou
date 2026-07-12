@@ -1272,3 +1272,14 @@ img { -webkit-user-drag: none; user-select: none; }
   .menu-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
   .menu-cat { font-size: 1.2rem; }
 }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：餐單「等級星級」標籤（.menu-tag）
+   - 顯示於品名下方，例：Lv.70 ★★★（古金色小字，呼應和風配色）
+   ============================================================ */
+.menu-tag {
+  font-size: .74rem;
+  letter-spacing: .08em;
+  color: var(--gold, #a8863c);
+  margin-top: 2px;
+}

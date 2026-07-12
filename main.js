@@ -192,9 +192,10 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   let group = [];      // 目前這條軌道可見的 .photo 清單
   let idx = 0;         // 目前顯示第幾張
 
-  // 取某張照片所屬軌道裡「目前可見」的照片（隱藏的跳過）
+  // 取某張照片所屬群組裡「目前可見」的照片（隱藏的跳過）
+  // 相簿＝同一條 .car-track；餐單＝同一個 .menu-grid；其餘退回全頁
   function siblingsOf(fig) {
-    const scope = fig.closest(".car-track") || document;
+    const scope = fig.closest(".car-track, .menu-grid") || document;
     return Array.from(scope.querySelectorAll(".photo"))
       .filter((p) => p.style.display !== "none" && p.querySelector(".photo-frame img"));
   }
@@ -582,11 +583,15 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return Array.from(document.querySelectorAll("#staffList .staff-photo"))
       .filter((b) => b.querySelector("img"));   // 「印」佔位（無照片）不列入
   }
+  // 取卡片目前顯示中的那張（多張輪播時抓可見的，否則第一張）
+  function visibleImg(box) {
+    return box.querySelector("img:not([hidden])") || box.querySelector("img");
+  }
   function showAt(i) {
     if (!group.length) return;
     idx = (i + group.length) % group.length;    // 循環
     const box = group[idx];
-    const img = box.querySelector("img");
+    const img = visibleImg(box);
     lbImg.src = img.currentSrc || img.src;
     lbImg.alt = img.alt || "";
     const name = box.dataset.name || "";
@@ -611,6 +616,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   }
 
   document.addEventListener("click", function (e) {
+    if (e.target.closest(".staff-dots")) return;   // 點指示點不觸發燈箱
     const box = e.target.closest("#staffList .staff-photo");
     if (!box || !box.querySelector("img")) return;
     openFrom(box);
@@ -633,4 +639,55 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     if (Math.abs(dx) > 45) showAt(idx + (dx < 0 ? 1 : -1));
     sx = null;
   }, { passive: true });
+})();
+
+/* ------------------------------------------------------------
+   15) RP 商店：計費小算盤＋社群入口列（只在 shop.html 作用）
+   - 小算盤公式：客人數 × 店員數 × 時長(盞) × 指名費 ＋ 包廂費
+   - 單價讀自帶 data-price-name／data-price-room 的欄位文字，
+     管理員線上改數字後即時反映（每次算都重讀，所以改完就生效）
+   - 社群列：href 還停在「#」的按鈕自動隱藏（噗浪／Threads 未開通時）
+------------------------------------------------------------ */
+(function () {
+  // (a) 計費小算盤
+  const calc = document.getElementById("shopCalc");
+  if (calc) {
+    const parseNum = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return NaN;
+      const n = parseInt((el.textContent || "").replace(/[^\d]/g, ""), 10);
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const g = document.getElementById("calcGuests");
+    const s = document.getElementById("calcStaff");
+    const d = document.getElementById("calcDur");
+    const r = document.getElementById("calcRoom");
+    const out = document.getElementById("calcTotal");
+    const fmt = (n) => n.toLocaleString("en-US");
+    function recalc() {
+      const nameFee = parseNum("[data-price-name]");
+      const roomFee = parseNum("[data-price-room]");
+      // 單價還沒填（顯示「—」）時，先不給數字，提示管理員填價
+      if (!Number.isFinite(nameFee)) { out.textContent = "價目待公告"; return; }
+      const guests = Math.max(1, parseInt(g.value, 10) || 1);
+      const staff  = Math.max(1, parseInt(s.value, 10) || 1);
+      const dur    = Math.max(1, parseInt(d.value, 10) || 1);
+      let total = guests * staff * dur * nameFee;
+      if (r.checked && Number.isFinite(roomFee)) total += roomFee;
+      out.textContent = fmt(total);
+    }
+    [g, s, d, r].forEach((el) => { el.addEventListener("input", recalc); el.addEventListener("change", recalc); });
+    recalc();
+    // 管理員線上改完價目後，點空白處失焦時重算一次
+    document.addEventListener("click", function (e) {
+      if (e.target.closest("[data-price-name],[data-price-room]")) return;
+      setTimeout(recalc, 50);
+    });
+  }
+
+  // (b) 社群入口列：未填網址（href 仍為 #）的按鈕自動隱藏
+  document.querySelectorAll(".social-row [data-social]").forEach(function (a) {
+    const href = a.getAttribute("href") || "";
+    if (!href || href === "#") a.style.display = "none";
+  });
 })();

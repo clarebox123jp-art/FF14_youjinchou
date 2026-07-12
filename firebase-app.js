@@ -89,7 +89,7 @@ async function loadPartners() {
        舊寫法備查：partnersCache = snap.docs.map((d) => ({ id: d.id, data: d.data() })); */
     partnersCache = snap.docs
       .map((d) => ({ id: d.id, data: d.data() }))
-      .filter((x) => x.data.kind !== "staff");
+      .filter((x) => x.data.kind !== "staff" && x.data.kind !== "menu");
   } catch (e) {
     console.warn("讀取工作夥伴失敗：", e);
     partnersCache = [];
@@ -251,6 +251,7 @@ function buildAdminBar(email) {
     <span>🔧 管理模式（${esc(email)}）</span>
     ${partnerList ? '<button type="button" id="abAdd" class="admin-btn primary">＋ 新增夥伴</button>' : ""}
     ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
+    ${document.getElementById("menuList") ? '<button type="button" id="abMenuAdd" class="admin-btn primary">＋ 新增餐點</button><button type="button" id="abMenuSeed" class="admin-btn">⤓ 匯入預設餐單</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
@@ -269,6 +270,11 @@ function buildAdminBar(email) {
   if (sAdd) sAdd.onclick = () => openStaffForm();
   const sSeed = document.getElementById("abStaffSeed");
   if (sSeed) sSeed.onclick = seedDefaultStaff;
+  /* ★ 2026-07-12：餐單（實作在第 16 段） */
+  const mAdd = document.getElementById("abMenuAdd");
+  if (mAdd) mAdd.onclick = () => openMenuForm();
+  const mSeed = document.getElementById("abMenuSeed");
+  if (mSeed) mSeed.onclick = seedDefaultMenu;
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -310,6 +316,7 @@ onAuthStateChanged(auth, (user) => {
   }
   renderPartners();                  // 依身分重畫（顯示／隱藏編輯鈕）
   renderStaff();                     // ★ 2026-07-11：店員名簿同樣依身分重畫（第 13 段）
+  renderMenu();                      // ★ 2026-07-12：餐單同樣依身分重畫（第 16 段）
 });
 
 /* ============================================================
@@ -1643,6 +1650,24 @@ async function loadStaff() {
   renderStaff();
 }
 
+/* ★ 2026-07-12：店員卡多張照片輪播（卡片內小輪播；燈箱另有左右切換） */
+function startStaffCarousel(card) {
+  const imgs = Array.from(card.querySelectorAll(".staff-photo img"));
+  const dots = Array.from(card.querySelectorAll(".staff-dots .sd"));
+  if (imgs.length < 2) return;
+  let i = 0, timer = null;
+  const go = (n) => {
+    imgs[i].hidden = true; if (dots[i]) dots[i].classList.remove("on");
+    i = (n + imgs.length) % imgs.length;
+    imgs[i].hidden = false; if (dots[i]) dots[i].classList.add("on");
+  };
+  const play = () => { timer = setInterval(() => go(i + 1), 3500); };
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  card.addEventListener("mouseenter", stop);
+  card.addEventListener("mouseleave", play);
+  play();
+}
+
 function renderStaff() {
   if (!staffList) return;
   staffList.innerHTML = "";
@@ -1653,14 +1678,31 @@ function renderStaff() {
   for (const { id, data: s } of rows) {
     const card = document.createElement("article");
     card.className = "staff-card";
-    const img = s.photo
-      ? `<img src="${s.photo}" alt="${esc(s.name)} 的照片" loading="lazy" />`
+    // ★ 2026-07-12：照片改吃陣列 photos[]（可多張輪播）；相容舊的單張 photo 欄位
+    const pics = (Array.isArray(s.photos) && s.photos.length) ? s.photos : (s.photo ? [s.photo] : []);
+    const inner = pics.length
+      ? pics.map((src, i) => `<img src="${src}" alt="${esc(s.name)} 的照片" loading="lazy"${i === 0 ? "" : ' hidden'} />`).join("")
       : `<div class="noimg" aria-hidden="true"><span>印</span></div>`;
+    const dots = pics.length > 1
+      ? `<div class="staff-dots">${pics.map((_, i) => `<span class="sd${i === 0 ? " on" : ""}"></span>`).join("")}</div>` : "";
+    // ★ 2026-07-12：角色設定（人設）——有填才顯示「看角色設定」
+    const persona = (s.persona || "").trim();
     card.innerHTML = `
-      <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${img}</div>
+      <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${inner}${dots}</div>
       <h3>${esc(s.name)}</h3>
       <p class="staff-role">${esc(s.role)}</p>
-      <p class="staff-serv">${esc(s.services)}</p>`;
+      <p class="staff-serv">${esc(s.services)}</p>
+      ${persona ? `<button type="button" class="staff-persona-btn">看角色設定 ▾</button>
+      <div class="staff-persona" hidden>${esc(persona).replace(/\n/g, "<br>")}</div>` : ""}`;
+    // 卡片內照片自動輪播（每 3.5 秒換一張；hover 暫停）
+    if (pics.length > 1) startStaffCarousel(card);
+    const pbtn = card.querySelector(".staff-persona-btn");
+    if (pbtn) pbtn.onclick = () => {
+      const box = card.querySelector(".staff-persona");
+      const open = box.hasAttribute("hidden");
+      if (open) box.removeAttribute("hidden"); else box.setAttribute("hidden", "");
+      pbtn.textContent = open ? "收合角色設定 ▴" : "看角色設定 ▾";
+    };
     if (isAdmin && id) {
       const bar = document.createElement("div");
       bar.className = "admin-actions";
@@ -1690,6 +1732,8 @@ loadStaff();     // 再讀 Firestore，有資料就換成線上版
 /* ---------- 新增／編輯店員的表單（燈箱式，比照夥伴表單） ---------- */
 function openStaffForm(id = null, s = {}) {
   closeStaffForm();
+  // ★ 2026-07-12：照片改用陣列（多張輪播）；相容舊的單張 photo
+  let photos = (Array.isArray(s.photos) && s.photos.length) ? s.photos.slice() : (s.photo ? [s.photo] : []);
   const wrap = document.createElement("div");
   wrap.className = "admin-modal";
   wrap.id = "staffModal";
@@ -1699,7 +1743,10 @@ function openStaffForm(id = null, s = {}) {
       <label>玩家 ID（例：小克瑞爾）<input id="sfName" value="${esc(s.name)}" /></label>
       <label>職務名稱（例：帳簿主）<input id="sfRole" value="${esc(s.role)}" /></label>
       <label>服務項目（例：公會長 · 網站維護）<input id="sfServ" value="${esc(s.services)}" /></label>
-      <label>照片（可不選＝維持不變／無照片）<input id="sfPhoto" type="file" accept="image/*" /></label>
+      <label>角色設定・人設（可多行，選填；訪客點「看角色設定」展開）
+        <textarea id="sfPersona" rows="4" placeholder="例：白銀鄉小店的帳簿主，總在櫃檯後細數著往來的緣分……">${esc(s.persona || "")}</textarea></label>
+      <label>照片（可多張，會在卡片上自動輪播）<input id="sfPhoto" type="file" accept="image/*" multiple /></label>
+      <div id="sfThumbs" class="sf-thumbs"></div>
       <label>排序（數字小的排前面）<input id="sfOrder" type="number" value="${Number.isFinite(s.order) ? s.order : (staffCache.length + 1)}" /></label>
       <p class="admin-hint" id="sfMsg"></p>
       <div class="admin-modal-btns">
@@ -1708,6 +1755,37 @@ function openStaffForm(id = null, s = {}) {
       </div>
     </div>`;
   document.body.appendChild(wrap);
+  const thumbs = document.getElementById("sfThumbs");
+  const renderThumbs = () => {
+    thumbs.innerHTML = photos.length
+      ? photos.map((src, i) => `
+          <div class="sf-thumb">
+            <img src="${src}" alt="照片 ${i + 1}" />
+            <div class="sf-thumb-btns">
+              <button type="button" data-mv="${i}" data-dir="-1" title="往前">◀</button>
+              <button type="button" data-rm="${i}" title="刪除">✕</button>
+              <button type="button" data-mv="${i}" data-dir="1" title="往後">▶</button>
+            </div>
+          </div>`).join("")
+      : `<p class="admin-hint">目前沒有照片；選檔後會顯示縮圖。第一張為卡片預設封面。</p>`;
+  };
+  renderThumbs();
+  thumbs.addEventListener("click", (e) => {
+    const rm = e.target.dataset.rm, mv = e.target.dataset.mv;
+    if (rm !== undefined) { photos.splice(Number(rm), 1); renderThumbs(); }
+    else if (mv !== undefined) {
+      const i = Number(mv), j = i + Number(e.target.dataset.dir);
+      if (j >= 0 && j < photos.length) { [photos[i], photos[j]] = [photos[j], photos[i]]; renderThumbs(); }
+    }
+  });
+  document.getElementById("sfPhoto").onchange = async (e) => {
+    const msg = document.getElementById("sfMsg");
+    try {
+      msg.textContent = "壓縮圖片中…";
+      for (const f of Array.from(e.target.files)) photos.push(await compressImage(f));
+      e.target.value = ""; msg.textContent = ""; renderThumbs();
+    } catch (err) { msg.textContent = "❌ 圖片處理失敗：" + (err.message || err); }
+  };
   wrap.addEventListener("click", (e) => { if (e.target === wrap) closeStaffForm(); });
   document.getElementById("sfCancel").onclick = closeStaffForm;
   document.getElementById("sfSave").onclick = async () => {
@@ -1720,15 +1798,15 @@ function openStaffForm(id = null, s = {}) {
         name:     document.getElementById("sfName").value.trim(),
         role:     document.getElementById("sfRole").value.trim(),
         services: document.getElementById("sfServ").value.trim(),
+        persona:  document.getElementById("sfPersona").value.trim(),   // ★ 人設
+        photos:   photos,                                              // ★ 多張照片
+        photo:    photos[0] || "",                                     // 相容舊欄位（封面）
         order:    Number(document.getElementById("sfOrder").value) || 0,
       };
       if (!data.name) throw new Error("「玩家 ID」不能空白。");
-      const file = document.getElementById("sfPhoto").files[0];
-      if (file) data.photo = await compressImage(file);   // 沿用第 2 段的壓縮（WebP dataURL）
       if (id) {
         await updateDoc(doc(db, "shopPartners", id), data);
       } else {
-        data.photo = data.photo || "";
         data.createdAt = serverTimestamp();
         await addDoc(collection(db, "shopPartners"), data);
       }
@@ -1778,6 +1856,207 @@ async function seedDefaultStaff() {
     }
     alert(`✅ 已匯入 ${missing.length} 位店員。`);
     loadStaff();
+  } catch (e) {
+    alert("❌ 匯入失敗：" + (e.message || e));
+  }
+}
+
+/* ============================================================
+   16) RP 商店「茶點・餐單」（只在有 #menuList 的頁面執行＝shop.html）
+   ------------------------------------------------------------
+   - 資料存既有 shopPartners 集合、以 kind:"menu" 標記（不必動規則）
+   - 分四類：main（主食）／dessert（甜點）／drink（飲品）／special（特調）
+   - Firestore 沒資料時先顯示內建預設餐單（DEFAULT_MENU，皆為 FF14
+     遊戲內實際料理＋咖啡廳常見飲品）；管理列「⤓ 匯入預設餐單」寫入後
+     即可逐張 ✎編輯／✕刪除、線上上傳照片
+   - 卡片走 .photo/.photo-frame 結構 → 自動吃 main.js 第 5 段燈箱（可左右切換）
+   ============================================================ */
+const menuList  = document.getElementById("menuList");
+const menuEmpty = document.getElementById("menuEmpty");
+
+const MENU_CATS = [
+  { key: "main",    label: "主食" },
+  { key: "dessert", label: "甜點" },
+  { key: "drink",   label: "飲品" },
+  { key: "special", label: "特調" },
+];
+
+/* 內建預設餐單（FF14 遊戲內實際料理／飲品；價格與照片留空，老師線上補） */
+const DEFAULT_MENU = [
+  { cat: "main",    name: "鮭魚飯糰",       desc: "包入鹽漬鮭魚的和風飯糰，樸實暖心。",             price: "", order: 1 },
+  { cat: "main",    name: "狐狸烏龍麵",     desc: "甜煮油豆皮鋪在熱湯烏龍上，一口暖到心底。",       price: "", order: 2 },
+  { cat: "main",    name: "什錦握壽司",     desc: "當令海鮮握成一貫貫，師傅手作誠意滿滿。",         price: "", order: 3 },
+  { cat: "main",    name: "天婦羅蓋飯",     desc: "酥炸時蔬與海老鋪飯，淋上特製丼汁。",             price: "", order: 4 },
+  { cat: "dessert", name: "蜜糖吐司",       desc: "外酥內軟的厚片，佐蜂蜜與鮮奶油。",               price: "", order: 5 },
+  { cat: "dessert", name: "抹茶大福",       desc: "軟糯麻糬裹著濃郁抹茶餡，回甘不膩。",             price: "", order: 6 },
+  { cat: "dessert", name: "銅鑼燒",         desc: "鬆軟餅皮夾入紅豆餡的經典和菓子。",               price: "", order: 7 },
+  { cat: "drink",   name: "拿鐵咖啡",       desc: "濃縮咖啡與綿密奶泡，畫上一葉拉花。",             price: "", order: 8 },
+  { cat: "drink",   name: "季節紅茶",       desc: "選用當季茶葉，冷熱皆宜。",                       price: "", order: 9 },
+  { cat: "drink",   name: "鮮榨果汁",       desc: "當日新鮮水果現榨，酸甜清爽。",                   price: "", order: 10 },
+  { cat: "special", name: "櫻花氣泡飲",     desc: "鹽漬櫻花漂浮於氣泡之中，粉嫩浪漫。",             price: "", order: 11 },
+  { cat: "special", name: "友人帳特調",     desc: "本店原創——以緣分為名的一杯，滋味由你來訪時揭曉。", price: "", order: 12 },
+];
+
+let menuCache = [];
+let menuUsingDefault = true;
+
+async function loadMenu() {
+  if (!menuList) return;
+  try {
+    const q = query(collection(db, "shopPartners"), orderBy("order"), orderBy("createdAt"));
+    const snap = await getDocs(q);
+    menuCache = snap.docs
+      .map((d) => ({ id: d.id, data: d.data() }))
+      .filter((x) => x.data.kind === "menu");
+  } catch (e) {
+    console.warn("讀取餐單失敗：", e);
+    menuCache = [];
+  }
+  menuUsingDefault = menuCache.length === 0;
+  renderMenu();
+}
+
+function renderMenu() {
+  if (!menuList) return;
+  menuList.innerHTML = "";
+  const rows = menuUsingDefault
+    ? DEFAULT_MENU.map((d) => ({ id: null, data: d }))
+    : menuCache;
+  if (menuEmpty) menuEmpty.style.display = rows.length ? "none" : "";
+
+  // 依分類分組，照 MENU_CATS 順序輸出（空分類略過）
+  for (const cat of MENU_CATS) {
+    const items = rows.filter((r) => (r.data.cat || "main") === cat.key);
+    if (!items.length) continue;
+    const group = document.createElement("div");
+    group.className = "menu-group";
+    group.innerHTML = `<h3 class="menu-cat">${cat.label}</h3>`;
+    const grid = document.createElement("div");
+    grid.className = "menu-grid";
+    for (const { id, data: m } of items) {
+      const card = document.createElement("article");
+      card.className = "menu-card photo";   // 帶 .photo → 吃相簿燈箱
+      const pic = m.photo
+        ? `<div class="photo-frame"><img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
+        : `<div class="photo-frame menu-noimg"><span>膳</span></div>`;
+      card.innerHTML = `
+        ${pic}
+        <div class="menu-body">
+          <div class="menu-head">
+            <span class="menu-name">${esc(m.name)}</span>
+            ${m.price ? `<span class="menu-price">${esc(m.price)}</span>` : ""}
+          </div>
+          <p class="menu-desc">${esc(m.desc || "")}</p>
+        </div>`;
+      // 燈箱抓圖說用：.photo 內放一個隱藏的 .cap
+      const cap = document.createElement("span");
+      cap.className = "cap"; cap.hidden = true;
+      cap.textContent = m.price ? `${m.name} · ${m.price}` : m.name;
+      card.appendChild(cap);
+      if (isAdmin && id) {
+        const bar = document.createElement("div");
+        bar.className = "admin-actions";
+        bar.innerHTML = `<button type="button" data-act="edit">✎ 編輯</button>
+                         <button type="button" data-act="del">✕ 刪除</button>`;
+        bar.querySelector('[data-act="edit"]').onclick = () => openMenuForm(id, m);
+        bar.querySelector('[data-act="del"]').onclick = async () => {
+          if (!confirm(`確定要刪除餐點「${m.name}」嗎？（無法復原）`)) return;
+          await deleteDoc(doc(db, "shopPartners", id));
+          loadMenu();
+        };
+        card.appendChild(bar);
+      }
+      grid.appendChild(card);
+    }
+    group.appendChild(grid);
+    menuList.appendChild(group);
+  }
+
+  if (isAdmin && menuUsingDefault && rows.length) {
+    const hint = document.createElement("p");
+    hint.className = "staff-default-hint";
+    hint.textContent = "目前顯示內建預設餐單；按管理列「⤓ 匯入預設餐單」寫入資料庫後，才能逐張編輯／刪除、上傳照片。";
+    menuList.appendChild(hint);
+  }
+}
+renderMenu();   // 先立刻畫出內建預設
+loadMenu();     // 再讀 Firestore
+
+/* ---------- 新增／編輯餐點表單 ---------- */
+function openMenuForm(id = null, m = {}) {
+  closeMenuForm();
+  const wrap = document.createElement("div");
+  wrap.className = "admin-modal";
+  wrap.id = "menuModal";
+  const catOpts = MENU_CATS.map((c) =>
+    `<option value="${c.key}"${(m.cat || "main") === c.key ? " selected" : ""}>${c.label}</option>`).join("");
+  wrap.innerHTML = `
+    <div class="admin-modal-card">
+      <h3>${id ? "編輯餐點" : "新增餐點"}</h3>
+      <label>分類<select id="mfCat">${catOpts}</select></label>
+      <label>品名（例：狐狸烏龍麵）<input id="mfName" value="${esc(m.name)}" /></label>
+      <label>簡介（一兩句話介紹）
+        <textarea id="mfDesc" rows="3" placeholder="例：甜煮油豆皮鋪在熱湯烏龍上，一口暖到心底。">${esc(m.desc || "")}</textarea></label>
+      <label>價格（可留空＝暫不標價；例：8,000 Gil）<input id="mfPrice" value="${esc(m.price || "")}" /></label>
+      <label>照片（可不選＝維持不變／無照片）<input id="mfPhoto" type="file" accept="image/*" /></label>
+      <label>排序（數字小的排前面）<input id="mfOrder" type="number" value="${Number.isFinite(m.order) ? m.order : (menuCache.length + 1)}" /></label>
+      <p class="admin-hint" id="mfMsg"></p>
+      <div class="admin-modal-btns">
+        <button type="button" id="mfSave" class="admin-btn primary">儲存</button>
+        <button type="button" id="mfCancel" class="admin-btn">取消</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeMenuForm(); });
+  document.getElementById("mfCancel").onclick = closeMenuForm;
+  document.getElementById("mfSave").onclick = async () => {
+    const msg = document.getElementById("mfMsg");
+    const btn = document.getElementById("mfSave");
+    try {
+      btn.disabled = true; msg.textContent = "儲存中…";
+      const data = {
+        kind:  "menu",
+        cat:   document.getElementById("mfCat").value,
+        name:  document.getElementById("mfName").value.trim(),
+        desc:  document.getElementById("mfDesc").value.trim(),
+        price: document.getElementById("mfPrice").value.trim(),
+        order: Number(document.getElementById("mfOrder").value) || 0,
+      };
+      if (!data.name) throw new Error("「品名」不能空白。");
+      const file = document.getElementById("mfPhoto").files[0];
+      if (file) data.photo = await compressImage(file);
+      if (id) {
+        await updateDoc(doc(db, "shopPartners", id), data);
+      } else {
+        data.photo = data.photo || "";
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "shopPartners"), data);
+      }
+      closeMenuForm();
+      loadMenu();
+    } catch (e) {
+      btn.disabled = false;
+      msg.textContent = "❌ " + (e.message || "儲存失敗，請再試一次。");
+    }
+  };
+}
+function closeMenuForm() {
+  const m = document.getElementById("menuModal");
+  if (m) m.remove();
+}
+
+/* ---------- 一鍵匯入預設餐單（只補缺漏，以品名去重） ---------- */
+async function seedDefaultMenu() {
+  const existing = new Set(menuCache.map((x) => x.data.name));
+  const missing  = DEFAULT_MENU.filter((m) => !existing.has(m.name));
+  if (!missing.length) { alert("預設餐單裡的餐點都已經在資料庫了，不需要匯入。"); return; }
+  if (!confirm(`要把還沒入庫的 ${missing.length} 道餐點寫進資料庫嗎？寫入後即可逐張編輯／刪除、上傳照片。`)) return;
+  try {
+    for (const m of missing) {
+      await addDoc(collection(db, "shopPartners"), { kind: "menu", ...m, createdAt: serverTimestamp() });
+    }
+    alert(`✅ 已匯入 ${missing.length} 道餐點。`);
+    loadMenu();
   } catch (e) {
     alert("❌ 匯入失敗：" + (e.message || e));
   }

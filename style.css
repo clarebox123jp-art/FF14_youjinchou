@@ -1098,3 +1098,177 @@ img { -webkit-user-drag: none; user-select: none; }
   .lightbox .lb-nav.prev { left: 8px; }
   .lightbox .lb-nav.next { right: 8px; }
 }
+
+/* ============================================================
+   ★ 2026-07-12 追加：RP 商店新區塊
+   開店時辰／計費表＋小算盤／帳前約定／社群入口列／店員人設＋多圖輪播
+   ============================================================ */
+
+/* —— 開店時辰 —— */
+.hours-card {
+  max-width: 560px; margin: 30px auto 0; padding: 26px 30px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(44, 38, 32, .1);
+}
+.hours-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 12px 0; border-bottom: 1px dashed rgba(176, 141, 63, .35);
+}
+.hours-row:last-of-type { border-bottom: none; }
+.hours-day { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+.hours-time { color: var(--shu); font-weight: 700; letter-spacing: .04em; }
+.hours-note { color: var(--muted); font-size: .84rem; }
+
+/* —— 計費表 —— */
+.price-card {
+  max-width: 560px; margin: 30px auto 0; padding: 26px 30px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(44, 38, 32, .1);
+}
+.price-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 12px 0; border-bottom: 1px dashed rgba(176, 141, 63, .35);
+}
+.price-name { color: var(--ink); }
+.price-val { font-family: var(--font-display); font-size: 1.15rem; color: var(--shu); font-weight: 700; }
+.price-note { color: var(--muted); font-size: .82rem; }
+
+/* —— 計費小算盤 —— */
+.calc-card {
+  max-width: 560px; margin: 20px auto 0; padding: 26px 30px;
+  background: linear-gradient(180deg, rgba(176,141,63,.08), rgba(176,141,63,.02));
+  border: 1px solid var(--line); border-radius: 16px;
+}
+.calc-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); margin-bottom: 16px; text-align: center; }
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.calc-field { display: flex; flex-direction: column; gap: 6px; font-size: .88rem; color: var(--ink); }
+.calc-field input[type="number"], .calc-field select {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: .95rem; background: var(--bg-1); color: var(--ink);
+}
+.calc-field.calc-check { flex-direction: row; align-items: center; gap: 8px; align-self: end; }
+.calc-result {
+  margin-top: 20px; text-align: center; font-family: var(--font-display);
+  font-size: 1.5rem; color: var(--shu);
+}
+.calc-result #calcTotal { font-weight: 700; }
+.calc-formula { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 8px; }
+
+/* —— 帳前約定 —— */
+.rules-list {
+  max-width: 640px; margin: 30px auto 0; padding: 0; list-style: none;
+}
+.rules-list li {
+  position: relative; padding: 14px 16px 14px 46px; margin-bottom: 12px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px;
+  line-height: 1.7; color: var(--ink);
+}
+.rules-list li::before {
+  content: "帳"; position: absolute; left: 14px; top: 14px;
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--shu); color: #fff; font-family: var(--font-display);
+  font-size: .9rem; display: flex; align-items: center; justify-content: center;
+}
+.rules-list b { color: var(--shu); }
+
+/* —— 社群入口列 —— */
+.social-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 30px; }
+.social-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 999px; text-decoration: none;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--ink);
+  transition: transform .2s, box-shadow .2s;
+}
+.social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(44,38,32,.15); color: var(--shu); }
+.social-ico { font-size: 1.2rem; }
+
+/* —— 店員卡：多圖輪播指示點＋人設 —— */
+.staff-dots {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 5px; z-index: 2;
+}
+.staff-dots .sd { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55); }
+.staff-dots .sd.on { background: #fff; }
+.staff-persona-btn {
+  margin-top: 8px; border: none; background: none; cursor: pointer;
+  color: var(--shu); font-size: .78rem; letter-spacing: .04em;
+}
+.staff-persona-btn:hover { text-decoration: underline; }
+.staff-persona {
+  margin-top: 6px; font-size: .78rem; line-height: 1.7; color: var(--ink);
+  text-align: left; background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px;
+}
+
+/* —— 店員表單：照片縮圖管理 —— */
+.sf-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.sf-thumb { position: relative; width: 62px; }
+.sf-thumb img { width: 62px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.sf-thumb-btns { display: flex; justify-content: center; gap: 2px; margin-top: 3px; }
+.sf-thumb-btns button {
+  border: none; border-radius: 6px; padding: 2px 5px; font-size: .7rem;
+  background: var(--aether); color: #fff; cursor: pointer;
+}
+.sf-thumb-btns button:hover { background: var(--shu); }
+
+@media (max-width: 560px) {
+  .calc-grid { grid-template-columns: 1fr; }
+  .hours-card, .price-card, .calc-card { padding: 20px 18px; }
+}
+/* price-val 改為 <p>（可線上編輯）：清掉 p 的預設外距、維持行內感 */
+.price-val { margin: 0; }
+
+/* ============================================================
+   ★ 2026-07-12 追加：茶點・餐單（咖啡簡餐 MENU，方形照片卡）
+   ============================================================ */
+.menu-wrap { margin-top: 30px; }
+.menu-group { margin-top: 34px; }
+.menu-group:first-child { margin-top: 8px; }
+.menu-cat {
+  font-family: var(--font-display); font-size: 1.35rem; color: var(--shu);
+  text-align: center; letter-spacing: .1em; margin-bottom: 20px; position: relative;
+}
+.menu-cat::before, .menu-cat::after {
+  content: ""; display: inline-block; width: 40px; height: 1px;
+  background: rgba(176, 141, 63, .6); vertical-align: middle; margin: 0 14px;
+}
+.menu-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 22px;
+}
+.menu-card {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; box-shadow: 0 8px 20px rgba(44, 38, 32, .1);
+  display: flex; flex-direction: column;
+}
+.menu-card .photo-frame {
+  width: 100%; aspect-ratio: 1 / 1; overflow: hidden;   /* 方形照片 */
+  background: var(--bg-1); cursor: zoom-in;
+}
+.menu-card .photo-frame img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .35s ease;
+}
+.menu-card .photo-frame:hover img { transform: scale(1.06); }
+.menu-noimg {
+  display: flex; align-items: center; justify-content: center; cursor: default;
+}
+.menu-noimg span {
+  font-family: var(--font-display); font-size: 2.4rem; color: var(--gold);
+  border: 2px solid var(--gold); border-radius: 12px; padding: 10px 14px; opacity: .55;
+}
+.menu-body { padding: 14px 16px 16px; text-align: left; flex: 1; }
+.menu-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.menu-name { font-family: var(--font-display); font-size: 1.08rem; color: var(--ink); }
+.menu-price { color: var(--shu); font-weight: 700; font-size: .92rem; white-space: nowrap; }
+.menu-desc { color: var(--muted); font-size: .82rem; line-height: 1.6; margin-top: 6px; }
+.menu-card .admin-actions { display: flex; gap: 6px; justify-content: center; padding: 0 16px 14px; }
+.menu-card .admin-actions button {
+  border: none; border-radius: 8px; padding: 4px 10px; font-size: .76rem;
+  background: var(--aether); color: #fff; cursor: pointer;
+}
+.menu-card .admin-actions button:hover { background: var(--shu); }
+@media (max-width: 560px) {
+  .menu-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .menu-cat { font-size: 1.2rem; }
+}

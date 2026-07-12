@@ -116,6 +116,108 @@
     </div>
   </section>
 
+  <!-- ============================================================
+       ★ 2026-07-12 新增：開店時辰（營業時間）
+       文字皆可線上編輯；公休或時段調整由管理員直接點字修改。
+       ============================================================ -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Hours · 開店時辰</p>
+        <h2>開店時辰</h2>
+        <p class="body" style="margin-top:14px">帳中燈火，於下列時分為你點亮；實際開店以 Discord 公告與預約排班為準。</p>
+      </div>
+      <div class="hours-card reveal">
+        <div class="hours-row"><span class="hours-day">平日</span><span class="hours-time">21:00 – 24:00</span></div>
+        <div class="hours-row"><span class="hours-day">週六・週日</span><span class="hours-time">14:00 – 24:00</span></div>
+        <div class="hours-row"><span class="hours-day">公休</span><span class="hours-time">不定期（詳見 Discord 公告）</span></div>
+        <p class="body hours-note" style="margin-top:16px">※ 需事先於 Discord 或預約表單登記，方能為你保留店員與包廂時段。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ★ 2026-07-12 新增：帳目・計費方式（單價表＋互動小算盤）
+       - 單價數字先留佔位「—」，老師之後可「線上編輯」直接改，
+         或提供數字由 Claude 烘進預設。
+       - 小算盤公式：客人數 × 店員數 × 時長單位 × 指名費 ＋ 包廂費
+         （時長單位＝每 30 分鐘一單位；main.js 第 15 段讀 data-price-* 即時試算）
+       ============================================================ -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Pricing · 帳目・計費方式</p>
+        <h2>帳目・計費方式</h2>
+        <p class="body" style="margin-top:14px">緣分以「盞」計——每 30 分鐘為一盞茶的時光；下列價目為參考，正式價格以開幕公告為準。</p>
+      </div>
+
+      <div class="price-card reveal">
+        <div class="price-row">
+          <span class="price-name">指名費 · 每位店員 / 每 30 分</span>
+          <p class="price-val" data-price-name>— Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">包廂費 · 每次</span>
+          <p class="price-val" data-price-room>— Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">佐談餐點 · 每份</span>
+          <p class="price-val" data-price-food>— Gil</p>
+        </div>
+        <p class="body price-note" style="margin-top:12px">※ 大廳與外帶價可能不同，實際以現場公告為準。管理員登入後可直接點價格數字修改（例：改成「20,000 Gil」），小算盤會自動跟著算。</p>
+      </div>
+
+      <!-- 互動小算盤 -->
+      <div class="calc-card reveal" id="shopCalc">
+        <h3 class="calc-title">💰 試算一盞茶的花費</h3>
+        <div class="calc-grid">
+          <label class="calc-field">客人數
+            <input type="number" id="calcGuests" min="1" value="1" />
+          </label>
+          <label class="calc-field">指名店員數
+            <input type="number" id="calcStaff" min="1" value="1" />
+          </label>
+          <label class="calc-field">時長
+            <select id="calcDur">
+              <option value="1">30 分鐘（1 盞）</option>
+              <option value="2">1 小時（2 盞）</option>
+              <option value="3">1.5 小時（3 盞）</option>
+              <option value="4">2 小時（4 盞）</option>
+            </select>
+          </label>
+          <label class="calc-field calc-check">
+            <input type="checkbox" id="calcRoom" /> 加開包廂
+          </label>
+        </div>
+        <div class="calc-result">預估花費　<span id="calcTotal">—</span> Gil</div>
+        <p class="body calc-formula">計算方式：客人數 × 店員數 × 時長（盞）× 指名費　＋　包廂費</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       ★ 2026-07-12 新增：茶點・餐單（咖啡簡餐 MENU）
+       - 方形照片卡，分主食／甜點／飲品／特調四類
+       - 資料存 shopPartners 集合、以 kind:"menu" 標記（不必動規則）
+       - Firestore 沒資料時先顯示內建預設餐單；管理列「⤓ 匯入預設餐單」
+         寫入後即可逐張 ✎編輯／✕刪除，並線上上傳照片
+       - 點照片放大看大圖（main.js 第 5 段燈箱，走 .photo 結構）
+       ============================================================ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Menu · 茶點・餐單</p>
+        <h2>茶點・餐單</h2>
+        <p class="body" style="margin-top:14px">坐檯佐談之際，佐一盞茶、一份點心——以下餐單為參考，實際供應與價格以現場公告為準。</p>
+      </div>
+      <!-- 餐單由 firebase-app.js 第 16 段渲染進 #menuList（依分類分組） -->
+      <div class="menu-wrap reveal" id="menuList"></div>
+      <p class="body" id="menuEmpty" style="text-align:center;margin-top:30px;display:none">餐單籌備中，敬請期待。</p>
+    </div>
+  </section>
+
   <hr class="divider" />
 
   <!-- ★ 2026-07-11 區塊重排：「店舖職務」整區移到頁面最底部（貴客榜之後）；「店員名簿」移到此處（服務內容之下）。 -->
@@ -295,6 +397,30 @@
     </div>
   </section>
 
+  <!-- ============================================================
+       ★ 2026-07-12 新增：帳前約定（入店須知 / RP 禮儀守則）
+       條列式，全部可線上編輯；想增減守則複製／刪一個 <li> 即可。
+       ============================================================ -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Etiquette · 帳前約定</p>
+        <h2>帳前約定</h2>
+        <p class="body" style="margin-top:14px">入帳之前，先讀一段小約定——讓每位旅人與店員，都能安心享受這場一期一會。</p>
+      </div>
+      <ul class="rules-list reveal">
+        <li><b>尊重角色與演出</b>　店員皆以角色身分接待，請把彼此當作故事裡的人物，友善互動、勿出戲糾纏。</li>
+        <li><b>先預約、後入席</b>　為保留店員與包廂時段，請先於 Discord 或預約表單登記，勿臨時強行指名。</li>
+        <li><b>尺度以店家公告為準</b>　本店為輕鬆陪聊與合影，恕不提供逾越分際的服務；如有疑問請先私訊幹部。</li>
+        <li><b>珍惜店員的時間</b>　店員掛「忙碌／離開」標記時代表暫離營業，請耐心等候，勿反覆私訊催促。</li>
+        <li><b>費用當面確認</b>　指名前請向前台確認計費方式與加購項目，避免結帳時的誤會。</li>
+        <li><b>留下美好，帶走回憶</b>　歡迎拍照留念；若要公開合影，請徵得同席店員與客人同意。</li>
+      </ul>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
   <!-- ★ 2026-07-11 區塊重排：「店員名簿」整區移到上方（服務內容之下）；「店舖職務」自上方移到此處。 -->
   <!-- ============================================================
        A. 職務招募（★2026-07-11 改為 6 個職務，整區移到頁面最底部）
@@ -382,6 +508,32 @@
         想參與 RP 商店的經營或演出？
         <a href="https://discord.com/invite/ff14yujincho" class="sfx" target="_blank" rel="noopener" style="color:var(--shu)">來 Discord 找我們聊聊 →</a>
       </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ★ 2026-07-12 新增：尋帳而來（社群入口列）
+       DC 已填公會邀請；噗浪／Threads 若日後開通，把 # 換成網址即可，
+       未填的按鈕會自動隱藏（main.js 第 15 段處理）。
+       ============================================================ -->
+  <section class="section social-section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal" style="text-align:center">
+        <p class="eyebrow">Find Us · 尋帳而來</p>
+        <h2>尋帳而來</h2>
+        <p class="body" style="margin-top:14px">循著這些線索，就能找到我們——最新開店消息與活動，都會在這裡發布。</p>
+      </div>
+      <div class="social-row reveal">
+        <a class="social-btn sfx" href="https://discord.com/invite/ff14yujincho" target="_blank" rel="noopener" data-social>
+          <span class="social-ico">💬</span><span>Discord 候客室</span>
+        </a>
+        <a class="social-btn sfx" href="#" target="_blank" rel="noopener" data-social>
+          <span class="social-ico">📷</span><span>Plurk 噗浪</span>
+        </a>
+        <a class="social-btn sfx" href="#" target="_blank" rel="noopener" data-social>
+          <span class="social-ico">🧵</span><span>Threads</span>
+        </a>
+      </div>
     </div>
   </section>
 

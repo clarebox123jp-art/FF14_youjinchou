@@ -339,7 +339,10 @@ function h32(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5)
 const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inner h1,.hero-inner p,.footer p,.footer h3,.photo .cap";
 /* ★ 2026-07-11：加入 #staffList（店員名簿卡片由 Firestore 動態產生，不走段落編輯）
    舊值備查："#partnerList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar" */
-const EXCLUDE = "#partnerList,#staffList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
+/* ★ 2026-07-12：再加入 #menuList——餐點文字（品名/簡介/價格/標籤）由餐單 ✎ 表單與
+   點價格機制管理，不走段落編輯，避免動態重繪造成編輯紀錄脫鉤
+   舊值備查："#partnerList,#staffList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar" */
+const EXCLUDE = "#partnerList,#staffList,#menuList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
 
 const textDefaults = {};                 // 每段的預設內容（供「回復預設」）
 function collectEditables() {
@@ -1969,9 +1972,17 @@ const DEFAULT_MENU = [
 
 let menuCache = [];
 let menuUsingDefault = true;
+/* ★ 2026-07-12：大分類／小分類標題可由管理員改名，覆寫存 siteContent/config-menulabels
+   （鍵＝wafu/yoshoku/starter/main/dessert/drink；沒有覆寫就用程式內建名稱） */
+let MENU_LABELS = {};
+const labelOf = (key, fallback) => MENU_LABELS[key] || fallback;
 
 async function loadMenu() {
   if (!menuList) return;
+  try {
+    const ls = await getDoc(doc(db, "siteContent", "config-menulabels"));
+    MENU_LABELS = ls.exists() ? (ls.data() || {}) : {};
+  } catch (e) { MENU_LABELS = {}; }
   try {
     const q = query(collection(db, "shopPartners"), orderBy("order"), orderBy("createdAt"));
     const snap = await getDocs(q);
@@ -1984,6 +1995,26 @@ async function loadMenu() {
   }
   menuUsingDefault = menuCache.length === 0;
   renderMenu();
+}
+
+/* ★ 2026-07-12：管理員點分類標題即可改名（存 siteContent/config-menulabels；
+   輸入空白＝清除覆寫、回到內建名稱） */
+function attachLabelRename(el, key, fallback) {
+  if (!el) return;
+  el.classList.add("edit-able");
+  el.title = "點一下修改分類名稱";
+  el.style.cursor = "pointer";
+  el.onclick = async () => {
+    const cur = labelOf(key, fallback);
+    const v = prompt(`分類名稱（留空＝回復內建「${fallback}」）`, cur);
+    if (v === null) return;
+    try {
+      const ref = doc(db, "siteContent", "config-menulabels");
+      if (v.trim()) await setDoc(ref, { [key]: v.trim() }, { merge: true });
+      else await setDoc(ref, { [key]: deleteField() }, { merge: true });
+      loadMenu();
+    } catch (e) { alert("❌ 更名失敗：" + (e.message || e)); }
+  };
 }
 
 function renderMenu() {
@@ -2009,7 +2040,8 @@ function renderMenu() {
     if (!items.length) continue;
     const group = document.createElement("div");
     group.className = "menu-group";
-    group.innerHTML = `<h3 class="menu-cat">${cat.label}</h3>`;
+    group.innerHTML = `<h3 class="menu-cat">${esc(cat.key === "__other" ? cat.label : labelOf(cat.key, cat.label))}</h3>`;
+    if (isAdmin && cat.key !== "__other") attachLabelRename(group.querySelector(".menu-cat"), cat.key, cat.label);
     /* ★ 2026-07-12：大分類之下再依 sub 細分（前菜/主餐/甜點/飲料）；
        沒有 sub 的舊資料排在最前面、不加小標，不會憑空消失
        舊版（單層 .menu-grid，備查）：
@@ -2024,7 +2056,8 @@ function renderMenu() {
       if (sub.label) {
         const sh = document.createElement("h4");
         sh.className = "menu-subcat";
-        sh.textContent = sub.label;
+        sh.textContent = labelOf(sub.key, sub.label);
+        if (isAdmin) attachLabelRename(sh, sub.key, sub.label);
         group.appendChild(sh);
       }
       const grid = document.createElement("div");

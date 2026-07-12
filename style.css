@@ -1409,3 +1409,9 @@ img { -webkit-user-drag: none; user-select: none; }
   padding-left: 2px;
 }
 .menu-subcat::before { content: "◆ "; font-size: .7em; vertical-align: 2px; }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：餐單小分類標題字色改黑（老師指定）
+   （覆寫前一段的古金色設定；舊值 var(--gold) 備查）
+   ============================================================ */
+.menu-subcat { color: var(--ink, #2c2620); }

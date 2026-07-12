@@ -1676,6 +1676,7 @@ function startStaffCarousel(card) {
 
 function renderStaff() {
   if (!staffList) return;
+  staffList.classList.add("in");   /* ★ 2026-07-12：同餐單，防 reveal 門檻造成整塊隱形 */
   staffList.innerHTML = "";
   const rows = staffUsingDefault
     ? DEFAULT_STAFF.map((d) => ({ id: null, data: d }))
@@ -2019,6 +2020,9 @@ function attachLabelRename(el, key, fallback) {
 
 function renderMenu() {
   if (!menuList) return;
+  /* ★ 2026-07-12：保險絲——若容器還掛著 reveal（舊版 HTML 或快取），渲染後直接補 .in，
+     避免「動態長高的清單達不到 IntersectionObserver 15% 門檻→整塊隱形」的間歇性消失 */
+  menuList.classList.add("in");
   menuList.innerHTML = "";
   const rows = menuUsingDefault
     ? DEFAULT_MENU.map((d) => ({ id: null, data: d }))

@@ -216,7 +216,8 @@
         <p class="body" style="margin-top:14px">坐檯佐談之際，佐一盞茶、一份點心——以下餐單為參考，實際供應與價格以現場公告為準。</p>
       </div>
       <!-- 餐單由 firebase-app.js 第 16 段渲染進 #menuList（依分類分組） -->
-      <div class="menu-wrap reveal" id="menuList"></div>
+      <!-- ★ 2026-07-12：拿掉 reveal——動態長高的容器用捲動淡入會因 15% 門檻永遠達不到而整塊隱形（舊值 class="menu-wrap reveal" 備查） -->
+      <div class="menu-wrap" id="menuList"></div>
       <p class="body" id="menuEmpty" style="text-align:center;margin-top:30px;display:none">餐單籌備中，敬請期待。</p>
     </div>
   </section>
@@ -295,7 +296,8 @@
 
       <!-- ★ 2026-07-11 店員名簿：直式短冊照片並列，資料由 firebase-app.js 第 13 段渲染。
            管理方式：網址加 #admin → 登入 → ＋新增店員／⤓匯入預設店員 → 逐張 ✎編輯／✕刪除。 -->
-      <div class="staff-row reveal" id="staffList"></div>
+      <!-- ★ 2026-07-12：同上，動態容器拿掉 reveal（舊值 class="staff-row reveal" 備查） -->
+      <div class="staff-row" id="staffList"></div>
       <p class="body" id="staffEmpty" style="text-align:center;margin-top:30px;display:none">店員名簿整理中，敬請期待。</p>
 
       <!-- ★ 2026-07-11：Discord 招募 CTA 已隨「店舖職務」一起移到頁面底部 -->

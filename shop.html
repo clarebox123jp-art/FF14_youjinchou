@@ -164,10 +164,12 @@
           <span class="price-name">佐談餐點 · 每份</span>
           <p class="price-val" data-price-food>— Gil</p>
         </div>
-        <p class="body price-note" style="margin-top:12px">※ 大廳與外帶價可能不同，實際以現場公告為準。管理員登入後可直接點價格數字修改（例：改成「20,000 Gil」），小算盤會自動跟著算。</p>
+        <p class="body price-note" style="margin-top:12px">※ 大廳與外帶價可能不同，實際以現場公告為準。管理員登入後可直接點價格數字修改（例：改成「20,000 Gil」）。<!-- 舊述及小算盤（已移除，改用頁尾線上預約結算）2026-07-12 --></p>
       </div>
 
-      <!-- 互動小算盤 -->
+      <!-- ★ 2026-07-12 移除：互動小算盤（與頁尾「線上預約・肆 明細與送出」的結算重複）
+           整塊保留備查；若要復原，把下方註解拆掉即可（main.js 第 15 段有防呆，元素不存在不會報錯）
+      <!~~ 互動小算盤 ~~>
       <div class="calc-card reveal" id="shopCalc">
         <h3 class="calc-title">💰 試算一盞茶的花費</h3>
         <div class="calc-grid">
@@ -179,7 +181,7 @@
           </label>
           <label class="calc-field">時長
             <select id="calcDur">
-              <!-- 舊時長選項（30 分制，2026-07-12 改制備查）：30分/1小時/1.5小時/2小時＝1~4盞 -->
+              <!~~ 舊時長選項（30 分制，2026-07-12 改制備查）：30分/1小時/1.5小時/2小時＝1~4盞 ~~>
               <option value="1">20 分鐘（1 盞）</option>
               <option value="2">40 分鐘（2 盞）</option>
               <option value="3">1 小時（3 盞）</option>
@@ -193,6 +195,7 @@
         <div class="calc-result">預估花費　<span id="calcTotal">—</span> Gil</div>
         <p class="body calc-formula">計算方式：客人數 × 店員數 × 時長（盞）× 指名費　＋　包廂費</p>
       </div>
+      -->
     </div>
   </section>
 
@@ -322,7 +325,7 @@
        - data-fee-photo＝加拍每張；data-min-order＝單點料理低消
        ============================================================ -->
   <section class="section" id="orderSection"
-           data-fee-seat="800" data-fee-named="200000" data-fee-photo="1000" data-min-order="5000">
+           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="1000" data-min-order="5000">
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Order · 線上預約點餐</p>

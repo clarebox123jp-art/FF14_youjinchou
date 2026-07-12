@@ -253,6 +253,7 @@ function buildAdminBar(email) {
     ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abMenuAdd" class="admin-btn primary">＋ 新增餐點</button><button type="button" id="abMenuSeed" class="admin-btn">⤓ 匯入預設餐單</button>' : ""}
     ${document.getElementById("roomList") ? '<button type="button" id="abRoomAdd" class="admin-btn primary">＋ 新增包廂</button><button type="button" id="abRoomSeed" class="admin-btn">⤓ 匯入預設包廂</button>' : ""}
+    ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
@@ -281,6 +282,9 @@ function buildAdminBar(email) {
   if (rAdd) rAdd.onclick = () => openRoomForm();
   const rSeed = document.getElementById("abRoomSeed");
   if (rSeed) rSeed.onclick = seedDefaultRooms;
+  /* ★ 2026-07-12 v2.1：預約價目線上設定（實作在第 18 段，經 window.YJC_ORDER 呼叫） */
+  const feeBtn = document.getElementById("abFees");
+  if (feeBtn) feeBtn.onclick = () => window.YJC_ORDER?.openFees?.();
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -2483,15 +2487,35 @@ loadRooms();
   const sec = document.getElementById("orderSection");
   if (!sec) return;
 
+  /* ★ 2026-07-12 v2.1：價目改為「RP 輕重計價」，且管理員可線上修正——
+     預設值讀 data 屬性，若 siteContent/config-orderfees 有設定則覆寫 */
   const FEE = {
-    seat:  Number(sec.dataset.feeSeat)  || 0,
-    named: Number(sec.dataset.feeNamed) || 0,
-    photo: Number(sec.dataset.feePhoto) || 0,
-    min:   Number(sec.dataset.minOrder) || 0,
+    seat:    Number(sec.dataset.feeSeat)    || 0,   // 不指名（隨緣）／時段
+    named:   Number(sec.dataset.feeNamed)   || 0,   // 指名基本／位／時段
+    persona: Number(sec.dataset.feePersona) || 0,   // 勾選個性（服務風格）加價／單
+    role:    Number(sec.dataset.feeRole)    || 0,   // 勾選職業扮演身分加價／單
+    photo:   Number(sec.dataset.feePhoto)   || 0,
+    min:     Number(sec.dataset.minOrder)   || 0,
   };
+  (async () => {
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-orderfees"));
+      if (snap.exists()) {
+        const d = snap.data() || {};
+        for (const k of ["seat","named","persona","role","photo","min"]) {
+          if (Number.isFinite(Number(d[k])) && d[k] !== "" && d[k] !== null && d[k] !== undefined) FEE[k] = Number(d[k]);
+        }
+        document.querySelectorAll("#staffList .staff-pick").forEach((el) => el.remove());
+        refreshStaff();
+        writeFeeNote();
+        updateTotals();
+      }
+    } catch (e) { /* 讀不到就用預設 */ }
+  })();
   const fmt = (n) => n.toLocaleString("zh-Hant-TW") + " Gil";
   const num = (t) => parseInt(String(t || "").replace(/[^\d]/g, ""), 10) || 0;
 
+  const pickVal = (nm) => document.querySelector(`input[name="${nm}"]:checked`)?.value || "隨緣";
   const dishes = new Map();
   let extraPhotos = 0;
   const pickedStaff = new Set();
@@ -2623,10 +2647,16 @@ loadRooms();
     const staffFee = namedN > 0
       ? Array.from(pickedStaff).reduce((sum, n) => sum + feeOf(n), 0) * units
       : FEE.seat * units;
+    /* ★ RP 輕重加價（僅指名時計）：勾個性＋persona、勾職業身分＋role；兩者都選＝重度 */
+    const styleOn = namedN > 0 && (pickVal("odStyle") !== "隨緣" || document.getElementById("odStyleCustom").value.trim() !== "");
+    const roleOn  = namedN > 0 && (pickVal("odRole")  !== "隨緣" || document.getElementById("odRoleCustom").value.trim()  !== "");
+    const rpFee = (styleOn ? FEE.persona : 0) + (roleOn ? FEE.role : 0);
+    const rpLevel = namedN === 0 ? "" : (styleOn && roleOn ? "重" : (styleOn || roleOn ? "中" : "輕"));
     const photoFee = extraPhotos * FEE.photo;
     const roomFee = pickedRoom ? pickedRoom.price : 0;
-    return { dishTotal, serviceTotal: staffFee + photoFee, roomFee,
-             grand: dishTotal + staffFee + photoFee + roomFee, units, namedN };
+    return { dishTotal, serviceTotal: staffFee + rpFee + photoFee, roomFee,
+             grand: dishTotal + staffFee + rpFee + photoFee + roomFee,
+             units, namedN, styleOn, roleOn, rpFee, rpLevel };
   }
   function updateTotals() {
     const c = calc();
@@ -2654,12 +2684,20 @@ loadRooms();
   }
   document.getElementById("odDuration").onchange = updateTotals;
   document.getElementById("odGuests").onchange = updateTotals;
+  /* ★ 勾個性／職業身分（含自訂輸入）→ RP 加價即時重算 */
+  document.getElementById("odRoleBox").addEventListener("change", updateTotals);
+  document.getElementById("odStyleBox").addEventListener("change", updateTotals);
+  document.getElementById("odRoleCustom").addEventListener("input", updateTotals);
+  document.getElementById("odStyleCustom").addEventListener("input", updateTotals);
 
-  document.getElementById("odFeeNote").textContent =
-    `（測試預設單價：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名 ${fmt(FEE.named)}／位／時段（店員可個別定價）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。正式價目以開幕公告為準）`;
+  function writeFeeNote() {
+    document.getElementById("odFeeNote").textContent =
+      `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價）・RP加價：勾選個性 ＋${fmt(FEE.persona)}、勾選職業身分 ＋${fmt(FEE.role)}（兩者皆選＝重度RP）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
+  }
+  writeFeeNote();
 
   /* ---------- 送出（測試＝產生明細文字） ---------- */
-  const pick = (nm) => document.querySelector(`input[name="${nm}"]:checked`)?.value || "隨緣";
+  const pick = pickVal;
   document.getElementById("odGenerate").onclick = () => {
     const c = calc();
     if (!dishes.size) { alert("請先在上方「茶點・餐單」點選至少 1 道料理。"); return; }
@@ -2686,6 +2724,7 @@ loadRooms();
     lines.push("　扮演身分：" + pick("odRole") + (roleCustom ? `／自訂：${roleCustom}` : ""));
     lines.push("　性別：" + pick("odGender"));
     lines.push("　服務風格：" + pick("odStyle") + (styleCustom ? `／自訂：${styleCustom}` : ""));
+    if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.rpFee ? `（個性${c.styleOn ? " ＋" + fmt(FEE.persona) : "—"}／職業身分${c.roleOn ? " ＋" + fmt(FEE.role) : "—"}）` : "（基本，無加價）"));
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
     lines.push("　店員服務小計：" + fmt(c.serviceTotal));
     lines.push("――― 包廂 ―――");
@@ -2703,7 +2742,55 @@ loadRooms();
     catch { ta.select(); document.execCommand("copy"); alert("已複製預約明細！"); }
   };
 
-  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms };
+  /* ---------- ★ v2.1：管理員線上修正價目（存 siteContent/config-orderfees） ---------- */
+  function openFees() {
+    document.getElementById("feeModal")?.remove();
+    const wrap = document.createElement("div");
+    wrap.className = "admin-modal";
+    wrap.id = "feeModal";
+    const row = (id, label, val) =>
+      `<label>${label}<input id="${id}" type="number" min="0" value="${val}" /></label>`;
+    wrap.innerHTML = `
+      <div class="admin-modal-card">
+        <h3>💰 預約價目設定（Gil）</h3>
+        ${row("feSeat",    "不指名（隨緣）／每 20 分鐘時段", FEE.seat)}
+        ${row("feNamed",   "指名基本／每位店員／每時段（店員可個別覆寫）", FEE.named)}
+        ${row("fePersona", "RP 加價：勾選個性（服務風格）／每單", FEE.persona)}
+        ${row("feRole",    "RP 加價：勾選職業扮演身分／每單", FEE.role)}
+        ${row("fePhoto",   "額外加拍／每張", FEE.photo)}
+        ${row("feMin",     "單點料理低消", FEE.min)}
+        <p class="admin-hint" id="feMsg">修改後全站立即生效（存於資料庫，蓋過網頁內建預設值）。</p>
+        <div class="admin-modal-btns">
+          <button type="button" id="feSave" class="admin-btn primary">儲存</button>
+          <button type="button" id="feCancel" class="admin-btn">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+    document.getElementById("feCancel").onclick = () => wrap.remove();
+    document.getElementById("feSave").onclick = async () => {
+      const msg = document.getElementById("feMsg");
+      try {
+        const vals = {
+          seat:    Number(document.getElementById("feSeat").value)    || 0,
+          named:   Number(document.getElementById("feNamed").value)   || 0,
+          persona: Number(document.getElementById("fePersona").value) || 0,
+          role:    Number(document.getElementById("feRole").value)    || 0,
+          photo:   Number(document.getElementById("fePhoto").value)   || 0,
+          min:     Number(document.getElementById("feMin").value)     || 0,
+        };
+        await setDoc(doc(db, "siteContent", "config-orderfees"), vals, { merge: true });
+        Object.assign(FEE, vals);
+        document.querySelectorAll("#staffList .staff-pick").forEach((el) => el.remove());
+        refreshStaff();
+        writeFeeNote();
+        updateTotals();
+        wrap.remove();
+      } catch (e) { msg.textContent = "❌ 儲存失敗：" + (e.message || e); }
+    };
+  }
+
+  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees };
   decorateMenu();
   refreshStaff();
   refreshRooms();

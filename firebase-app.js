@@ -1885,6 +1885,7 @@ function closeStaffForm() {
    }
 ------------------------------------------------------------------------------ */
 async function seedDefaultStaff() {
+  staffCache = await removeDuplicatesByName(staffCache, "店員");   /* ★ 2026-07-13 先清重複 */
   const existing = new Set(staffCache.map((x) => x.data.name));   // 資料庫已有的店員名字
   const missing  = DEFAULT_STAFF.filter((s) => !existing.has(s.name));
   if (!missing.length) {
@@ -2259,7 +2260,41 @@ function closeMenuForm() {
 /* ---------- 一鍵匯入預設餐單（只補缺漏，以品名去重） ----------
    ★ 2026-07-12：改版換餐單後，若資料庫裡還有「不在新預設名單內」的舊餐點，
    會先詢問要不要一併刪除（確定＝整份換新；取消＝保留舊的、只補缺漏） */
+/* ============================================================
+   ★ 2026-07-13：重複資料清理（共用工具）
+   ------------------------------------------------------------
+   起因：先前資料庫「讀取」壞掉（複合索引問題）期間，每按一次「⤓ 匯入」
+   程式都誤判資料庫是空的、把整份預設再寫一次 → 同名資料疊了好幾份。
+   本工具在三個匯入按鈕開頭執行：同名（同 kind）只留一筆，優先保留
+   「內容最豐富」的那筆（自訂照片 > 有標價/人設 > 先到），其餘詢問後刪除。
+   ============================================================ */
+async function removeDuplicatesByName(cache, label) {
+  const byName = new Map();
+  const extras = [];
+  const scoreOf = (y) =>
+    (((y.data.photo || "").startsWith("data:") || (y.data.photos || []).some((p) => String(p).startsWith("data:"))) ? 4 : 0) +
+    (y.data.price ? 2 : 0) + (y.data.persona ? 1 : 0) + (y.data.badge ? 1 : 0);
+  for (const x of cache) {
+    const n = x.data.name;
+    if (!n) { extras.push(x); continue; }          // 連名字都沒有的空資料一併清
+    const kept = byName.get(n);
+    if (!kept) { byName.set(n, x); continue; }
+    if (scoreOf(x) > scoreOf(kept)) { extras.push(kept); byName.set(n, x); }
+    else extras.push(x);
+  }
+  if (!extras.length) return cache;
+  if (!confirm(`偵測到 ${extras.length} 筆重複的${label}（先前匯入按鈕誤重複寫入所致）。\n\n按「確定」＝自動清除重複、每種只保留一筆（優先保留有自訂照片或標價的那筆）。`)) {
+    return cache;
+  }
+  try {
+    for (const x of extras) await deleteDoc(doc(db, "shopPartners", x.id));
+    alert(`✔ 已清除 ${extras.length} 筆重複${label}。`);
+  } catch (e) { alert("❌ 清除重複失敗：" + (e.message || e)); }
+  return Array.from(byName.values());
+}
+
 async function seedDefaultMenu() {
+  menuCache = await removeDuplicatesByName(menuCache, "餐點");   /* ★ 2026-07-13 先清重複 */
   const defaultNames = new Set(DEFAULT_MENU.map((m) => m.name));
   const stale = menuCache.filter((x) => !defaultNames.has(x.data.name));
   if (stale.length) {
@@ -2467,6 +2502,7 @@ function openRoomForm(id = null, r = {}) {
 
 /* 一鍵匯入預設包廂（同餐單模式：先問是否清掉不在名單內的舊包廂，再補匯入缺漏） */
 async function seedDefaultRooms() {
+  roomCache = await removeDuplicatesByName(roomCache, "包廂");   /* ★ 2026-07-13 先清重複 */
   const names = new Set(DEFAULT_ROOMS.map((r) => r.name));
   const stale = roomCache.filter((x) => !names.has(x.data.name));
   if (stale.length && confirm(`資料庫裡有 ${stale.length} 間不在預設名單內的包廂（例如「${stale[0].data.name}」）。\n\n按「確定」＝刪除它們換成預設名單；按「取消」＝保留、只補匯入缺漏。`)) {

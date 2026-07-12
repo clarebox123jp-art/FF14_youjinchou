@@ -1283,3 +1283,129 @@ img { -webkit-user-drag: none; user-select: none; }
   color: var(--gold, #a8863c);
   margin-top: 2px;
 }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：餐單「狀態標籤」（.menu-badge）
+   - 顯示在簡介下方的小印章樣式（活動限定／主廚推薦／自訂文字）
+   - 「已售完」自動轉灰（.is-soldout）
+   ============================================================ */
+.menu-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 12px;
+  font-size: .76rem;
+  letter-spacing: .18em;
+  color: var(--shu, #b3402a);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: rgba(179, 64, 42, 0.06);
+}
+.menu-badge.is-soldout {
+  color: #8a857d;
+  background: rgba(120, 115, 108, 0.08);
+  text-decoration: line-through;
+}
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：餐單「點價格改價」的管理員提示樣式
+   ============================================================ */
+.menu-price-edit { cursor: pointer; border-bottom: 1px dashed currentColor; }
+.menu-price-edit:hover { opacity: .75; }
+.menu-price-edit.is-empty { color: #9a9186; font-weight: 400; }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：線上點餐・試營運測試（#orderSection）
+   ============================================================ */
+.order-test-banner {
+  margin: 18px 0 26px;
+  padding: 14px 18px;
+  border: 2px dashed var(--shu, #b3402a);
+  border-radius: 8px;
+  background: rgba(179, 64, 42, 0.07);
+  color: var(--ink, #2c2620);
+  line-height: 1.8;
+}
+.order-test-banner strong { color: var(--shu, #b3402a); }
+.order-step { margin-top: 30px; }
+.order-step-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--ink);
+  border-left: 4px solid var(--gold, #b08d3f);
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+.order-note { display: block; font-size: .8rem; color: var(--muted, #8a857d); margin-top: 6px; }
+.order-empty { color: var(--muted, #8a857d); font-size: .9rem; }
+.order-dish-list { margin-top: 10px; }
+.order-dish-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 6px 2px; border-bottom: 1px dashed rgba(120,115,108,.3);
+  font-size: .95rem;
+}
+.order-min-note { margin-top: 10px; font-size: .88rem; color: var(--shu, #b3402a); }
+.order-min-note.ok { color: #3e7c4f; }
+
+.order-field { margin-top: 18px; }
+.order-label { display: block; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+.order-field select, .order-field input[type="text"], .order-field textarea {
+  width: 100%; max-width: 420px; padding: 8px 10px; margin-top: 6px;
+  border: 1px solid rgba(120,115,108,.45); border-radius: 6px;
+  background: rgba(255,255,255,.75); font: inherit; color: var(--ink);
+}
+.order-choice-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.order-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border: 1px solid rgba(176,141,63,.5); border-radius: 999px;
+  background: rgba(255,255,255,.6); font-size: .88rem; cursor: pointer; user-select: none;
+}
+.order-chip small { color: var(--muted, #8a857d); font-size: .74rem; }
+.order-chip:has(input:checked) {
+  background: rgba(179, 64, 42, 0.1);
+  border-color: var(--shu, #b3402a);
+  color: var(--shu, #b3402a);
+}
+.order-decency {
+  margin-top: 16px; padding: 10px 14px; font-size: .84rem; line-height: 1.8;
+  border-left: 3px solid var(--gold, #b08d3f);
+  background: rgba(176,141,63,.08); color: var(--ink);
+}
+.order-photo-row { display: flex; align-items: center; gap: 10px; font-size: .95rem; }
+.order-consent { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-size: .9rem; cursor: pointer; }
+.order-totals { max-width: 420px; margin: 6px 0 12px; }
+.order-totals > div { display: flex; justify-content: space-between; padding: 6px 2px; font-size: .95rem; }
+.order-totals .order-grand { border-top: 1px solid rgba(120,115,108,.4); margin-top: 4px; padding-top: 10px; font-size: 1.08rem; }
+.order-totals .order-grand b { color: var(--shu, #b3402a); }
+#odResult {
+  width: 100%; margin-top: 14px; padding: 12px;
+  border: 1px solid rgba(120,115,108,.45); border-radius: 8px;
+  background: rgba(255,255,255,.8); font: inherit; font-size: .88rem; color: var(--ink);
+}
+#odCopy { margin-top: 8px; }
+
+/* 餐點卡上的數量鈕 */
+.menu-order {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(120,115,108,.3);
+}
+.mo-btn {
+  width: 30px; height: 30px; line-height: 1;
+  border: 1px solid var(--gold, #b08d3f); border-radius: 50%;
+  background: rgba(255,255,255,.7); color: var(--ink);
+  font-size: 1.05rem; cursor: pointer;
+}
+.mo-btn:hover { background: var(--gold, #b08d3f); color: #fff; }
+.mo-qty, #odPhotoQty { min-width: 24px; text-align: center; font-weight: 700; }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：餐單小分類標題（.menu-subcat）
+   ============================================================ */
+.menu-subcat {
+  font-family: var(--font-display);
+  font-size: .98rem;
+  color: var(--gold, #b08d3f);
+  letter-spacing: .3em;
+  margin: 22px 0 4px;
+  padding-left: 2px;
+}
+.menu-subcat::before { content: "◆ "; font-size: .7em; vertical-align: 2px; }

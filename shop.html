@@ -52,7 +52,7 @@
       <p class="body" style="margin:0 auto">
         在白銀鄉的溫泉一隅，有一間以「人」為菜單的店。<br />
         醫生、小學老師、市井百業——選一位 NPC、挑一間包廂，<br />
-        以三十分鐘為一盞茶的長度，陪你聊上半晌、留一幀合影。
+        <!-- 舊：以三十分鐘為一盞茶的長度（2026-07-12 改制） -->以二十分鐘為一盞茶的長度，陪你聊上半晌、留一幀合影。
       </p>
       <!-- ★ RP商店 羽化插圖①（表演）：四邊柔邊透明，沿用 css/style.css 的 .feather-img -->
       <figure class="feather-img reveal" style="margin-top:28px">
@@ -80,7 +80,7 @@
   <hr class="divider" />
 
   <!-- ============================================================
-       ★ 2026-07-11 新增：服務內容（依新營運方向：NPC 坐檯陪聊為主、30 分鐘計費）
+       ★ 2026-07-11 新增：服務內容（依新營運方向：NPC 坐檯陪聊為主、20 分鐘計費／2026-07-12 由 30 分改制）
        - 文字全部走線上編輯；NPC 身分與包廂例子登入後點字即可改
        ============================================================ -->
   <section class="section">
@@ -88,14 +88,14 @@
       <div class="reveal">
         <p class="eyebrow">Menu · 服務內容</p>
         <h2>服務內容</h2>
-        <p class="body" style="margin-top:14px">主營坐檯陪聊與包廂拍照，佐以餐點；每 30 分鐘為一個計費單位，價目將於開幕時公告。</p>
+        <p class="body" style="margin-top:14px"><!-- 舊：每 30 分鐘為一個計費單位（2026-07-12 改制） -->主營坐檯陪聊與包廂拍照，佐以餐點；每 20 分鐘為一個計費單位，價目將於開幕時公告。</p>
       </div>
       <div class="job-grid reveal">
         <article class="job">
           <div class="num">主</div>
           <!-- 舊預設（2026-07-11 二次同步）：💬 NPC 坐檯陪聊 -->
           <h3>💬 坐檯陪聊</h3>
-          <p>以各種身分入席對坐——溫柔醫生、小學老師、攻略嚮導、居酒屋老闆娘……市井百業任君指定。可挑選包廂場景（診療室、教室、和室茶間、溫泉雅座等），以 30 分鐘為一單位計時。</p>
+          <p>以各種身分入席對坐——溫柔醫生、小學老師、攻略嚮導、居酒屋老闆娘……市井百業任君指定。可挑選包廂場景（診療室、教室、和室茶間、溫泉雅座等），以 20 分鐘為一單位計時。<!-- 舊：30 分鐘（2026-07-12 改制） --></p>
         </article>
         <article class="job">
           <div class="num">主</div>
@@ -141,19 +141,19 @@
        - 單價數字先留佔位「—」，老師之後可「線上編輯」直接改，
          或提供數字由 Claude 烘進預設。
        - 小算盤公式：客人數 × 店員數 × 時長單位 × 指名費 ＋ 包廂費
-         （時長單位＝每 30 分鐘一單位；main.js 第 15 段讀 data-price-* 即時試算）
+         （時長單位＝每 20 分鐘一單位（2026-07-12 由 30 分改制）；main.js 第 15 段讀 data-price-* 即時試算）
        ============================================================ -->
   <section class="section" style="padding-top:0">
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Pricing · 帳目・計費方式</p>
         <h2>帳目・計費方式</h2>
-        <p class="body" style="margin-top:14px">緣分以「盞」計——每 30 分鐘為一盞茶的時光；下列價目為參考，正式價格以開幕公告為準。</p>
+        <p class="body" style="margin-top:14px"><!-- 舊：每 30 分鐘為一盞（2026-07-12 改制） -->緣分以「盞」計——每 20 分鐘為一盞茶的時光；下列價目為參考，正式價格以開幕公告為準。</p>
       </div>
 
       <div class="price-card reveal">
         <div class="price-row">
-          <span class="price-name">指名費 · 每位店員 / 每 30 分</span>
+          <span class="price-name">指名費 · 每位店員 / 每 20 分</span>
           <p class="price-val" data-price-name>— Gil</p>
         </div>
         <div class="price-row">
@@ -179,10 +179,11 @@
           </label>
           <label class="calc-field">時長
             <select id="calcDur">
-              <option value="1">30 分鐘（1 盞）</option>
-              <option value="2">1 小時（2 盞）</option>
-              <option value="3">1.5 小時（3 盞）</option>
-              <option value="4">2 小時（4 盞）</option>
+              <!-- 舊時長選項（30 分制，2026-07-12 改制備查）：30分/1小時/1.5小時/2小時＝1~4盞 -->
+              <option value="1">20 分鐘（1 盞）</option>
+              <option value="2">40 分鐘（2 盞）</option>
+              <option value="3">1 小時（3 盞）</option>
+              <option value="4">1 小時 20 分（4 盞）</option>
             </select>
           </label>
           <label class="calc-field calc-check">
@@ -298,6 +299,124 @@
       <p class="body" id="staffEmpty" style="text-align:center;margin-top:30px;display:none">店員名簿整理中，敬請期待。</p>
 
       <!-- ★ 2026-07-11：Discord 招募 CTA 已隨「店舖職務」一起移到頁面底部 -->
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================
+       ★ 2026-07-12 新增：線上點餐・試營運測試（第 17 段點餐模組的畫面）
+       - 料理數量按鈕由 JS 直接長在上方「茶點・餐單」每張卡上
+       - 本區＝店員服務選單＋明細總額＋產生訂單文字（複製後貼 Discord）
+       - data-fee-*＝測試用預設單價（Gil）；data-min-order＝低消門檻
+         正式定價後改這裡的數字即可（或請 Claude 改）
+       ============================================================ -->
+  <section class="section" id="orderSection"
+           data-fee-seat="1000" data-fee-named="500" data-fee-photo="1000" data-min-order="5000">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Order · 線上點餐</p>
+        <h2>線上點餐・試營運測試</h2>
+      </div>
+
+      <div class="order-test-banner reveal">
+        ⚠ 本店<strong>尚未正式營業</strong>——此點餐選單目前<strong>僅供功能測試</strong>，
+        送出不會成立任何訂單、不會有店員與您聯繫；所有價格皆為測試預設值，正式價目以開幕公告為準。
+      </div>
+
+      <!-- 步驟一：料理 -->
+      <div class="order-step reveal">
+        <h3 class="order-step-title">壹 · 挑選料理</h3>
+        <p class="body">請捲回上方「茶點・餐單」，在想吃的餐點卡片上按「＋」加入；此處會即時列出已點內容。
+          <span class="order-note">單點料理低消 5,000 Gil；未標價餐點暫不計入金額。</span></p>
+        <div id="orderDishList" class="order-dish-list"><p class="order-empty">尚未點選任何餐點。</p></div>
+        <p id="orderMinNote" class="order-min-note"></p>
+      </div>
+
+      <!-- 步驟二：店員服務 -->
+      <div class="order-step reveal">
+        <h3 class="order-step-title">貳 · 店員服務</h3>
+
+        <div class="order-field">
+          <span class="order-label">陪聊時長（20 分鐘為一個時段，每位顧客以 60 分鐘為限）</span>
+          <select id="odDuration">
+            <option value="20">20 分鐘（1 時段）</option>
+            <option value="40">40 分鐘（2 時段）</option>
+            <option value="60">60 分鐘（3 時段）</option>
+          </select>
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">指名店員（最多 3 位；不指名請勾「隨緣」）</span>
+          <div id="odStaffBox" class="order-choice-wrap"><!-- JS 依店員名簿產生 --></div>
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">扮演身分（參考選項，也可自行輸入）</span>
+          <div id="odRoleBox" class="order-choice-wrap"><!-- JS 產生 --></div>
+          <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂身分（選填，例：占星術士）" />
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">店員性別</span>
+          <div class="order-choice-wrap">
+            <label class="order-chip"><input type="radio" name="odGender" value="男" />男</label>
+            <label class="order-chip"><input type="radio" name="odGender" value="女" />女</label>
+            <label class="order-chip"><input type="radio" name="odGender" value="隨緣" checked />隨緣</label>
+          </div>
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">服務風格（個性；也可自行輸入）</span>
+          <div id="odStyleBox" class="order-choice-wrap"><!-- JS 產生 --></div>
+          <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" />
+        </div>
+
+        <p class="order-decency">
+          ⚖ 自訂身分與服務風格請符合<strong>善良風俗</strong>：請勿輸入涉及色情、暴力、歧視、騷擾
+          或違反遊戲服務條款的內容；本店保留調整措辭與婉拒服務的權利。
+        </p>
+
+        <div class="order-field">
+          <span class="order-label">拍照服務（每次消費已包含 1 張專業拍照）</span>
+          <div class="order-photo-row">
+            額外加拍
+            <button type="button" class="mo-btn" id="odPhotoMinus">−</button>
+            <span id="odPhotoQty">0</span>
+            <button type="button" class="mo-btn" id="odPhotoPlus">＋</button>
+            張
+          </div>
+          <p class="order-note">加拍費用將支付給配合入鏡的店員與攝影師。</p>
+        </div>
+
+        <div class="order-field">
+          <span class="order-label">顧客暱稱與備註（選填）</span>
+          <input type="text" id="odNick" maxlength="20" placeholder="您的暱稱（角色名）" />
+          <textarea id="odMemo" rows="2" maxlength="200" placeholder="其他備註（包廂偏好、話題禁區…）"></textarea>
+        </div>
+
+        <label class="order-consent">
+          <input type="checkbox" id="odAgree" />
+          我已閱讀「帳前約定」入店須知，並同意自訂內容符合善良風俗。
+        </label>
+      </div>
+
+      <!-- 步驟三：明細與總額 -->
+      <div class="order-step reveal">
+        <h3 class="order-step-title">參 · 明細與總額</h3>
+        <div class="order-totals">
+          <div><span>料理小計</span><b id="odDishTotal">0 Gil</b></div>
+          <div><span>服務小計</span><b id="odServiceTotal">0 Gil</b></div>
+          <div class="order-grand"><span>總計</span><b id="odGrandTotal">0 Gil</b></div>
+        </div>
+        <p class="order-note" id="odFeeNote"><!-- JS 填測試單價說明 --></p>
+        <button type="button" class="btn primary" id="odGenerate">產生訂單明細（測試）</button>
+        <div id="odResultWrap" style="display:none">
+          <textarea id="odResult" rows="12" readonly></textarea>
+          <button type="button" class="btn" id="odCopy">📋 複製明細</button>
+          <p class="order-note">測試模式：複製後不會送出。正式營業後，此明細可貼到 Discord 預約區或預約表單。</p>
+        </div>
+      </div>
     </div>
   </section>
 

@@ -170,8 +170,15 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
    - 關閉：右上角 ×、點灰色背景、Esc　　切換：左右箭頭鈕、鍵盤 ← →、手機左右滑
 ------------------------------------------------------------ */
 (function () {
+  /* 舊版（鐵則①保留備查）：頁面載入當下沒有 .photo 就整個略過——
+     但 shop.html 的餐單卡是 Firebase 之後才動態渲染的，會被誤跳過
   const imgs = document.querySelectorAll(".photo .photo-frame img");
   if (!imgs.length) return;
+  */
+  // ★ 2026-07-12：有靜態照片「或」有餐單容器（#menuList，照片晚點才進來）都初始化；
+  //   點擊走事件委派，動態新增的餐點照片自動有燈箱＋左右切換
+  const imgs = document.querySelectorAll(".photo .photo-frame img");
+  if (!imgs.length && !document.getElementById("menuList")) return;
 
   const lb = document.createElement("div");
   lb.className = "lightbox";
@@ -193,9 +200,11 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   let idx = 0;         // 目前顯示第幾張
 
   // 取某張照片所屬群組裡「目前可見」的照片（隱藏的跳過）
-  // 相簿＝同一條 .car-track；餐單＝同一個 .menu-grid；其餘退回全頁
+  // 相簿＝同一條 .car-track；餐單＝同一個 .menu-group；其餘退回全頁
+  // ★ 2026-07-12：餐單細分前菜/主餐/甜點/飲料後，改以整個大分類（.menu-group）
+  //   為切換範圍，左右切換才不會被小分類切得太碎（舊值＝.menu-grid，備查）
   function siblingsOf(fig) {
-    const scope = fig.closest(".car-track, .menu-grid") || document;
+    const scope = fig.closest(".car-track, .menu-group") || document;
     return Array.from(scope.querySelectorAll(".photo"))
       .filter((p) => p.style.display !== "none" && p.querySelector(".photo-frame img"));
   }
@@ -644,6 +653,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 /* ------------------------------------------------------------
    15) RP 商店：計費小算盤＋社群入口列（只在 shop.html 作用）
    - 小算盤公式：客人數 × 店員數 × 時長(盞) × 指名費 ＋ 包廂費
+     （★ 2026-07-12：一盞＝20 分鐘，由 30 分鐘改制；公式本身不變）
    - 單價讀自帶 data-price-name／data-price-room 的欄位文字，
      管理員線上改數字後即時反映（每次算都重讀，所以改完就生效）
    - 社群列：href 還停在「#」的按鈕自動隱藏（噗浪／Threads 未開通時）

@@ -190,6 +190,14 @@
         <p class="body price-note" style="margin-top:12px">※ 指名店員「服務性格」和「身分職業」將額外加收費用。<!-- 舊註（大廳外帶價/點價格修改說明）已由老師線上改寫並烘入 2026-07-12 --></p>
       </div>
 
+      <!-- ★ 2026-07-13：開始預約大按鈕（自線上預約區移來——看完價目即可入座點餐） -->
+      <div class="order-start-wrap reveal">
+        <button type="button" class="order-start-btn" id="odStart">
+          <span class="osb-deco">✦</span> 開 始 預 約 <span class="osb-deco">✦</span>
+          <small>從挑選料理開始，一路點到送出</small>
+        </button>
+      </div>
+
       <!-- ★ 2026-07-12 移除：互動小算盤（與頁尾「線上預約・肆 明細與送出」的結算重複）
            整塊保留備查；若要復原，把下方註解拆掉即可（main.js 第 15 段有防呆，元素不存在不會報錯）
       <!~~ 互動小算盤 ~~>
@@ -360,13 +368,7 @@
         送出不會成立任何訂單、不會有店員與您聯繫；所有價格皆為測試預設值，正式價目以開幕公告為準。
       </div>
 
-      <!-- ★ 2026-07-12：開始預約大按鈕（捲動至餐單區，引導顧客從壹開始點） -->
-      <div class="order-start-wrap reveal">
-        <button type="button" class="order-start-btn" id="odStart">
-          <span class="osb-deco">✦</span> 開 始 預 約 <span class="osb-deco">✦</span>
-          <small>從挑選料理開始，一路點到送出</small>
-        </button>
-      </div>
+      <!-- ★ 2026-07-13：「開始預約」大按鈕已移至「帳目・計費方式」區下方（原位於此，備查） -->
 
       <!-- 壹：料理（必選，低消 5000） -->
       <div class="order-step reveal">

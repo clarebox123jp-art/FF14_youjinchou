@@ -88,7 +88,8 @@
       <div class="reveal">
         <p class="eyebrow">Menu · 服務內容</p>
         <h2>服務內容</h2>
-        <p class="body" style="margin-top:14px"><!-- 舊：每 30 分鐘為一個計費單位（2026-07-12 改制） -->主營坐檯陪聊與包廂拍照，佐以餐點；每 20 分鐘為一個計費單位，價目將於開幕時公告。</p>
+        <p class="body" style="margin-top:14px"><!-- 舊：每 30 分鐘為一個計費單位（2026-07-12 改制）；2026-07-12 深夜補 RP 定位 -->主營坐檯陪聊與包廂拍照，佐以餐點；每 20 分鐘為一個計費單位，價目將於開幕時公告。</p>
+        <p class="body rp-level-line">本店定位為<strong>輕〜中度 RP</strong>：以輕鬆聊天與情境點綴為主，想淺淺入戲或純聊天都歡迎，不強求演技、也不做重度連續劇情。</p>
       </div>
       <div class="job-grid reveal">
         <article class="job">
@@ -152,19 +153,41 @@
       </div>
 
       <div class="price-card reveal">
+        <!-- ★ 2026-07-12 深夜改版：完整價目表（依線上預約 v2.1 計價結構烘入；
+             老師線上填的 100000／50000／5000 已對應烘進下列預設值）
+             舊三列（指名費/包廂費/佐談餐點，data-price-* 供已移除的小算盤用）備查：
+             指名費 · 每位店員 / 每 20 分＝100000 Gil（線上編輯值）
+             包廂費 · 每次＝50000 Gil（線上編輯值）
+             佐談餐點 · 每份＝5000 Gil（線上編輯值） -->
         <div class="price-row">
-          <span class="price-name">指名費 · 每位店員 / 每 20 分</span>
-          <p class="price-val" data-price-name>— Gil</p>
+          <span class="price-name">陪聊 · 不指名（隨緣）／每 20 分鐘時段</span>
+          <p class="price-val">50,000 Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">陪聊 · 指名基本／每位店員／每時段</span>
+          <p class="price-val">100,000 Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">RP 加價 · 指定個性（服務風格）／每單</span>
+          <p class="price-val">＋50,000 Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">RP 加價 · 指定職業扮演身分／每單</span>
+          <p class="price-val">＋100,000 Gil</p>
+        </div>
+        <div class="price-row">
+          <span class="price-name">專業拍照 · 每次消費含 1 張；額外加拍／每張</span>
+          <p class="price-val">＋5,000 Gil</p>
         </div>
         <div class="price-row">
           <span class="price-name">包廂費 · 每次</span>
-          <p class="price-val" data-price-room>— Gil</p>
+          <p class="price-val">依各包廂標示</p>
         </div>
         <div class="price-row">
-          <span class="price-name">佐談餐點 · 每份</span>
-          <p class="price-val" data-price-food>— Gil</p>
+          <span class="price-name">佐談餐點 · 依餐單標價；單點低消</span>
+          <p class="price-val">5,000 Gil</p>
         </div>
-        <p class="body price-note" style="margin-top:12px">※ 大廳與外帶價可能不同，實際以現場公告為準。管理員登入後可直接點價格數字修改（例：改成「20,000 Gil」）。<!-- 舊述及小算盤（已移除，改用頁尾線上預約結算）2026-07-12 --></p>
+        <p class="body price-note" style="margin-top:12px">※ 指名店員「服務性格」和「身分職業」將額外加收費用。<!-- 舊註（大廳外帶價/點價格修改說明）已由老師線上改寫並烘入 2026-07-12 --></p>
       </div>
 
       <!-- ★ 2026-07-12 移除：互動小算盤（與頁尾「線上預約・肆 明細與送出」的結算重複）
@@ -211,7 +234,7 @@
          寫入後即可逐張 ✎編輯／✕刪除，並線上上傳照片
        - 點照片放大看大圖（main.js 第 5 段燈箱，走 .photo 結構）
        ============================================================ -->
-  <section class="section">
+  <section class="section" id="menuSection"><!-- ★ 2026-07-12：加錨點供「開始預約」按鈕捲動 -->
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Menu · 茶點・餐單</p>
@@ -325,7 +348,7 @@
        - data-fee-photo＝加拍每張；data-min-order＝單點料理低消
        ============================================================ -->
   <section class="section" id="orderSection"
-           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="1000" data-min-order="5000">
+           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="5000" data-min-order="5000">
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Order · 線上預約點餐</p>
@@ -335,6 +358,14 @@
       <div class="order-test-banner reveal">
         ⚠ 本店<strong>尚未正式營業</strong>——此預約選單目前<strong>僅供功能測試</strong>，
         送出不會成立任何訂單、不會有店員與您聯繫；所有價格皆為測試預設值，正式價目以開幕公告為準。
+      </div>
+
+      <!-- ★ 2026-07-12：開始預約大按鈕（捲動至餐單區，引導顧客從壹開始點） -->
+      <div class="order-start-wrap reveal">
+        <button type="button" class="order-start-btn" id="odStart">
+          <span class="osb-deco">✦</span> 開 始 預 約 <span class="osb-deco">✦</span>
+          <small>從挑選料理開始，一路點到送出</small>
+        </button>
       </div>
 
       <!-- 壹：料理（必選，低消 5000） -->
@@ -443,9 +474,29 @@
           <input type="text" id="odNick" maxlength="20" placeholder="您的暱稱（角色名）" />
           <textarea id="odMemo" rows="2" maxlength="200" placeholder="特殊需求（話題禁區、慶生驚喜、飲食偏好…）"></textarea>
         </div>
+        <!-- ★ 2026-07-12 深夜新增：預約注意事項（彙整社群常見 RP 店爭議，理直氣和版） -->
+        <div class="order-notice">
+          <h4 class="order-notice-title">預約前，請花一分鐘知悉</h4>
+          <p class="order-notice-rp">本店為<strong>輕〜中度 RP</strong> 店——輕鬆互動為主、氛圍點綴為輔；期待重度沉浸劇情的旅人，建議先與幹部聊聊再預約。</p>
+          <p class="order-notice-sub">請您配合的事</p>
+          <ul class="order-notice-list">
+            <li>尊重每一場演出與交談——請勿打斷表演、洗頻、對店員或其他客人做出騷擾性的動作與發言。惡意鬧場者，店家將中止服務並列入黑名單。</li>
+            <li>RP 的一切互動以「雙方同意」為前提。本店不提供、也不接受任何限制級（ERP）內容，請勿以角色設定為由要求他人越界。</li>
+            <li>入店請配合店內世界觀與氛圍；偶爾出戲無妨，但請避免持續破壞他人沉浸感的言行。</li>
+            <li>消費不是特權——請以對待朋友的基本尊重對待店員，我們也會以同樣的尊重回應您。</li>
+          </ul>
+          <p class="order-notice-sub">我們承諾的事</p>
+          <ul class="order-notice-list">
+            <li>現場備有維持秩序的工作人員，遇違規行為會即時勸阻、必要時請離，不讓少數人破壞大家的夜晚。</li>
+            <!-- ★ 2026-07-12 深夜：店員服務守則相關內容移至「店舖職務」區（見店員服務守則卡），此處保留顧客申訴管道一句 -->
+            <li>若消費體驗不佳，歡迎私訊會長或幹部回報，我們會處理。</li>
+            <li>宣傳與服務內容一致：本店是劇情向 RP 店，沒有檯面下的其他交易。</li>
+            <li>保護彼此隱私——您在店內的劇情與設定不會被外流談論；也請您同樣不截圖、不外傳他人的私密劇情。</li>
+          </ul>
+        </div>
         <label class="order-consent">
           <input type="checkbox" id="odAgree" />
-          我已閱讀「帳前約定」入店須知，並同意自訂內容符合善良風俗。
+          我已閱讀<a href="#rulesSection" class="order-rules-link">「帳前約定」入店須知</a>，並同意自訂內容符合善良風俗。
         </label>
         <button type="button" class="btn primary" id="odGenerate">送出預約訂單（測試）</button>
         <div id="odResultWrap" style="display:none">
@@ -559,7 +610,7 @@
        ★ 2026-07-12 新增：帳前約定（入店須知 / RP 禮儀守則）
        條列式，全部可線上編輯；想增減守則複製／刪一個 <li> 即可。
        ============================================================ -->
-  <section class="section" style="padding-top:0">
+  <section class="section" style="padding-top:0" id="rulesSection">
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Etiquette · 帳前約定</p>
@@ -592,6 +643,18 @@
         <p class="eyebrow">Positions · 招募職務</p>
         <h2>店舖職務</h2>
         <p class="body" style="margin-top:14px">依商店需求而定，歡迎依你的專長與興趣認領。</p>
+      </div>
+
+      <!-- ★ 2026-07-12 深夜新增：店員服務守則（自預約注意事項分出的店員面內容，供應徵者知悉） -->
+      <div class="order-notice reveal" id="staffRules">
+        <h4 class="order-notice-title">店員服務守則（應徵前請先讀過）</h4>
+        <ul class="order-notice-list">
+          <li>值勤時維持角色與人設，避免長時間 OOC（跳出角色聊現實）；本店為輕〜中度 RP，自然、不尬戲即可。</li>
+          <li>生客熟客一視同仁，主動照顧初次來店的客人，不搞小圈圈。</li>
+          <li>一切互動以雙方同意為界；不進行任何 ERP 或檯面下交易，遇客人提出逾越要求，禮貌婉拒並回報管理人員。</li>
+          <li>尊重並保護客人隱私：店內劇情、客人設定與對話內容不外流、不在社群平台談論。</li>
+          <li>遇奧客鬧場或違規互動，交由現場管理人員處理，不與客人私下衝突。</li>
+        </ul>
       </div>
 
       <div class="job-grid reveal">

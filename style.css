@@ -1477,3 +1477,70 @@ img { -webkit-user-drag: none; user-select: none; }
 .staff-badge.is-off { color: #8a857d; }
 .order-picked { font-size: .9rem; color: var(--shu, #b3402a); margin: 6px 0 4px; }
 .admin-check { display: flex; align-items: center; gap: 8px; }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：「開始預約」精緻大按鈕
+   ============================================================ */
+.order-start-wrap { text-align: center; margin: 6px 0 10px; }
+.order-start-btn {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px 46px;
+  font-family: var(--font-display);
+  font-size: 1.25rem; letter-spacing: .32em; text-indent: .32em;
+  color: #fdf6ea;
+  background: linear-gradient(145deg, #b3402a, #8f2f1e);
+  border: 1px solid rgba(201,164,92,.85);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(143,47,30,.35), inset 0 1px 0 rgba(255,255,255,.18);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.order-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(143,47,30,.45), inset 0 1px 0 rgba(255,255,255,.22);
+  filter: brightness(1.06);
+}
+.order-start-btn:active { transform: translateY(0); }
+.order-start-btn small {
+  font-size: .72rem; letter-spacing: .14em; text-indent: .14em;
+  color: rgba(253,246,234,.85); font-family: var(--font-body, inherit);
+}
+.osb-deco { color: var(--gold, #c9a45c); font-size: .9em; }
+
+/* ★ 2026-07-12 檔尾疊加：同意欄的「帳前約定」連結樣式 */
+.order-rules-link { color: var(--shu, #b3402a); text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* ============================================================
+   ★ 2026-07-12 檔尾疊加：預約注意事項（.order-notice）
+   ============================================================ */
+.order-notice {
+  margin: 20px 0 4px;
+  padding: 16px 20px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(176,141,63,.4);
+  border-left: 4px solid var(--shu, #b3402a);
+  border-radius: 8px;
+}
+.order-notice-title {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: .1em;
+}
+.order-notice-sub {
+  font-size: .85rem; font-weight: 700;
+  color: var(--shu, #b3402a);
+  margin: 10px 0 4px; letter-spacing: .15em;
+}
+.order-notice-list { margin: 0; padding-left: 1.3em; }
+.order-notice-list li {
+  font-size: .87rem; line-height: 1.85;
+  margin-bottom: 4px;
+}
+
+/* ★ 2026-07-12 檔尾疊加：RP 定位標語與店員守則沿用 order-notice 樣式 */
+.rp-level-line { margin-top: 10px; color: var(--shu, #b3402a); }
+.rp-level-line strong { letter-spacing: .12em; }
+.order-notice-rp { font-size: .86rem; line-height: 1.8; margin-bottom: 6px; color: var(--ink); }
+.order-notice-rp strong { color: var(--shu, #b3402a); letter-spacing: .1em; }

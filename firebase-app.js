@@ -2299,7 +2299,9 @@ const DEFAULT_ROOMS = [
   { name: "咖啡廳吧檯雅座",   cap: 2, desc: "彩繪玻璃與香草吊燈下的吧檯座，看店員在眼前調理一杯緣分。",     price: "", available: true, badge: "", photo: "images/rooms/cafe-counter.webp",   order: 2 },
   { name: "和風別墅",         cap: 2, desc: "圍爐燒水、竹影搖曳，褟褟米上的私語時光。",                     price: "", available: true, badge: "", photo: "images/rooms/wafu-villa.webp",     order: 3 },
   { name: "知識天井澡堂",     cap: 2, desc: "天光自玻璃頂灑落，書香與湯煙共蒸騰的祕湯書齋。",               price: "", available: true, badge: "", photo: "images/rooms/skylight-bath.webp",  order: 4 },
-  { name: "中央舞台貴賓席",   cap: 3, desc: "紅幕與薔薇簇擁的最佳視野，把整間店的燈火盡收眼底。",           price: "", available: true, badge: "", photo: "images/rooms/stage-vip.webp",      order: 5 },
+  /* ★ 2026-07-12 深夜：中央舞台由貴賓席改為開放區域（免費、供公會成員掛網、座位不保證）
+     舊值備查：{ name:"中央舞台貴賓席", cap:3, desc:"紅幕與薔薇簇擁的最佳視野，把整間店的燈火盡收眼底。", price:"" } */
+  { name: "中央舞台區",       cap: 4, desc: "紅幕與薔薇簇擁的中央舞台，開放給公會成員自由歇腳掛網——不收分文，但座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 5 },
   { name: "夢幻花叢",         cap: 1, desc: "白花如雪、彩鯉悠游，吊椅輕晃的一人份夢境。",                   price: "", available: true, badge: "", photo: "images/rooms/dream-garden.webp",   order: 6 },
   { name: "金碧輝煌主沙發",   cap: 1, desc: "金磚與典籍環繞的豪奢一隅，貓咪掌櫃偶爾同席。",                 price: "", available: true, badge: "", photo: "images/rooms/golden-lounge.webp",  order: 7 },
   { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
@@ -2679,7 +2681,7 @@ loadRooms();
     document.getElementById("odDishTotal").textContent    = fmt(c.dishTotal);
     document.getElementById("odServiceTotal").textContent = fmt(c.serviceTotal);
     document.getElementById("odRoomTotal").textContent    = pickedRoom
-      ? (pickedRoom.price ? fmt(c.roomFee) : "價目待公告") : "未選包廂";
+      ? (pickedRoom.price ? fmt(c.roomFee) : (pickedRoom.rawPrice || "價目待公告")) : "未選包廂";
     document.getElementById("odGrandTotal").textContent   = fmt(c.grand);
   }
   document.getElementById("odDuration").onchange = updateTotals;
@@ -2728,7 +2730,7 @@ loadRooms();
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
     lines.push("　店員服務小計：" + fmt(c.serviceTotal));
     lines.push("――― 包廂 ―――");
-    lines.push(`　${pickedRoom.name}（最多 ${pickedRoom.cap} 位）：` + (pickedRoom.rawPrice ? fmt(c.roomFee) : "價目待公告"));
+    lines.push(`　${pickedRoom.name}（最多 ${pickedRoom.cap} 位）：` + (pickedRoom.price ? fmt(c.roomFee) : (pickedRoom.rawPrice || "價目待公告")));
     lines.push("――― 總計：" + fmt(c.grand) + " ―――");
     const memo = document.getElementById("odMemo").value.trim();
     if (memo) lines.push("特殊需求：" + memo);
@@ -2789,6 +2791,13 @@ loadRooms();
       } catch (e) { msg.textContent = "❌ 儲存失敗：" + (e.message || e); }
     };
   }
+
+  /* ★ 2026-07-12：「開始預約」按鈕 → 平滑捲到餐單區，讓顧客從壹開始點 */
+  const startBtn = document.getElementById("odStart");
+  if (startBtn) startBtn.onclick = () => {
+    const target = document.getElementById("menuSection") || document.getElementById("menuList");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees };
   decorateMenu();

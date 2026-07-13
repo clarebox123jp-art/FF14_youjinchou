@@ -1693,3 +1693,26 @@ img { -webkit-user-drag: none; user-select: none; }
   text-align: right;
 }
 .corner-poem .cp-title { margin-bottom: 2px; }
+
+/* ============================================================
+   ★ 2026-07-13 深夜檔尾疊加：顧客資訊列＋接單通知視窗
+   ============================================================ */
+.cust-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.cust-row input { flex: 1 1 180px; max-width: 240px; padding: 8px 10px;
+  border: 1px solid rgba(120,115,108,.45); border-radius: 6px;
+  background: rgba(255,255,255,.75); font: inherit; color: var(--ink); }
+.cust-co { margin-top: 8px; }
+
+.od-toast {
+  position: fixed; right: 18px; bottom: 18px; z-index: 9999;
+  max-width: 320px; padding: 14px 16px;
+  background: #fdf6ea; color: var(--ink, #2c2620);
+  border: 1px solid var(--gold, #b08d3f); border-left: 5px solid var(--shu, #b3402a);
+  border-radius: 10px; box-shadow: 0 10px 28px rgba(44,38,32,.3);
+  display: flex; flex-direction: column; gap: 8px;
+  animation: odToastIn .35s ease;
+}
+.od-toast b { font-size: 1rem; }
+.od-toast span { font-size: .86rem; color: #6b655c; }
+.od-toast-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+@keyframes odToastIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }

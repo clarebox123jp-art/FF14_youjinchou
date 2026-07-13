@@ -221,6 +221,29 @@
         </button>
       </div>
 
+      <!-- ★ 2026-07-13 深夜新增：顧客資訊（點餐前先登記；同行最多 3 位，勾選後每位都要填齊） -->
+      <div class="order-step reveal" id="custInfo">
+        <h3 class="order-step-title">入席登記 · 顧客資訊</h3>
+        <div class="order-field">
+          <span class="order-label">您的所屬伺服器與遊戲角色 ID（必填）</span>
+          <div class="cust-row">
+            <input type="text" id="custServer" maxlength="12" placeholder="伺服器（例：鳳凰）" />
+            <input type="text" id="custId" maxlength="20" placeholder="角色 ID（例：小克瑞爾）" />
+          </div>
+        </div>
+        <label class="order-consent" style="margin-top:4px">
+          <input type="checkbox" id="custHasCo" /> 有同行顧客（最多 3 位；勾選後，每一位都需填妥伺服器與 ID 才算完整）
+        </label>
+        <div id="custCoWrap" style="display:none">
+          <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行① 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行① 角色 ID" /></div>
+          <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行② 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行② 角色 ID" /></div>
+          <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行③ 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /></div>
+        </div>
+        <p class="order-note">同行者的所有點餐與指名店員費用，將合併計入<strong>同一張帳單</strong>。</p>
+        <!-- 防機器人蜜罐欄位：真人看不到也不會填；被填寫的送單一律擋下 -->
+        <input type="text" id="odWeb" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;height:0;opacity:0" aria-hidden="true" />
+      </div>
+
       <!-- ★ 2026-07-12 移除：互動小算盤（與頁尾「線上預約・肆 明細與送出」的結算重複）
            整塊保留備查；若要復原，把下方註解拆掉即可（main.js 第 15 段有防呆，元素不存在不會報錯）
       <!~~ 互動小算盤 ~~>
@@ -384,8 +407,8 @@
         </div>
 
         <div class="order-field">
-          <span class="order-label">同行人數（含您本人）</span>
-          <select id="odGuests">
+          <span class="order-label">同行人數（含您本人；由上方「顧客資訊」自動帶入）</span>
+          <select id="odGuests" disabled>
             <option value="1">1 位</option><option value="2">2 位</option>
             <option value="3">3 位</option><option value="4">4 位</option>
           </select>
@@ -507,6 +530,9 @@
             <li>入店請配合店內世界觀與氛圍；偶爾出戲無妨，但請避免持續破壞他人沉浸感的言行。</li>
             <li>消費不是特權——請以對待朋友的基本尊重對待店員，我們也會以同樣的尊重回應您。</li>
             <li>自訂身分與服務風格請符合善良風俗：請勿輸入涉及色情、暴力、歧視、騷擾或違反遊戲條款的字句；本店保留調整措辭與婉拒服務的權利。</li>
+            <li>同行光顧的所有點餐與指名店員費用，皆合併計入同一張帳單，由主客統一結帳。</li>
+            <li>請最晚於消費日 <strong>3 天前</strong>完成預訂，以利工作人員備料與排班。</li>
+            <li>預約成功卻無故未到將列入紀錄；本店將視連續取消或未到的情形，婉拒該顧客後續的預約。</li>
           </ul>
           <p class="order-notice-sub">我們承諾的事</p>
           <ul class="order-notice-list">

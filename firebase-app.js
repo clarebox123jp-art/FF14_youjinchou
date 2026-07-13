@@ -256,7 +256,7 @@ function buildAdminBar(email) {
     ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abMenuAdd" class="admin-btn primary">＋ 新增餐點</button><button type="button" id="abMenuSeed" class="admin-btn">⤓ 匯入預設餐單</button>' : ""}
     ${document.getElementById("roomList") ? '<button type="button" id="abRoomAdd" class="admin-btn primary">＋ 新增包廂</button><button type="button" id="abRoomSeed" class="admin-btn">⤓ 匯入預設包廂</button>' : ""}
-    ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button>' : ""}
+    ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
@@ -288,6 +288,8 @@ function buildAdminBar(email) {
   /* ★ 2026-07-12 v2.1：預約價目線上設定（實作在第 18 段，經 window.YJC_ORDER 呼叫） */
   const feeBtn = document.getElementById("abFees");
   if (feeBtn) feeBtn.onclick = () => window.YJC_ORDER?.openFees?.();
+  const ocfgBtn = document.getElementById("abOrderCfg");
+  if (ocfgBtn) ocfgBtn.onclick = () => window.YJC_ORDER?.openOrderCfg?.();
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -2592,6 +2594,39 @@ loadRooms();
   const num = (t) => parseInt(String(t || "").replace(/[^\d]/g, ""), 10) || 0;
 
   const pickVal = (nm) => document.querySelector(`input[name="${nm}"]:checked`)?.value || "隨緣";
+
+  /* ---------- ★ 2026-07-13 深夜：顧客資訊（伺服器/ID＋同行最多3位） ---------- */
+  const coWrap = document.getElementById("custCoWrap");
+  const hasCo  = document.getElementById("custHasCo");
+  if (hasCo) hasCo.onchange = () => { coWrap.style.display = hasCo.checked ? "" : "none"; syncGuests(); };
+  function coRows() {
+    return Array.from(document.querySelectorAll("#custCoWrap .cust-co")).map((row) => ({
+      server: row.querySelector(".coServer").value.trim(),
+      id:     row.querySelector(".coId").value.trim(),
+    }));
+  }
+  function syncGuests() {
+    const n = 1 + (hasCo && hasCo.checked ? coRows().filter((r) => r.server && r.id).length : 0);
+    const sel = document.getElementById("odGuests");
+    if (sel) sel.value = String(Math.min(4, Math.max(1, n)));
+    updateTotals();
+  }
+  document.querySelectorAll("#custCoWrap input").forEach((el) => el.addEventListener("input", syncGuests));
+  /* 顧客資訊驗證：回傳錯誤訊息或 null */
+  function validateCustomer() {
+    const sv = document.getElementById("custServer")?.value.trim();
+    const cid = document.getElementById("custId")?.value.trim();
+    if (!sv || !cid) return "請先在「入席登記 · 顧客資訊」填寫您的伺服器與角色 ID。";
+    if (hasCo && hasCo.checked) {
+      const rows = coRows();
+      const complete = rows.filter((r) => r.server && r.id);
+      const partial  = rows.filter((r) => (r.server && !r.id) || (!r.server && r.id));
+      if (partial.length) return "同行顧客資料不完整：每一位都需要「伺服器＋角色 ID」都填妥。";
+      if (!complete.length) return "已勾選「有同行顧客」，請至少填妥一位同行者的伺服器與 ID（或取消勾選）。";
+    }
+    return null;
+  }
+
   const dishes = new Map();
   let extraPhotos = 0;
   const pickedStaff = new Set();
@@ -2777,6 +2812,9 @@ loadRooms();
   const pick = pickVal;
   document.getElementById("odGenerate").onclick = () => {
     const c = calc();
+    if (document.getElementById("odWeb")?.value) return;   /* 蜜罐被填＝機器人，靜默擋下 */
+    const custErr = validateCustomer();
+    if (custErr) { alert(custErr); return; }
     if (!dishes.size) { alert("請先在上方「茶點・餐單」點選至少 1 道料理。"); return; }
     if (FEE.min && c.dishTotal < FEE.min) { alert("單點料理尚未達到低消 " + fmt(FEE.min) + "，請再加點一些餐點。"); return; }
     /* ★ 2026-07-13：包廂改為可不選——未指定者於中央舞台區（開放區域・免費）入席 */
@@ -2790,7 +2828,10 @@ loadRooms();
     lines.push("【茶談百緣｜幻想友人帳 RP 商店・測試預約單】");   /* ★ 2026-07-13 店名定案 */
     lines.push("※ 本店尚未正式營業，此明細僅為功能測試，不成立任何訂單。");
     lines.push("顧客暱稱：" + (document.getElementById("odNick").value.trim() || "（未填）"));
-    lines.push("同行人數：" + guests + " 位");
+    lines.push("顧客：" + document.getElementById("custServer").value.trim() + "｜" + document.getElementById("custId").value.trim());
+    if (hasCo && hasCo.checked) coRows().filter((r) => r.server && r.id)
+      .forEach((r, k) => lines.push(`同行${k + 1}：${r.server}｜${r.id}`));
+    lines.push("同行人數：" + guests + " 位（含本人；所有點餐與指名合併同一張帳單）");
     lines.push("――― 料理 ―――");
     dishes.forEach((v, n) => lines.push(`　${n} × ${v.qty}${v.price ? "　" + fmt(v.qty * v.price) : "（未定價）"}`));
     lines.push("　料理小計：" + fmt(c.dishTotal) + (FEE.min ? `（低消 ${fmt(FEE.min)} ✔）` : ""));
@@ -2812,8 +2853,21 @@ loadRooms();
     lines.push("――― 總計：" + fmt(c.grand) + " ―――");
     const memo = document.getElementById("odMemo").value.trim();
     if (memo) lines.push("特殊需求：" + memo);
-    document.getElementById("odResult").value = lines.join("\n");
+    const orderText = lines.join("\n");
+    document.getElementById("odResult").value = orderText;
     document.getElementById("odResultWrap").style.display = "";
+    /* ★ 2026-07-13：可送單時顯示送出按鈕（試用期＝僅管理員；正式開放在 🛎 設定打勾） */
+    let sb = document.getElementById("odSubmit");
+    if (canSubmitNow()) {
+      if (!sb) {
+        sb = document.createElement("button");
+        sb.type = "button"; sb.id = "odSubmit"; sb.className = "btn primary";
+        sb.style.marginTop = "8px";
+        document.getElementById("odCopy").after(sb);
+      }
+      sb.textContent = isAdmin && OCFG.open !== true ? "📨 送出預約單（管理員試用）" : "📨 送出預約單";
+      sb.onclick = () => submitOrder(orderText);
+    } else if (sb) sb.remove();
     document.getElementById("odResult").scrollIntoView({ behavior: "smooth", block: "center" });
   };
   document.getElementById("odCopy").onclick = async () => {
@@ -2821,6 +2875,161 @@ loadRooms();
     try { await navigator.clipboard.writeText(ta.value); alert("已複製預約明細！"); }
     catch { ta.select(); document.execCommand("copy"); alert("已複製預約明細！"); }
   };
+
+  /* ============================================================
+     ★ 2026-07-13 深夜：真送單（Google 表單）＋防濫用＋管理員接單通知
+     ------------------------------------------------------------
+     - 設定存 siteContent/config-orderform：
+       { formUrl（…/formResponse）, entryId（entry.123456）, csvUrl（回應試算表發布CSV）,
+         sheetUrl（訂單列表網址）, open（true=所有訪客可送；false=僅管理員試用）, vol（通知音量0-100） }
+     - 防濫用（純前端能做的都做了）：蜜罐欄位／同機 2 分鐘冷卻／同內容 10 分鐘防重送。
+       ※ 誠實說明：靜態網站擋不了決心滿滿的攻擊者，真正的流量防護在 Google 表單端
+       （表單可另開「僅限登入 Google 帳號者作答」＝最有效的防機器人）。
+     - 通知：管理員登入時每 45 秒輪詢 CSV，偵測到新回應→風鈴聲＋右下角視窗
+       （點開訂單列表／一鍵複製給顧客的預約成功通知訊息）。
+     ============================================================ */
+  const OCFG = { formUrl: "", entryId: "", csvUrl: "", sheetUrl: "", open: false, vol: 60 };
+  let ocfgLoaded = false;
+  (async () => {
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-orderform"));
+      if (snap.exists()) Object.assign(OCFG, snap.data() || {});
+    } catch (_) {}
+    ocfgLoaded = true;
+  })();
+
+  function canSubmitNow() {
+    return ocfgLoaded && OCFG.formUrl && OCFG.entryId && (OCFG.open === true || isAdmin);
+  }
+  function hashText(t) { let h = 0; for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; } return String(h); }
+  async function submitOrder(text) {
+    if (document.getElementById("odWeb")?.value) return;                       /* 蜜罐 */
+    const now = Date.now();
+    const lastTs = Number(localStorage.getItem("yjc_order_ts") || 0);
+    if (now - lastTs < 120000) { alert("送單太頻繁囉，請稍候 2 分鐘再試。"); return; }
+    const h = hashText(text);
+    if (localStorage.getItem("yjc_order_hash") === h && now - lastTs < 600000) {
+      alert("這張單剛剛已經送出過了，請不要重複送單。"); return;
+    }
+    try {
+      const body = new URLSearchParams();
+      body.append(OCFG.entryId, text);
+      await fetch(OCFG.formUrl, { method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+      localStorage.setItem("yjc_order_ts", String(now));
+      localStorage.setItem("yjc_order_hash", h);
+      alert("📨 預約單已送出！我們收到後會盡快與您聯繫。\n（明細已保留在下方，可自行複製留存）");
+    } catch (e) { alert("❌ 送出失敗，請改用「複製明細」貼到 Discord 預約區：" + (e.message || e)); }
+  }
+
+  /* ---------- 管理員接單通知（輪詢發布的回應 CSV） ---------- */
+  function parseCSV(t) {
+    const rows = []; let cur = [""], q = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) {
+        if (ch === '"') { if (t[i + 1] === '"') { cur[cur.length - 1] += '"'; i++; } else q = false; }
+        else cur[cur.length - 1] += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ",") cur.push("");
+      else if (ch === "\n") { rows.push(cur); cur = [""]; }
+      else if (ch !== "\r") cur[cur.length - 1] += ch;
+    }
+    if (cur.length > 1 || cur[0]) rows.push(cur);
+    return rows.filter((r) => r.some((c) => c.trim()));
+  }
+  function notifyToast(orderText) {
+    document.getElementById("odToast")?.remove();
+    const m = orderText.match(/顧客：([^｜\n]+)｜([^\n]+)/);
+    const server = m ? m[1].trim() : "", cid = m ? m[2].trim() : "";
+    const reply = `【茶談百緣】預約確認通知\n${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，已收到您的預約單！\n內容已登記，我們會依單準備。小提醒：\n・最晚請於消費日 3 天前完成預訂\n・同行點餐與指名將合併於同一張帳單\n如需修改或取消請提前告知，期待您的光臨 🍵`;
+    const t = document.createElement("div");
+    t.id = "odToast"; t.className = "od-toast";
+    t.innerHTML = `<b>🔔 收到新預約單！</b><span>${esc(cid ? `${server}｜${cid}` : "點開查看內容")}</span>
+      <div class="od-toast-btns">
+        ${OCFG.sheetUrl || OCFG.csvUrl ? `<button type="button" class="admin-btn primary" id="otOpen">開啟訂單列表</button>` : ""}
+        <button type="button" class="admin-btn" id="otCopy">📋 複製通知訊息</button>
+        <button type="button" class="admin-btn" id="otClose">✕</button>
+      </div>`;
+    document.body.appendChild(t);
+    const openBtn = document.getElementById("otOpen");
+    if (openBtn) openBtn.onclick = () => window.open(OCFG.sheetUrl || OCFG.csvUrl, "_blank");
+    document.getElementById("otCopy").onclick = async () => {
+      try { await navigator.clipboard.writeText(reply); alert("已複製通知訊息，貼到遊戲密語或信件即可。"); } catch (_) {}
+    };
+    document.getElementById("otClose").onclick = () => t.remove();
+    try {
+      const bell = new Audio("audio/風鈴聲.mp3");
+      bell.volume = Math.min(1, Math.max(0, (Number(OCFG.vol) || 60) / 100));
+      bell.play().catch(() => {});
+    } catch (_) {}
+  }
+  setInterval(async () => {
+    if (!isAdmin || !OCFG.csvUrl) return;
+    try {
+      const res = await fetch(OCFG.csvUrl, { cache: "no-store" });
+      const rows = parseCSV(await res.text());
+      const n = Math.max(0, rows.length - 1);           /* 扣掉表頭 */
+      const seen = Number(localStorage.getItem("yjc_orders_seen") || -1);
+      if (seen === -1) { localStorage.setItem("yjc_orders_seen", String(n)); return; }
+      if (n > seen) {
+        localStorage.setItem("yjc_orders_seen", String(n));
+        const last = rows[rows.length - 1];
+        notifyToast(last.join("\n"));
+      }
+    } catch (_) {}
+  }, 45000);
+
+  /* ---------- 🛎 送單／通知設定 ---------- */
+  function openOrderCfg() {
+    document.getElementById("ocfgModal")?.remove();
+    const wrap = document.createElement("div");
+    wrap.className = "admin-modal"; wrap.id = "ocfgModal";
+    wrap.innerHTML = `
+      <div class="admin-modal-card">
+        <h3>🛎 送單／接單通知設定</h3>
+        <label>Google 表單送出網址（表單網址結尾改成 /formResponse）
+          <input id="ofUrl" value="${esc(OCFG.formUrl)}" placeholder="https://docs.google.com/forms/d/e/…/formResponse" /></label>
+        <label>明細欄位的 entry 代碼（預填連結裡的 entry.數字）
+          <input id="ofEntry" value="${esc(OCFG.entryId)}" placeholder="entry.1234567890" /></label>
+        <label>回應試算表「發布到網路」的 CSV 連結（接單通知用，可留空）
+          <input id="ofCsv" value="${esc(OCFG.csvUrl)}" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" /></label>
+        <label>訂單列表網址（通知視窗「開啟訂單列表」按鈕，可填回應試算表網址）
+          <input id="ofSheet" value="${esc(OCFG.sheetUrl)}" /></label>
+        <label>通知音量（0〜100）<input id="ofVol" type="number" min="0" max="100" value="${Number(OCFG.vol) || 60}" /></label>
+        <label class="admin-check"><input id="ofOpen" type="checkbox" ${OCFG.open === true ? "checked" : ""} /> 開放所有訪客送單（取消勾選＝僅管理員可送，試用期建議關閉）</label>
+        <p class="admin-hint" id="ofMsg">防濫用：蜜罐欄位＋同機 2 分鐘冷卻＋同內容 10 分鐘防重送已內建；更強的防護請在 Google 表單開「僅限登入者作答」。</p>
+        <div class="admin-modal-btns">
+          <button type="button" id="ofTest" class="admin-btn">🔔 測試通知音</button>
+          <button type="button" id="ofSave" class="admin-btn primary">儲存</button>
+          <button type="button" id="ofCancel" class="admin-btn">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+    document.getElementById("ofCancel").onclick = () => wrap.remove();
+    document.getElementById("ofTest").onclick = () => {
+      const b = new Audio("audio/風鈴聲.mp3");
+      b.volume = Math.min(1, Math.max(0, (Number(document.getElementById("ofVol").value) || 60) / 100));
+      b.play().catch(() => alert("瀏覽器擋掉了自動播放，請再點一次。"));
+    };
+    document.getElementById("ofSave").onclick = async () => {
+      try {
+        const vals = {
+          formUrl:  document.getElementById("ofUrl").value.trim(),
+          entryId:  document.getElementById("ofEntry").value.trim(),
+          csvUrl:   document.getElementById("ofCsv").value.trim(),
+          sheetUrl: document.getElementById("ofSheet").value.trim(),
+          vol:      Math.min(100, Math.max(0, Number(document.getElementById("ofVol").value) || 60)),
+          open:     document.getElementById("ofOpen").checked,
+        };
+        await setDoc(doc(db, "siteContent", "config-orderform"), vals, { merge: true });
+        Object.assign(OCFG, vals);
+        wrap.remove();
+        alert("✔ 已儲存送單／通知設定。");
+      } catch (e) { document.getElementById("ofMsg").textContent = "❌ 儲存失敗：" + (e.message || e); }
+    };
+  }
 
   /* ---------- ★ v2.1：管理員線上修正價目（存 siteContent/config-orderfees） ---------- */
   function openFees() {
@@ -2877,7 +3086,7 @@ loadRooms();
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees };
+  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees, openOrderCfg };
   decorateMenu();
   refreshStaff();
   refreshRooms();

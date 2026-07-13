@@ -2979,6 +2979,19 @@ loadRooms();
     document.getElementById("odToast")?.remove();
     const m = orderText.match(/顧客：([^｜\n]+)｜([^\n]+)/);
     const server = m ? m[1].trim() : "", cid = m ? m[2].trim() : "";
+    /* ★ 2026-07-13：DC 出勤工作單（時間/店員/職務/總營收，一鍵複製發到公會 DC） */
+    const g = (re) => (orderText.match(re) || [, ""])[1].trim();
+    const workOrder = [
+      "📣【茶談百緣 · 出勤工作單】",
+      `日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
+      `入席：${g(/期望入席：([^\n]+)/)}｜顧客：${server}｜${cid}`,
+      "指名：" + g(/指名：([^\n]+)/).replace(/（[^）]*）/g, ""),
+      "包廂：" + g(/――― 包廂 ―――\n　?([^\n]+)/),
+      "餐點：\n" + ((orderText.match(/――― 料理 ―――\n([\s\S]+?)\n　料理小計/) || [, "（見明細）"])[1]),
+      "需求崗位：NPC陪聊店員、備餐、攝影師",
+      "預估營收：" + g(/――― 總計：([^ ―]+)/),
+      "可出勤的店員請在下方回覆 ✋",
+    ].join("\n");
     const reply = `【茶談百緣】預約確認通知\n${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，已收到您的預約單！\n內容已登記，我們會依單準備。小提醒：\n・最晚請於消費日 3 天前完成預訂\n・同行點餐與指名將合併於同一張帳單\n如需修改或取消請提前告知，期待您的光臨 🍵`;
     const t = document.createElement("div");
     t.id = "odToast"; t.className = "od-toast";
@@ -2986,6 +2999,7 @@ loadRooms();
       <div class="od-toast-btns">
         ${OCFG.sheetUrl || OCFG.csvUrl ? `<button type="button" class="admin-btn primary" id="otOpen">開啟訂單列表</button>` : ""}
         <button type="button" class="admin-btn" id="otCopy">📋 複製通知訊息</button>
+        <button type="button" class="admin-btn" id="otWork">📣 複製工作單</button>
         <button type="button" class="admin-btn" id="otClose">✕</button>
       </div>`;
     document.body.appendChild(t);
@@ -2993,6 +3007,9 @@ loadRooms();
     if (openBtn) openBtn.onclick = () => window.open(OCFG.sheetUrl || OCFG.csvUrl, "_blank");
     document.getElementById("otCopy").onclick = async () => {
       try { await navigator.clipboard.writeText(reply); alert("已複製通知訊息，貼到遊戲密語或信件即可。"); } catch (_) {}
+    };
+    document.getElementById("otWork").onclick = async () => {
+      try { await navigator.clipboard.writeText(workOrder); alert("已複製出勤工作單，貼到公會 Discord 徵集店員即可。"); } catch (_) {}
     };
     document.getElementById("otClose").onclick = () => t.remove();
     try {

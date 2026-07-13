@@ -1750,3 +1750,25 @@ img { -webkit-user-drag: none; user-select: none; }
   .admin-bar { max-height: calc(100vh - 130px); }
   .room-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：文字編輯工具列改停靠右側
+   - 舊版固定在畫面下方置中，會蓋住正在編輯的段落
+   -（舊值備查：left:50%; bottom:76px; translateX(-50%)，橫向排列）
+   ============================================================ */
+.edit-bar {
+  left: auto; right: 16px;
+  bottom: auto; top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 240px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  gap: 8px;
+}
+.edit-bar .eb-colors { justify-content: flex-start; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  /* 手機空間不足：貼齊底部但縮窄靠右，仍不擋左側文字 */
+  .edit-bar { right: 8px; left: auto; top: auto; bottom: 10px; transform: none; max-width: 62vw; }
+}

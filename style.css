@@ -1716,3 +1716,37 @@ img { -webkit-user-drag: none; user-select: none; }
 .od-toast span { font-size: .86rem; color: #6b655c; }
 .od-toast-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 @keyframes odToastIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ============================================================
+   ★ 2026-07-13 深夜檔尾疊加：管理列捲動＋相簿桌機縮圖放大置中＋手機排版修整
+   ============================================================ */
+/* ② 管理列：高度上限＋可捲動（滾輪/拖曳） */
+.admin-bar {
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.35) transparent;
+  touch-action: pan-y;
+}
+
+/* ③ 相簿（PC）：縮圖放大 50%、去除超大側邊留白造成的「偏右」 */
+@media (min-width: 769px) {
+  .car-track { padding: 6px 14px; }                        /* 舊：兩側 (100%-330px)/2 巨型留白 → 置中回正 */
+  .car-track .photo { flex: 0 0 min(70%, 495px); }         /* 330px × 1.5 */
+  .car-track .photo-frame img { max-height: 390px; }       /* 260px × 1.5 */
+}
+
+/* ④ 手機排版修整（560px 以下） */
+@media (max-width: 560px) {
+  .order-start-btn { padding: 12px 28px; font-size: 1.05rem; letter-spacing: .2em; text-indent: .2em; }
+  .cust-row input,
+  .order-field select,
+  .order-field input[type="text"],
+  .order-field textarea { max-width: none; }
+  .od-toast { left: 10px; right: 10px; max-width: none; }
+  .cover-carousel { border-radius: 10px; }
+  .order-step-flag { font-size: .8rem; letter-spacing: .05em; }
+  .admin-bar { max-height: calc(100vh - 130px); }
+  .room-grid { grid-template-columns: 1fr; }
+}

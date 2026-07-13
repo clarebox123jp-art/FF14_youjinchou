@@ -259,7 +259,7 @@ function buildAdminBar(email) {
     ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
-    <button type="button" id="abSheet" class="admin-btn">📊 排班表</button>
+    ${document.getElementById("menuList") ? '<button type="button" id="abSheet" class="admin-btn">📊 排班表</button>' : ""}
     <button type="button" id="abBg" class="admin-btn">🖼 背景設定</button>
     <button type="button" id="abFonts" class="admin-btn">🖋 字型庫</button>
     <button type="button" id="abExport" class="admin-btn">📋 匯出內容</button>
@@ -286,6 +286,23 @@ function buildAdminBar(email) {
   const rSeed = document.getElementById("abRoomSeed");
   if (rSeed) rSeed.onclick = seedDefaultRooms;
   /* ★ 2026-07-12 v2.1：預約價目線上設定（實作在第 18 段，經 window.YJC_ORDER 呼叫） */
+  /* ★ 2026-07-13：管理列按鈕變多後可捲動——滾輪原生支援（CSS overflow），
+     這裡補「滑鼠按住拖曳」捲動：位移超過 6px 才視為拖曳，並攔下拖曳後的誤點擊 */
+  const barEl = document.querySelector(".admin-bar");
+  if (barEl && !barEl.dataset.dragScroll) {
+    barEl.dataset.dragScroll = "1";
+    let dragY = null, dragTop = 0, moved = false;
+    barEl.addEventListener("pointerdown", (e) => { dragY = e.clientY; dragTop = barEl.scrollTop; moved = false; });
+    barEl.addEventListener("pointermove", (e) => {
+      if (dragY === null) return;
+      const dy = e.clientY - dragY;
+      if (Math.abs(dy) > 6) { moved = true; barEl.scrollTop = dragTop - dy; }
+    });
+    const endDrag = () => { dragY = null; };
+    barEl.addEventListener("pointerup", endDrag);
+    barEl.addEventListener("pointerleave", endDrag);
+    barEl.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  }
   const feeBtn = document.getElementById("abFees");
   if (feeBtn) feeBtn.onclick = () => window.YJC_ORDER?.openFees?.();
   const ocfgBtn = document.getElementById("abOrderCfg");
@@ -295,7 +312,8 @@ function buildAdminBar(email) {
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
   const bkBtn = document.getElementById("abBooking");
   if (bkBtn) bkBtn.onclick = openBookingConfig;
-  document.getElementById("abSheet").onclick = openSheetLink;
+  const shBtn = document.getElementById("abSheet");   /* ★ 2026-07-13：排班表僅商店頁有，需防呆 */
+  if (shBtn) shBtn.onclick = openSheetLink;
   document.getElementById("abBg").onclick = openBgConfig;
   /* ★ 2026-07-11：字型庫（Google Fonts 名單，實作在第 4 段尾） */
   document.getElementById("abFonts").onclick = openFontLibrary;

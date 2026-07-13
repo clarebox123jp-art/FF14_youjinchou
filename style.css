@@ -1821,3 +1821,12 @@ img { -webkit-user-drag: none; user-select: none; }
   font-family: inherit; margin: 0; }
 .bill-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(120,115,108,.4);
   font-size: .78rem; color: var(--muted, #8a857d); }
+
+/* ★ 2026-07-13：餐點卡「名稱／價格」改為上下兩行 ----------
+   原單行排版（名稱靠左、價格靠右同一行）＝第 1261 行附近：
+   .menu-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+   此處以檔尾疊加改為直排：名稱一行、價格獨立一行，長品名不再擠壓換行
+   （v2 加強版：改用 .menu-card 提高權重＋display:block 徹底脫離 flex 併排） */
+.menu-card .menu-head { display: block; }
+.menu-card .menu-head .menu-name { display: block; }
+.menu-card .menu-head .menu-price { display: inline-block; margin-top: 2px; font-size: .95rem; }

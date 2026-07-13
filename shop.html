@@ -144,8 +144,11 @@
         <p class="body" style="margin-top:14px">帳中燈火，於下列時分為你點亮；實際開店以 Discord 公告與預約排班為準。</p>
       </div>
       <div class="hours-card reveal">
-        <div class="hours-row"><span class="hours-day">平日</span><span class="hours-time">21:00 – 24:00</span></div>
-        <div class="hours-row"><span class="hours-day">週六・週日</span><span class="hours-time">14:00 – 24:00</span></div>
+        <!-- 舊時段（2026-07-13 改為四場次制，鐵則①備查）：平日 21:00–24:00／週六日 14:00–24:00／公休不定期 -->
+        <div class="hours-row"><span class="hours-day">早場</span><span class="hours-time">10:00 – 12:00</span></div>
+        <div class="hours-row"><span class="hours-day">午場</span><span class="hours-time">14:00 – 17:00</span></div>
+        <div class="hours-row"><span class="hours-day">晚場</span><span class="hours-time">20:00 – 24:00</span></div>
+        <div class="hours-row"><span class="hours-day">午夜場</span><span class="hours-time">24:00 – 02:00</span></div>
         <div class="hours-row"><span class="hours-day">公休</span><span class="hours-time">不定期（詳見 Discord 公告）</span></div>
         <p class="body hours-note" style="margin-top:16px">※ 需事先於 Discord 或預約表單登記，方能為你保留店員與包廂時段。</p>
       </div>
@@ -240,11 +243,18 @@
           <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行③ 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /></div>
         </div>
         <div class="order-field">
-          <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）與期望入席時間</span>
-          <div class="cust-row">
-            <input type="date" id="custDate" />
-            <input type="text" id="custTime" maxlength="10" placeholder="入席時間（例：21:30）" />
+          <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）</span>
+          <div class="cust-row"><input type="date" id="custDate" /></div>
+        </div>
+        <div class="order-field">
+          <span class="order-label">來訪場次（先勾場次，再填詳細入席時間）</span>
+          <div class="order-choice-wrap" id="custSessionBox">
+            <label class="order-chip"><input type="radio" name="custSession" value="早場 10:00-12:00" />早場 10:00–12:00</label>
+            <label class="order-chip"><input type="radio" name="custSession" value="午場 14:00-17:00" />午場 14:00–17:00</label>
+            <label class="order-chip"><input type="radio" name="custSession" value="晚場 20:00-24:00" />晚場 20:00–24:00</label>
+            <label class="order-chip"><input type="radio" name="custSession" value="午夜場 24:00-02:00" />午夜場 24:00–02:00</label>
           </div>
+          <input type="text" id="custTime" maxlength="10" placeholder="詳細入席時間（例：21:30）" />
         </div>
         <p class="order-note">同行者的所有點餐與指名店員費用，將合併計入<strong>同一張帳單</strong>。</p>
         <!-- 防機器人蜜罐欄位：真人看不到也不會填；被填寫的送單一律擋下 -->

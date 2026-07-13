@@ -2652,7 +2652,8 @@ loadRooms();
     if (!dv) return "請選擇「預約消費日期」。";
     const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + 3);
     if (new Date(dv + "T00:00:00") < min) return "依本店規定，最晚需於消費日 3 天前預訂——請選擇 3 天後（含）的日期。";
-    if (!document.getElementById("custTime")?.value.trim()) return "請填寫期望入席時間（例：21:30）。";
+    if (!document.querySelector('input[name="custSession"]:checked')) return "請先勾選來訪場次（早場／午場／晚場／午夜場）。";
+    if (!document.getElementById("custTime")?.value.trim()) return "請填寫詳細入席時間（例：21:30）。";
     return null;
   }
 
@@ -2861,6 +2862,7 @@ loadRooms();
       const dv = document.getElementById("custDate").value;
       const wd = ["日","一","二","三","四","五","六"][new Date(dv + "T00:00:00").getDay()];
       lines.push(`消費日期：${dv.replace(/-/g, "/")}（週${wd}）`);
+      lines.push("場次：" + (document.querySelector('input[name="custSession"]:checked')?.value || ""));
       lines.push("期望入席：" + document.getElementById("custTime").value.trim());
     }
     lines.push("顧客：" + document.getElementById("custServer").value.trim() + "｜" + document.getElementById("custId").value.trim());

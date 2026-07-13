@@ -1773,8 +1773,9 @@ function renderStaff() {
       <p class="staff-role">${esc(s.role)}</p>
       <p class="staff-serv">${esc(s.services)}</p>
       ${Array.isArray(s.shifts) && s.shifts.length ? `<p class="staff-shifts">🕐 可預約：${esc(formatShifts(s.shifts))}</p>` : ""}
-      ${s.rpRoles ? `<p class="staff-rpline">🎭 可接身分：${esc(s.rpRoles)}</p>` : ""}
-      ${s.rpStyles ? `<p class="staff-rpline">💬 風格：${esc(s.rpStyles)}${s.rpPhoto === "是" ? "　📸 可加拍" : ""}</p>` : ""}
+      ${s.rpRoles ? `<p class="staff-rpline staff-rp-roles">🎭 可接身分：${esc(s.rpRoles)}</p>` : ""}
+      ${s.rpStyles ? `<p class="staff-rpline staff-rp-styles">💬 風格：${esc(s.rpStyles)}${s.rpPhoto === "是" ? "　📸 可加拍" : ""}</p>` : ""}
+      ${""/* ★ 2026-07-14：加上 staff-rp-roles / staff-rp-styles 細分 class，供 style.css 檔尾分色資訊框使用（原 class 保留相容） */}
       ${persona ? `<button type="button" class="staff-persona-btn">看角色設定 ▾</button>
       <div class="staff-persona" hidden>${esc(persona).replace(/\n/g, "<br>")}</div>` : ""}`;
     // 卡片內照片自動輪播（每 3.5 秒換一張；hover 暫停）
@@ -2015,49 +2016,53 @@ const DEFAULT_MENU = [
 /* ★ 2026-07-12 新版預設餐單（FF14 遊戲內實際料理／飲品，共 31 道）
    - 縮圖已裁自遊戲截圖，存 images/menu/*.webp（英數檔名）
    - tag＝遊戲內等級與星級；price 留空＝顯示「價目待公告」風格（不標價）
-   - 老師可線上按 ✎ 換更漂亮的實拍照片、改分類、補價格 */
+   - 老師可線上按 ✎ 換更漂亮的實拍照片、改分類、補價格
+   ★ 2026-07-14：每道介紹尾端補上「推薦給…的你。」一句（原介紹全文保留為前段，
+     未刪任何舊文；前台會把這句獨立成朱紅小字第二行）。已入庫的餐點按管理列
+     「⤓ 匯入預設餐單」即可自動同步——只更新「介紹仍是舊版預設」的餐點，
+     老師自己改寫過的介紹一律不動 */
 const DEFAULT_MENU = [
   /* —— 和風 —— */
-  { cat: "wafu",    name: "章魚燒", sub: "starter",         tag: "Lv.70 ★★★",  desc: "鐵板上滾出焦香圓球，柴魚花在熱氣裡輕輕起舞。",     price: "3,600 Gil", photo: "images/menu/takoyaki.webp",             order: 1 },
-  { cat: "wafu",    name: "什錦壽司卷", sub: "main",     tag: "Lv.70 ★★★",  desc: "什錦餡料捲進醋飯與海苔，一刀切開便是繽紛。",       price: "5,400 Gil", photo: "images/menu/sushi-roll.webp",           order: 2 },
-  { cat: "wafu",    name: "關東煮", sub: "main",         tag: "Lv.70 ★★★",  desc: "昆布高湯慢燉入味，寒夜裡最溫柔的一鍋。",           price: "4,500 Gil", photo: "images/menu/oden.webp",                 order: 3 },
-  { cat: "wafu",    name: "茶碗蒸", sub: "starter",         tag: "Lv.70 ★★",   desc: "滑嫩蒸蛋藏著海味珍饈，入口即化的溫潤。",           price: "2,400 Gil", photo: "images/menu/chawanmushi.webp",          order: 4 },
-  { cat: "wafu",    name: "草原奶茶", sub: "drink",       tag: "Lv.70 ★★",   desc: "草原游牧風味的鹹香奶茶，醇厚而質樸。",             price: "2,700 Gil", photo: "images/menu/steppe-milktea.webp",       order: 5 },
-  { cat: "wafu",    name: "紅蓮特飲", sub: "drink",       tag: "Lv.70 ★★★",  desc: "如紅蓮燃燒般的豔色特調，入喉一瞬暖意升騰。",       price: "4,500 Gil", photo: "images/menu/guren-drink.webp",          order: 6 },
+  { cat: "wafu",    name: "章魚燒", sub: "starter",         tag: "Lv.70 ★★★",  desc: "鐵板上滾出焦香圓球，柴魚花在熱氣裡輕輕起舞。推薦給想念祭典喧鬧的你。",     price: "3,600 Gil", photo: "images/menu/takoyaki.webp",             order: 1 },
+  { cat: "wafu",    name: "什錦壽司卷", sub: "main",     tag: "Lv.70 ★★★",  desc: "什錦餡料捲進醋飯與海苔，一刀切開便是繽紛。推薦給喜歡驚喜藏在切面裡的你。",       price: "5,400 Gil", photo: "images/menu/sushi-roll.webp",           order: 2 },
+  { cat: "wafu",    name: "關東煮", sub: "main",         tag: "Lv.70 ★★★",  desc: "昆布高湯慢燉入味，寒夜裡最溫柔的一鍋。推薦給奔波一日、想被慢慢暖回來的你。",           price: "4,500 Gil", photo: "images/menu/oden.webp",                 order: 3 },
+  { cat: "wafu",    name: "茶碗蒸", sub: "starter",         tag: "Lv.70 ★★",   desc: "滑嫩蒸蛋藏著海味珍饈，入口即化的溫潤。推薦給胃口小巧、偏愛細膩滋味的你。",           price: "2,400 Gil", photo: "images/menu/chawanmushi.webp",          order: 4 },
+  { cat: "wafu",    name: "草原奶茶", sub: "drink",       tag: "Lv.70 ★★",   desc: "草原游牧風味的鹹香奶茶，醇厚而質樸。推薦給嚮往遠方草原與自由的你。",             price: "2,700 Gil", photo: "images/menu/steppe-milktea.webp",       order: 5 },
+  { cat: "wafu",    name: "紅蓮特飲", sub: "drink",       tag: "Lv.70 ★★★",  desc: "如紅蓮燃燒般的豔色特調，入喉一瞬暖意升騰。推薦給今天需要一點勇氣的你。",       price: "4,500 Gil", photo: "images/menu/guren-drink.webp",          order: 6 },
   /* —— 洋食・鹹食 —— */
-  { cat: "yoshoku", name: "王室鮭魚排", sub: "main",     tag: "Lv.70 ★★",   desc: "嫩煎鮭魚佐宮廷醬汁，名符其實的王室待遇。",         price: "14,400 Gil", photo: "images/menu/royal-salmon.webp",         order: 7 },
-  { cat: "yoshoku", name: "披薩", sub: "main",           tag: "Lv.80 ★★★★", desc: "窯烤餅皮鋪滿熔岩般的起司，趁熱拉絲最迷人。",       price: "9,600 Gil", photo: "images/menu/pizza.webp",                order: 8 },
-  { cat: "yoshoku", name: "奶油雞肉寬麵", sub: "main",   tag: "Lv.80 ★★★★", desc: "寬扁麵條裹上濃郁奶油白醬，雞肉香嫩多汁。",         price: "8,400 Gil", photo: "images/menu/chicken-pasta.webp",        order: 9 },
-  { cat: "yoshoku", name: "煙燻雞肉", sub: "main",       tag: "Lv.80 ★★★",  desc: "木香煙燻入骨，外皮金黃、肉質柔嫩。",               price: "7,800 Gil", photo: "images/menu/smoked-chicken.webp",       order: 10 },
-  { cat: "yoshoku", name: "炸蟹餅", sub: "starter",         tag: "Lv.80 ★★★",  desc: "滿滿蟹肉煎至金黃酥脆，海潮鮮味在齒間迸發。",       price: "7,500 Gil", photo: "images/menu/crab-cake.webp",            order: 11 },
-  { cat: "yoshoku", name: "辣醬炒全蟹", sub: "main",     tag: "Lv.80 ★★★",  desc: "整隻鮮蟹裹上濃烈辣醬，豪邁而過癮的一皿。",         price: "20,400 Gil", photo: "images/menu/chili-crab.webp",           order: 12 },
-  { cat: "yoshoku", name: "南瓜濃湯", sub: "starter",       tag: "Lv.90 ★★",   desc: "金黃南瓜熬成綿密濃湯，一匙暖進心底。",             price: "3,600 Gil", photo: "images/menu/pumpkin-potage.webp",       order: 13 },
-  { cat: "yoshoku", name: "鳳梨沙拉", sub: "starter",       tag: "Lv.80 ★★★",  desc: "酸甜鳳梨與鮮蔬相遇，清爽開胃的南國風情。",         price: "4,800 Gil", photo: "images/menu/pineapple-salad.webp",      order: 14 },
-  { cat: "yoshoku", name: "蘋果新薯沙拉", sub: "starter",   tag: "Lv.80 ★★★",  desc: "蘋果的脆甜遇上新薯的綿密，樸實卻耐人尋味。",       price: "4,500 Gil", photo: "images/menu/apple-potato-salad.webp",   order: 15 },
+  { cat: "yoshoku", name: "王室鮭魚排", sub: "main",     tag: "Lv.70 ★★",   desc: "嫩煎鮭魚佐宮廷醬汁，名符其實的王室待遇。推薦給想好好犒賞自己一頓的你。",         price: "14,400 Gil", photo: "images/menu/royal-salmon.webp",         order: 7 },
+  { cat: "yoshoku", name: "披薩", sub: "main",           tag: "Lv.80 ★★★★", desc: "窯烤餅皮鋪滿熔岩般的起司，趁熱拉絲最迷人。推薦給喜歡與朋友分食同樂的你。",       price: "9,600 Gil", photo: "images/menu/pizza.webp",                order: 8 },
+  { cat: "yoshoku", name: "奶油雞肉寬麵", sub: "main",   tag: "Lv.80 ★★★★", desc: "寬扁麵條裹上濃郁奶油白醬，雞肉香嫩多汁。推薦給無法抗拒濃郁奶香的你。",         price: "8,400 Gil", photo: "images/menu/chicken-pasta.webp",        order: 9 },
+  { cat: "yoshoku", name: "煙燻雞肉", sub: "main",       tag: "Lv.80 ★★★",  desc: "木香煙燻入骨，外皮金黃、肉質柔嫩。推薦給鍾情炭火與木香的你。",               price: "7,800 Gil", photo: "images/menu/smoked-chicken.webp",       order: 10 },
+  { cat: "yoshoku", name: "炸蟹餅", sub: "starter",         tag: "Lv.80 ★★★",  desc: "滿滿蟹肉煎至金黃酥脆，海潮鮮味在齒間迸發。推薦給想先嚐一口大海的你。",       price: "7,500 Gil", photo: "images/menu/crab-cake.webp",            order: 11 },
+  { cat: "yoshoku", name: "辣醬炒全蟹", sub: "main",     tag: "Lv.80 ★★★",  desc: "整隻鮮蟹裹上濃烈辣醬，豪邁而過癮的一皿。推薦給嗜辣如命、吃飯講究痛快的你。",         price: "20,400 Gil", photo: "images/menu/chili-crab.webp",           order: 12 },
+  { cat: "yoshoku", name: "南瓜濃湯", sub: "starter",       tag: "Lv.90 ★★",   desc: "金黃南瓜熬成綿密濃湯，一匙暖進心底。推薦給怕冷、想從第一口就暖起來的你。",             price: "3,600 Gil", photo: "images/menu/pumpkin-potage.webp",       order: 13 },
+  { cat: "yoshoku", name: "鳳梨沙拉", sub: "starter",       tag: "Lv.80 ★★★",  desc: "酸甜鳳梨與鮮蔬相遇，清爽開胃的南國風情。推薦給想以清爽揭開序幕的你。",         price: "4,800 Gil", photo: "images/menu/pineapple-salad.webp",      order: 14 },
+  { cat: "yoshoku", name: "蘋果新薯沙拉", sub: "starter",   tag: "Lv.80 ★★★",  desc: "蘋果的脆甜遇上新薯的綿密，樸實卻耐人尋味。推薦給偏愛樸實家常味的你。",       price: "4,500 Gil", photo: "images/menu/apple-potato-salad.webp",   order: 15 },
   /* —— 洋食・甜點 —— */
-  { cat: "yoshoku", name: "焦糖烤布蕾", sub: "dessert",     tag: "Lv.60 ★",    desc: "敲開琥珀糖殼，滑嫩布蕾在匙尖顫動。",               price: "3,600 Gil", photo: "images/menu/creme-brulee.webp",         order: 16 },
-  { cat: "yoshoku", name: "生日蛋糕", sub: "dessert",       tag: "Lv.60 ★",    desc: "插上蠟燭便是慶典——為特別的日子預留的一份甜。",     price: "26,400 Gil", photo: "images/menu/birthday-cake.webp",        order: 17 },
-  { cat: "yoshoku", name: "蘋果卷", sub: "dessert",         tag: "Lv.60 ★★★",  desc: "酥皮層層裹著肉桂蘋果餡，暖香撲鼻。",               price: "3,900 Gil", photo: "images/menu/apple-strudel.webp",        order: 18 },
-  { cat: "yoshoku", name: "仙子莓乳酪蛋糕", sub: "dessert", tag: "Lv.80 ★★",   desc: "仙子莓的酸甜點綴濃郁乳酪，夢幻般的粉紅滋味。",     price: "4,500 Gil", photo: "images/menu/pixieberry-cheesecake.webp", order: 19 },
-  { cat: "yoshoku", name: "檸檬格子鬆餅", sub: "dessert",   tag: "Lv.80 ★★★",  desc: "格紋鬆餅淋上檸檬糖霜，酸甜清新的午後時光。",       price: "4,200 Gil", photo: "images/menu/lemon-waffle.webp",         order: 20 },
-  { cat: "yoshoku", name: "蜂蜜牛角麵包", sub: "dessert",   tag: "Lv.80 ★★★",  desc: "千層酥皮刷上金黃蜂蜜，出爐時香氣四溢。",           price: "2,400 Gil", photo: "images/menu/honey-croissant.webp",      order: 21 },
-  { cat: "yoshoku", name: "烏雞布丁", sub: "dessert",       tag: "Lv.80 ★★★",  desc: "烏雞蛋蒸出的絲滑布丁，蛋香濃郁、甜而不膩。",       price: "3,000 Gil", photo: "images/menu/silkie-pudding.webp",       order: 22 },
-  { cat: "yoshoku", name: "軟果糕", sub: "dessert",         tag: "Lv.80 ★★★",  desc: "入口即化的果香軟糕，輕盈如雲朵。",                 price: "1,800 Gil", photo: "images/menu/soft-fruit-cake.webp",      order: 23 },
-  { cat: "yoshoku", name: "白桃塔", sub: "dessert",         tag: "Lv.90 ★★",   desc: "白桃薄片如花瓣鋪展，果香與塔皮的溫柔協奏。",       price: "4,800 Gil", photo: "images/menu/peach-tart.webp",           order: 24 },
-  { cat: "yoshoku", name: "無花果餅乾", sub: "dessert",     tag: "Lv.90 ★★",   desc: "無花果乾烘進酥餅，樸實的甜與茶最相配。",           price: "1,800 Gil", photo: "images/menu/fig-biscuit.webp",          order: 25 },
+  { cat: "yoshoku", name: "焦糖烤布蕾", sub: "dessert",     tag: "Lv.60 ★",    desc: "敲開琥珀糖殼，滑嫩布蕾在匙尖顫動。推薦給享受敲碎糖殼那一瞬的你。",               price: "3,600 Gil", photo: "images/menu/creme-brulee.webp",         order: 16 },
+  { cat: "yoshoku", name: "生日蛋糕", sub: "dessert",       tag: "Lv.60 ★",    desc: "插上蠟燭便是慶典——為特別的日子預留的一份甜。推薦給想為重要的人慶祝的你。",     price: "26,400 Gil", photo: "images/menu/birthday-cake.webp",        order: 17 },
+  { cat: "yoshoku", name: "蘋果卷", sub: "dessert",         tag: "Lv.60 ★★★",  desc: "酥皮層層裹著肉桂蘋果餡，暖香撲鼻。推薦給著迷肉桂暖香的你。",               price: "3,900 Gil", photo: "images/menu/apple-strudel.webp",        order: 18 },
+  { cat: "yoshoku", name: "仙子莓乳酪蛋糕", sub: "dessert", tag: "Lv.80 ★★",   desc: "仙子莓的酸甜點綴濃郁乳酪，夢幻般的粉紅滋味。推薦給少女心從未退役的你。",     price: "4,500 Gil", photo: "images/menu/pixieberry-cheesecake.webp", order: 19 },
+  { cat: "yoshoku", name: "檸檬格子鬆餅", sub: "dessert",   tag: "Lv.80 ★★★",  desc: "格紋鬆餅淋上檸檬糖霜，酸甜清新的午後時光。推薦給想在午後偷閒片刻的你。",       price: "4,200 Gil", photo: "images/menu/lemon-waffle.webp",         order: 20 },
+  { cat: "yoshoku", name: "蜂蜜牛角麵包", sub: "dessert",   tag: "Lv.80 ★★★",  desc: "千層酥皮刷上金黃蜂蜜，出爐時香氣四溢。推薦給早晨需要一點甜的你。",           price: "2,400 Gil", photo: "images/menu/honey-croissant.webp",      order: 21 },
+  { cat: "yoshoku", name: "烏雞布丁", sub: "dessert",       tag: "Lv.80 ★★★",  desc: "烏雞蛋蒸出的絲滑布丁，蛋香濃郁、甜而不膩。推薦給獨鍾古早蛋香的你。",       price: "3,000 Gil", photo: "images/menu/silkie-pudding.webp",       order: 22 },
+  { cat: "yoshoku", name: "軟果糕", sub: "dessert",         tag: "Lv.80 ★★★",  desc: "入口即化的果香軟糕，輕盈如雲朵。推薦給飯後只想來一點點甜的你。",                 price: "1,800 Gil", photo: "images/menu/soft-fruit-cake.webp",      order: 23 },
+  { cat: "yoshoku", name: "白桃塔", sub: "dessert",         tag: "Lv.90 ★★",   desc: "白桃薄片如花瓣鋪展，果香與塔皮的溫柔協奏。推薦給喜歡細細品味、不急不徐的你。",       price: "4,800 Gil", photo: "images/menu/peach-tart.webp",           order: 24 },
+  { cat: "yoshoku", name: "無花果餅乾", sub: "dessert",     tag: "Lv.90 ★★",   desc: "無花果乾烘進酥餅，樸實的甜與茶最相配。推薦給喜歡配茶閒聊的你。",           price: "1,800 Gil", photo: "images/menu/fig-biscuit.webp",          order: 25 },
   /* —— 洋食・飲品 —— */
-  { cat: "yoshoku", name: "熱巧克力", sub: "drink",       tag: "Lv.60 ★",    desc: "濃醇可可緩緩升起白霧，捧在手心便是冬日。",         price: "3,600 Gil", photo: "images/menu/hot-chocolate.webp",        order: 26 },
-  { cat: "yoshoku", name: "果香特飲", sub: "drink",       tag: "Lv.60 ★★★",  desc: "數種果實調和的琥珀色特飲，酸甜恰到好處。",         price: "4,200 Gil", photo: "images/menu/fruit-drink.webp",          order: 27 },
-  { cat: "yoshoku", name: "仙子莓茶", sub: "drink",       tag: "Lv.80 ★★",   desc: "仙子莓染紅的茶湯，莓果香氣在杯中盤旋。",           price: "3,900 Gil", photo: "images/menu/pixieberry-tea.webp",       order: 28 },
-  { cat: "yoshoku", name: "黃金鳳梨汁", sub: "drink",     tag: "Lv.80 ★★★",  desc: "現榨黃金鳳梨，陽光般燦爛的酸甜。",                 price: "4,500 Gil", photo: "images/menu/pineapple-juice.webp",      order: 29 },
-  { cat: "yoshoku", name: "白桃汁", sub: "drink",         tag: "Lv.90 ★★",   desc: "熟成白桃現榨成汁，溫柔的粉色甜香。",               price: "4,500 Gil", photo: "images/menu/peach-juice.webp",          order: 30 },
-  { cat: "yoshoku", name: "薩維奈奶茶", sub: "drink",     tag: "Lv.90 ★★",   desc: "南國香料燉煮的奶茶，異域風情繚繞舌尖。",           price: "3,600 Gil", photo: "images/menu/thavnairian-chai.webp",     order: 31 },
+  { cat: "yoshoku", name: "熱巧克力", sub: "drink",       tag: "Lv.60 ★",    desc: "濃醇可可緩緩升起白霧，捧在手心便是冬日。推薦給今天想被好好安慰的你。",         price: "3,600 Gil", photo: "images/menu/hot-chocolate.webp",        order: 26 },
+  { cat: "yoshoku", name: "果香特飲", sub: "drink",       tag: "Lv.60 ★★★",  desc: "數種果實調和的琥珀色特飲，酸甜恰到好處。推薦給選擇困難、什麼果味都想要的你。",         price: "4,200 Gil", photo: "images/menu/fruit-drink.webp",          order: 27 },
+  { cat: "yoshoku", name: "仙子莓茶", sub: "drink",       tag: "Lv.80 ★★",   desc: "仙子莓染紅的茶湯，莓果香氣在杯中盤旋。推薦給偏愛莓果微酸的你。",           price: "3,900 Gil", photo: "images/menu/pixieberry-tea.webp",       order: 28 },
+  { cat: "yoshoku", name: "黃金鳳梨汁", sub: "drink",     tag: "Lv.80 ★★★",  desc: "現榨黃金鳳梨，陽光般燦爛的酸甜。推薦給需要補充陽光的你。",                 price: "4,500 Gil", photo: "images/menu/pineapple-juice.webp",      order: 29 },
+  { cat: "yoshoku", name: "白桃汁", sub: "drink",         tag: "Lv.90 ★★",   desc: "熟成白桃現榨成汁，溫柔的粉色甜香。推薦給不嗜咖啡、只愛果香的你。",               price: "4,500 Gil", photo: "images/menu/peach-juice.webp",          order: 30 },
+  { cat: "yoshoku", name: "薩維奈奶茶", sub: "drink",     tag: "Lv.90 ★★",   desc: "南國香料燉煮的奶茶，異域風情繚繞舌尖。推薦給著迷異國香料的你。",           price: "3,600 Gil", photo: "images/menu/thavnairian-chai.webp",     order: 31 },
 /* ★ 2026-07-12 追加五道（sub＝小分類） */
-  { cat: "yoshoku", name: "鮮奶油咖啡",     sub: "drink",   tag: "Lv.78",       desc: "濃縮咖啡頂上一朵鮮奶油雲，苦甜在杯中交融。",       price: "3,900 Gil", photo: "images/menu/cream-coffee.webp",   order: 32 },
-  { cat: "wafu",    name: "抹茶",           sub: "drink",   tag: "Lv.70 ★★★",  desc: "茶筅刷出翡翠色的細沫，一碗靜心的東方風雅。",       price: "4,500 Gil", photo: "images/menu/matcha.webp",         order: 33 },
-  { cat: "yoshoku", name: "近東蝦咖哩",     sub: "main",    tag: "Lv.90 ★★★",  desc: "近東香料燉出濃郁咖哩，鮮蝦飽滿、辛香繚繞。",       price: "11,400 Gil", photo: "images/menu/prawn-curry.webp",    order: 34 },
-  { cat: "yoshoku", name: "高級烤牛肉",     sub: "main",    tag: "Lv.80 ★★",   desc: "低溫慢烤鎖住肉汁，切面粉嫩如玫瑰綻放。",           price: "17,400 Gil", photo: "images/menu/roast-beef.webp",     order: 35 },
-  { cat: "yoshoku", name: "賢人漢堡",       sub: "main",    tag: "Lv.90 ★★",   desc: "賢人也點頭的豪華層疊——多汁肉排與融化起司的智慧。", price: "9,600 Gil", photo: "images/menu/archon-burger.webp",  order: 36 },
+  { cat: "yoshoku", name: "鮮奶油咖啡",     sub: "drink",   tag: "Lv.78",       desc: "濃縮咖啡頂上一朵鮮奶油雲，苦甜在杯中交融。推薦給熬夜趕路、需要一杯提神的你。",       price: "3,900 Gil", photo: "images/menu/cream-coffee.webp",   order: 32 },
+  { cat: "wafu",    name: "抹茶",           sub: "drink",   tag: "Lv.70 ★★★",  desc: "茶筅刷出翡翠色的細沫，一碗靜心的東方風雅。推薦給想沉澱心緒、靜坐片刻的你。",       price: "4,500 Gil", photo: "images/menu/matcha.webp",         order: 33 },
+  { cat: "yoshoku", name: "近東蝦咖哩",     sub: "main",    tag: "Lv.90 ★★★",  desc: "近東香料燉出濃郁咖哩，鮮蝦飽滿、辛香繚繞。推薦給循著香料去旅行的你。",       price: "11,400 Gil", photo: "images/menu/prawn-curry.webp",    order: 34 },
+  { cat: "yoshoku", name: "高級烤牛肉",     sub: "main",    tag: "Lv.80 ★★",   desc: "低溫慢烤鎖住肉汁，切面粉嫩如玫瑰綻放。推薦給無肉不歡、講究火候的你。",           price: "17,400 Gil", photo: "images/menu/roast-beef.webp",     order: 35 },
+  { cat: "yoshoku", name: "賢人漢堡",       sub: "main",    tag: "Lv.90 ★★",   desc: "賢人也點頭的豪華層疊——多汁肉排與融化起司的智慧。推薦給豪邁大口、不拘小節的你。", price: "9,600 Gil", photo: "images/menu/archon-burger.webp",  order: 36 },
 ];
 
 let menuCache = [];
@@ -2116,9 +2121,13 @@ function renderMenu() {
      避免「動態長高的清單達不到 IntersectionObserver 15% 門檻→整塊隱形」的間歇性消失 */
   menuList.classList.add("in");
   menuList.innerHTML = "";
-  const rows = menuUsingDefault
+  /* ★ 2026-07-14：新增 hidden 欄位——hidden=true 的餐點訪客看不到；
+     管理員仍看得到（卡片半透明＋「已隱藏」標示），可隨時一鍵再開
+     舊寫法備查：const rows = menuUsingDefault ? DEFAULT_MENU.map(...) : menuCache; */
+  const allRows = menuUsingDefault
     ? DEFAULT_MENU.map((d) => ({ id: null, data: d }))
     : menuCache;
+  const rows = isAdmin ? allRows : allRows.filter((r) => r.data.hidden !== true);
   if (menuEmpty) menuEmpty.style.display = rows.length ? "none" : "";
 
   // 依分類分組，照 MENU_CATS 順序輸出（空分類略過）
@@ -2161,6 +2170,7 @@ function renderMenu() {
       for (const { id, data: m } of subItems) {
       const card = document.createElement("article");
       card.className = "menu-card photo";   // 帶 .photo → 吃相簿燈箱
+      if (m.hidden === true) card.classList.add("is-hidden");   /* ★ 2026-07-14：管理員視角的隱藏標示 */
       const pic = m.photo
         ? `<div class="photo-frame"><img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
         : `<div class="photo-frame menu-noimg"><span>膳</span></div>`;
@@ -2170,6 +2180,13 @@ function renderMenu() {
       const priceHtml = m.price
         ? `<span class="menu-price${isAdmin ? " menu-price-edit" : ""}" title="${isAdmin ? "點一下修改價格" : ""}">${esc(m.price)}</span>`
         : (isAdmin ? `<span class="menu-price menu-price-edit is-empty" title="點一下標價">＋標價</span>` : "");
+      /* ★ 2026-07-14：介紹裡的「推薦給…的你」獨立成第二行小字（.menu-reco，樣式在 style.css 檔尾）；
+         沒有這句的介紹照舊整段顯示，不受影響 */
+      const descHtml = (() => {
+        const d = esc(m.desc || "");
+        const i = d.indexOf("推薦給");
+        return i > -1 ? d.slice(0, i) + `<span class="menu-reco">` + d.slice(i) + `</span>` : d;
+      })();
       card.innerHTML = `
         ${pic}
         <div class="menu-body">
@@ -2178,8 +2195,9 @@ function renderMenu() {
             ${priceHtml}
           </div>
           ${m.tag ? `<div class="menu-tag">${esc(m.tag)}</div>` : ""}
-          <p class="menu-desc">${esc(m.desc || "")}</p>
+          <p class="menu-desc">${descHtml}</p>
           ${m.badge ? `<div class="menu-badge${m.badge === "已售完" ? " is-soldout" : ""}">${esc(m.badge)}</div>` : ""}
+          ${isAdmin && m.hidden === true ? `<div class="menu-hidden-tag">🙈 已隱藏（訪客看不到）</div>` : ""}
         </div>`;
       // 燈箱抓圖說用：.photo 內放一個隱藏的 .cap
       // ★ 2026-07-12：style.css 的 .photo .cap 會蓋過 hidden 屬性，導致卡片下方
@@ -2207,9 +2225,18 @@ function renderMenu() {
       if (isAdmin && id) {
         const bar = document.createElement("div");
         bar.className = "admin-actions";
+        /* ★ 2026-07-14：加入「隱藏／顯示」一鍵開關（寫 hidden 欄位）
+           舊寫法備查：bar.innerHTML = `✎ 編輯 ✕ 刪除` 兩鈕 */
         bar.innerHTML = `<button type="button" data-act="edit">✎ 編輯</button>
+                         <button type="button" data-act="hide">${m.hidden === true ? "👁 顯示" : "🙈 隱藏"}</button>
                          <button type="button" data-act="del">✕ 刪除</button>`;
         bar.querySelector('[data-act="edit"]').onclick = () => openMenuForm(id, m);
+        bar.querySelector('[data-act="hide"]').onclick = async () => {
+          try {
+            await updateDoc(doc(db, "shopPartners", id), { hidden: m.hidden !== true });
+            loadMenu();
+          } catch (e) { alert("❌ 隱藏／顯示切換失敗：" + (e.message || e)); }
+        };
         bar.querySelector('[data-act="del"]').onclick = async () => {
           if (!confirm(`確定要刪除餐點「${m.name}」嗎？（無法復原）`)) return;
           await deleteDoc(doc(db, "shopPartners", id));
@@ -2262,6 +2289,7 @@ function openMenuForm(id = null, m = {}) {
       <label>簡介（一兩句話介紹）
         <textarea id="mfDesc" rows="3" placeholder="例：甜煮油豆皮鋪在熱湯烏龍上，一口暖到心底。">${esc(m.desc || "")}</textarea></label>
       <label>價格（可留空＝暫不標價；例：8,000 Gil）<input id="mfPrice" value="${esc(m.price || "")}" /></label>
+      <label class="admin-check"><input id="mfHidden" type="checkbox"${m.hidden === true ? " checked" : ""} /> 暫時隱藏此餐點（訪客看不到，可隨時再開）</label>
       <label>照片（可不選＝維持不變／無照片）<input id="mfPhoto" type="file" accept="image/*" /></label>
       <label>排序（數字小的排前面）<input id="mfOrder" type="number" value="${Number.isFinite(m.order) ? m.order : (menuCache.length + 1)}" /></label>
       <p class="admin-hint" id="mfMsg"></p>
@@ -2287,6 +2315,7 @@ function openMenuForm(id = null, m = {}) {
         badge: document.getElementById("mfBadge").value.trim(),
         desc:  document.getElementById("mfDesc").value.trim(),
         price: document.getElementById("mfPrice").value.trim(),
+        hidden: document.getElementById("mfHidden").checked,   /* ★ 2026-07-14：隱藏開關 */
         order: Number(document.getElementById("mfOrder").value) || 0,
       };
       if (!data.name) throw new Error("「品名」不能空白。");
@@ -2369,6 +2398,9 @@ async function seedDefaultMenu() {
       const patch = {};
       if (d && !SUB_KEYS.has(x.data.sub || "")) { patch.cat = d.cat; patch.sub = d.sub; }
       if (d && d.price && !x.data.price) patch.price = d.price;   /* ★ 2026-07-13：只補空價，不動老師改過的 */
+      /* ★ 2026-07-14：介紹補「推薦給…的你」——只在資料庫裡的介紹仍是舊版預設
+         （＝新介紹的開頭前段）時更新；老師自己改寫過的介紹一律不動 */
+      if (d && d.desc && x.data.desc && x.data.desc !== d.desc && d.desc.startsWith(x.data.desc)) patch.desc = d.desc;
       if (d && Object.keys(patch).length) {
         await updateDoc(doc(db, "shopPartners", x.id), patch);
       }

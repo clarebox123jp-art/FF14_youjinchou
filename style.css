@@ -1616,3 +1616,53 @@ img { -webkit-user-drag: none; user-select: none; }
   border-radius: 4px 999px 999px 4px;
   box-shadow: 0 2px 8px rgba(143,47,30,.3);
 }
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：右上角茶杯下方小詩《喫茶閒趣》
+   - 直書右起、逐句浮現（每 3 秒一句）、停留後全詩一起消隱，16 秒一輪循環
+   ============================================================ */
+.corner-poem {
+  position: fixed;
+  top: calc(64px + min(300px, 42vw) * 0.72);   /* 貼在茶杯 GIF 下緣 */
+  right: 18px;
+  z-index: -1;                                  /* 與 corner-fx 同層，不擋操作 */
+  pointer-events: none;
+  display: flex;
+  flex-direction: row-reverse;                  /* 直書由右往左排列 */
+  gap: 10px;
+  writing-mode: vertical-rl;
+  font-family: var(--font-display);
+  font-size: clamp(.85rem, 1.6vw, 1.05rem);
+  letter-spacing: .35em;
+  color: var(--ink, #2c2620);
+  text-shadow: 0 0 6px rgba(253,246,234,.9), 0 0 2px rgba(253,246,234,.9);
+}
+.cp-line { opacity: 0; animation: cpcycle 16s infinite; }
+.cp-title { color: var(--shu, #b3402a); font-size: .82em; letter-spacing: .22em; }
+/* 逐句浮現：標題與第一句先起，之後每 3 秒一句；81% 起全詩一起淡出 */
+.cp-title, .cp-l1 { animation-name: cp1; }
+.cp-l2 { animation-name: cp2; }
+.cp-l3 { animation-name: cp3; }
+.cp-l4 { animation-name: cp4; }
+@keyframes cp1 { 0%{opacity:0} 3%{opacity:0} 10%{opacity:1} 81%{opacity:1} 92%{opacity:0} 100%{opacity:0} }
+@keyframes cp2 { 0%{opacity:0} 21%{opacity:0} 28%{opacity:1} 81%{opacity:1} 92%{opacity:0} 100%{opacity:0} }
+@keyframes cp3 { 0%{opacity:0} 40%{opacity:0} 47%{opacity:1} 81%{opacity:1} 92%{opacity:0} 100%{opacity:0} }
+@keyframes cp4 { 0%{opacity:0} 59%{opacity:0} 66%{opacity:1} 81%{opacity:1} 92%{opacity:0} 100%{opacity:0} }
+@keyframes cpcycle { }  /* 佔位：實際各句用 cp1~cp4 */
+@media (prefers-reduced-motion: reduce) { .corner-poem { display: none; } }
+@media (max-width: 560px) { .corner-poem { display: none; } }  /* 小螢幕避免與內容打架 */
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：角落小詩改用毛筆楷書
+   - 字型＝教育部標準楷書（edukai 4.0，CC BY-SA 3.0 TW，標註：中華民國教育部）
+   - 已裁成只含詩句 27 字的迷你字檔（fonts/poem-kai.woff2，約 14KB）
+   ============================================================ */
+@font-face {
+  font-family: "PoemKai";
+  src: url("fonts/poem-kai.woff2") format("woff2");
+  font-display: swap;
+}
+.corner-poem {
+  font-family: "PoemKai", var(--font-display), serif;
+  font-size: clamp(.95rem, 1.8vw, 1.2rem);   /* 毛筆字稍放大更有掛軸感 */
+}

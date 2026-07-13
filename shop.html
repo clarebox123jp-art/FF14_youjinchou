@@ -239,6 +239,13 @@
           <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行② 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行② 角色 ID" /></div>
           <div class="cust-row cust-co"><input type="text" class="coServer" maxlength="12" placeholder="同行③ 伺服器" /><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /></div>
         </div>
+        <div class="order-field">
+          <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）與期望入席時間</span>
+          <div class="cust-row">
+            <input type="date" id="custDate" />
+            <input type="text" id="custTime" maxlength="10" placeholder="入席時間（例：21:30）" />
+          </div>
+        </div>
         <p class="order-note">同行者的所有點餐與指名店員費用，將合併計入<strong>同一張帳單</strong>。</p>
         <!-- 防機器人蜜罐欄位：真人看不到也不會填；被填寫的送單一律擋下 -->
         <input type="text" id="odWeb" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;height:0;opacity:0" aria-hidden="true" />

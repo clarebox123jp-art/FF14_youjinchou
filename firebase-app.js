@@ -2630,6 +2630,11 @@ loadRooms();
     updateTotals();
   }
   document.querySelectorAll("#custCoWrap input").forEach((el) => el.addEventListener("input", syncGuests));
+  { /* ★ 預約日期最小值＝今天+3（瀏覽器日曆直接反灰不可選） */
+    const d = new Date(); d.setDate(d.getDate() + 3);
+    const el = document.getElementById("custDate");
+    if (el) el.min = d.toISOString().slice(0, 10);
+  }
   /* 顧客資訊驗證：回傳錯誤訊息或 null */
   function validateCustomer() {
     const sv = document.getElementById("custServer")?.value.trim();
@@ -2642,6 +2647,12 @@ loadRooms();
       if (partial.length) return "同行顧客資料不完整：每一位都需要「伺服器＋角色 ID」都填妥。";
       if (!complete.length) return "已勾選「有同行顧客」，請至少填妥一位同行者的伺服器與 ID（或取消勾選）。";
     }
+    /* ★ 2026-07-13：預約日期（3 天前規則）＋入席時間 */
+    const dv = document.getElementById("custDate")?.value;
+    if (!dv) return "請選擇「預約消費日期」。";
+    const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + 3);
+    if (new Date(dv + "T00:00:00") < min) return "依本店規定，最晚需於消費日 3 天前預訂——請選擇 3 天後（含）的日期。";
+    if (!document.getElementById("custTime")?.value.trim()) return "請填寫期望入席時間（例：21:30）。";
     return null;
   }
 
@@ -2846,6 +2857,12 @@ loadRooms();
     lines.push("【茶談百緣｜幻想友人帳 RP 商店・測試預約單】");   /* ★ 2026-07-13 店名定案 */
     lines.push("※ 本店尚未正式營業，此明細僅為功能測試，不成立任何訂單。");
     lines.push("顧客暱稱：" + (document.getElementById("odNick").value.trim() || "（未填）"));
+    {
+      const dv = document.getElementById("custDate").value;
+      const wd = ["日","一","二","三","四","五","六"][new Date(dv + "T00:00:00").getDay()];
+      lines.push(`消費日期：${dv.replace(/-/g, "/")}（週${wd}）`);
+      lines.push("期望入席：" + document.getElementById("custTime").value.trim());
+    }
     lines.push("顧客：" + document.getElementById("custServer").value.trim() + "｜" + document.getElementById("custId").value.trim());
     if (hasCo && hasCo.checked) coRows().filter((r) => r.server && r.id)
       .forEach((r, k) => lines.push(`同行${k + 1}：${r.server}｜${r.id}`));

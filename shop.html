@@ -432,16 +432,20 @@
           <p class="order-note">包廂各有容納上限，超過將無法送出。</p>
         </div>
 
+        <!-- ★ 2026-07-13：指名店員時，改為逐位顯示該店員「排班表登記過」的可選項（JS 渲染） -->
+        <div id="odStaffPrefs" style="display:none"></div>
+
+        <div id="odGlobalPrefs"><!-- 未指名（隨緣）時顯示的全域偏好 -->
         <div class="order-field">
-          <span class="order-label">店員扮演身分（勾選參考選項，或自行輸入）</span>
+          <span class="order-label">店員扮演身分（隨緣安排時的偏好；可自行輸入）</span>
           <div id="odRoleBox" class="order-choice-wrap"></div>
           <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂店員身分（選填，例：占星術士）" />
         </div>
 
-        <!-- ★ 2026-07-13 新增：顧客扮演身分（顧客自行輸入，不影響計價） -->
+        <!-- ★ 2026-07-13：顧客扮演身分改為依同行人數逐位輸入（顧客甲/乙/丙/丁，JS 渲染） -->
         <div class="order-field">
-          <span class="order-label">顧客扮演身分（選填，自行輸入——想以什麼身分入席？）</span>
-          <input type="text" id="odGuestRole" maxlength="30" placeholder="例：迷路的吟遊詩人、剛下副本的冒險者" />
+          <span class="order-label">顧客扮演身分（選填，逐位輸入——想以什麼身分入席？）</span>
+          <div id="odGuestRoles"></div>
         </div>
 
         <div class="order-field">
@@ -454,10 +458,11 @@
         </div>
 
         <div class="order-field">
-          <span class="order-label">服務風格（個性；也可自行輸入）</span>
+          <span class="order-label">服務風格（個性；隨緣安排時的偏好，可自行輸入）</span>
           <div id="odStyleBox" class="order-choice-wrap"></div>
           <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" />
         </div>
+        </div><!-- /odGlobalPrefs -->
 
         <!-- ★ 2026-07-13：善良風俗提醒併入「預約注意事項」（原獨立框移除，避免重複） -->
 
@@ -524,6 +529,8 @@
         <p class="body">您點選的料理（單點低消 5,000 Gil；未標價餐點暫不計入金額）：</p>
         <div id="orderDishList" class="order-dish-list"><p class="order-empty">尚未點選任何餐點。</p></div>
         <p id="orderMinNote" class="order-min-note"></p>
+        <!-- ★ 2026-07-13：服務逐項結算（含可取消勾選的 RP 加價項，JS 渲染） -->
+        <div id="odServiceList" class="order-service-list"></div>
         <div class="order-totals">
           <div><span>料理小計</span><b id="odDishTotal">0 Gil</b></div>
           <div><span>店員服務小計</span><b id="odServiceTotal">0 Gil</b></div>
@@ -537,8 +544,8 @@
           <textarea id="odMemo" rows="2" maxlength="200" placeholder="特殊需求（話題禁區、慶生驚喜、飲食偏好…）"></textarea>
         </div>
         <!-- ★ 2026-07-12 深夜新增：預約注意事項（彙整社群常見 RP 店爭議，理直氣和版） -->
-        <div class="order-notice">
-          <h4 class="order-notice-title">預約前，請花一分鐘知悉</h4>
+        <div class="order-notice" id="rulesSection"><!-- ★ 2026-07-13：與「帳前約定」合併，錨點移到這裡 -->
+          <h4 class="order-notice-title">帳前約定——預約前，請花一分鐘知悉</h4>
           <p class="order-notice-rp">本店為<strong>輕〜中度 RP</strong> 店——輕鬆互動為主、氛圍點綴為輔；期待重度沉浸劇情的旅人，建議先與幹部聊聊再預約。</p>
           <p class="order-notice-sub">請您配合的事</p>
           <ul class="order-notice-list">
@@ -550,6 +557,8 @@
             <li>同行光顧的所有點餐與指名店員費用，皆合併計入同一張帳單，由主客統一結帳。</li>
             <li>請最晚於消費日 <strong>3 天前</strong>完成預訂，以利工作人員備料與排班。</li>
             <li>預約成功卻無故未到將列入紀錄；本店將視連續取消或未到的情形，婉拒該顧客後續的預約。</li>
+            <li>店員皆以角色身分接待——請把彼此當作故事裡的人物友善互動；店員掛「忙碌／離開」時代表暫離營業，請耐心等候、勿反覆私訊催促，也請勿未經預約臨時強行指名。</li>
+            <li>歡迎拍照留念；若要公開合影，請先徵得同席店員與客人的同意。費用以本頁價目表與訂單明細為準，有疑問請先私訊幹部確認。</li>
           </ul>
           <p class="order-notice-sub">我們承諾的事</p>
           <ul class="order-notice-list">
@@ -571,6 +580,13 @@
           <button type="button" class="btn" id="odCopy">📋 複製明細</button>
           <p class="order-note">測試模式：僅產生明細供複製，不會真正送出。正式營業後，此明細可貼到 Discord 預約區或預約表單。</p>
         </div>
+      </div>
+
+      <!-- ★ 2026-07-13：伍・我的預約紀錄（僅存於本裝置瀏覽器；送單成功時自動保存） -->
+      <div class="order-step reveal" id="myOrdersWrap" style="display:none">
+        <h3 class="order-step-title">伍 · 我的預約紀錄</h3>
+        <p class="body">此紀錄僅保存在您目前這台裝置的瀏覽器中——點「查看帳單」開啟精美帳單卡，截圖即可轉發給同行友人。</p>
+        <div id="myOrders"></div>
       </div>
     </div>
   </section>
@@ -595,12 +611,14 @@
         <article class="notice">
           <p class="notice-tag">🎊 開幕特惠</p>
           <h3>開帳誌慶 · 首月同慶</h3>
-          <p>開幕首月光臨的每一位旅人，餐點一律八折，並附贈本店特調飲品一杯；預約拍照服務者，加贈精修照片一張。</p>
+          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：開幕首月光臨的每一位旅人，餐點一律八折，並附贈本店特調飲品一杯；預約拍照服務者，加贈精修照片一張。 -->
+          <p>尚在規劃中，敬請期待！</p>
         </article>
         <article class="notice">
           <p class="notice-tag">🌸 節慶活動</p>
           <h3>當季祭事 · 籌備中</h3>
-          <p>新年初詣、櫻花祭、盂蘭盆納涼祭——四季的祭事正在籌備中，詳情將於此告示板與 Discord 同步公告。</p>
+          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：新年初詣、櫻花祭、盂蘭盆納涼祭——四季的祭事正在籌備中，詳情將於此告示板與 Discord 同步公告。 -->
+          <p>尚在規劃中，敬請期待！</p>
         </article>
       </div>
     </div>
@@ -668,7 +686,9 @@
        ★ 2026-07-12 新增：帳前約定（入店須知 / RP 禮儀守則）
        條列式，全部可線上編輯；想增減守則複製／刪一個 <li> 即可。
        ============================================================ -->
-  <section class="section" style="padding-top:0" id="rulesSection">
+  <!-- ★ 2026-07-13：「帳前約定」已與「預約前請知悉」合併，統一放在結帳（肆）之前；本獨立區移除。
+       原內容備查：
+  <section class="section" style="padding-top:0" id=~rulesSection~(備查)>
     <div class="wrap">
       <div class="reveal">
         <p class="eyebrow">Etiquette · 帳前約定</p>
@@ -685,6 +705,7 @@
       </ul>
     </div>
   </section>
+  -->
 
   <hr class="divider" />
 

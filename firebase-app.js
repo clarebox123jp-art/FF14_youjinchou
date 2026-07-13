@@ -256,7 +256,7 @@ function buildAdminBar(email) {
     ${document.getElementById("staffList") ? '<button type="button" id="abStaffAdd" class="admin-btn primary">＋ 新增店員</button><button type="button" id="abStaffSeed" class="admin-btn">⤓ 匯入預設店員</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abMenuAdd" class="admin-btn primary">＋ 新增餐點</button><button type="button" id="abMenuSeed" class="admin-btn">⤓ 匯入預設餐單</button>' : ""}
     ${document.getElementById("roomList") ? '<button type="button" id="abRoomAdd" class="admin-btn primary">＋ 新增包廂</button><button type="button" id="abRoomSeed" class="admin-btn">⤓ 匯入預設包廂</button>' : ""}
-    ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button>' : ""}
+    ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button><button type="button" id="abStaffSync" class="admin-btn">⟳ 更新店員排班表</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abSheet" class="admin-btn">📊 排班表</button>' : ""}
@@ -307,6 +307,8 @@ function buildAdminBar(email) {
   if (feeBtn) feeBtn.onclick = () => window.YJC_ORDER?.openFees?.();
   const ocfgBtn = document.getElementById("abOrderCfg");
   if (ocfgBtn) ocfgBtn.onclick = () => window.YJC_ORDER?.openOrderCfg?.();
+  const ssyBtn = document.getElementById("abStaffSync");
+  if (ssyBtn) ssyBtn.onclick = () => window.YJC_ORDER?.syncStaffSchedule?.();
   const lyBtn = document.getElementById("abLyrics");
   if (lyBtn) lyBtn.onclick = openLyricsEditor;
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
@@ -1726,6 +1728,24 @@ function startStaffCarousel(card) {
   play();
 }
 
+/* ★ 2026-07-13：把匯入的週循環班表壓成可讀字串（一二三四→一至四；全七天→每日） */
+function formatShifts(shifts) {
+  const DAYS = "一二三四五六日";
+  const pretty = (days) => {
+    if (days === DAYS) return "每日";
+    if (days === "一二三四五") return "平日";
+    if (days === "六日") return "假日";
+    const i = DAYS.indexOf(days[0]);
+    if (days.length >= 3 && DAYS.slice(i, i + days.length) === days)
+      return `週${days[0]}至${days[days.length - 1]}`;
+    return "週" + Array.from(days).join("、");
+  };
+  return (shifts || []).map((sh) => {
+    const [d, s] = String(sh).split("|");
+    return `${pretty(d || "")}${s ? "・" + s + (s.length <= 2 && s !== "午夜" ? "" : "") : ""}`;
+  }).join("｜");
+}
+
 function renderStaff() {
   if (!staffList) return;
   staffList.classList.add("in");   /* ★ 2026-07-12：同餐單，防 reveal 門檻造成整塊隱形 */
@@ -1752,6 +1772,9 @@ function renderStaff() {
       ${s.badge ? `<p class="staff-badge${s.available === false ? " is-off" : ""}">${esc(s.badge)}</p>` : ""}
       <p class="staff-role">${esc(s.role)}</p>
       <p class="staff-serv">${esc(s.services)}</p>
+      ${Array.isArray(s.shifts) && s.shifts.length ? `<p class="staff-shifts">🕐 可預約：${esc(formatShifts(s.shifts))}</p>` : ""}
+      ${s.rpRoles ? `<p class="staff-rpline">🎭 可接身分：${esc(s.rpRoles)}</p>` : ""}
+      ${s.rpStyles ? `<p class="staff-rpline">💬 風格：${esc(s.rpStyles)}${s.rpPhoto === "是" ? "　📸 可加拍" : ""}</p>` : ""}
       ${persona ? `<button type="button" class="staff-persona-btn">看角色設定 ▾</button>
       <div class="staff-persona" hidden>${esc(persona).replace(/\n/g, "<br>")}</div>` : ""}`;
     // 卡片內照片自動輪播（每 3.5 秒換一張；hover 暫停）
@@ -2631,9 +2654,100 @@ loadRooms();
     const n = 1 + (hasCo && hasCo.checked ? coRows().filter((r) => r.server && r.id).length : 0);
     const sel = document.getElementById("odGuests");
     if (sel) sel.value = String(Math.min(4, Math.max(1, n)));
+    renderGuestRoles();   /* ★ 人數變動 → 顧客甲乙丙丁欄位跟著長 */
     updateTotals();
   }
   document.querySelectorAll("#custCoWrap input").forEach((el) => el.addEventListener("input", syncGuests));
+
+  /* ---------- ★ 2026-07-13 深夜：指名店員 → 逐位顯示排班表登記的可選項 ---------- */
+  const GUEST_TAG = ["甲","乙","丙","丁"];
+  function splitOpts(t) {
+    return String(t || "").split(/[、,，／/;；]+/).map((x) => x.trim()).filter(Boolean);
+  }
+  /* ★ 2026-07-13：依匯入的週循環班表，判斷店員在「所選日期＋場次」是否有班
+     （班表未匯入＝回傳 null 不提示；有匯入才做判斷） */
+  function staffOnDuty(name) {
+    const s = staffRows().find((x) => x.name === name);
+    if (!s || !Array.isArray(s.shifts) || !s.shifts.length) return null;
+    const dv = document.getElementById("custDate")?.value;
+    const sess = (document.querySelector('input[name="custSession"]:checked')?.value || "").slice(0, 2);
+    if (!dv || !sess) return null;
+    const w = "日一二三四五六"[new Date(dv + "T00:00:00").getDay()];
+    return s.shifts.some((sh) => {
+      const [days, s2] = String(sh).split("|");
+      return days.includes(w) && sess.startsWith(String(s2).slice(0, 2));
+    });
+  }
+  function dutyWarnings() {
+    return Array.from(pickedStaff).filter((n) => staffOnDuty(n) === false);
+  }
+
+  function staffProfile(name) {
+    const s = staffRows().find((x) => x.name === name) || {};
+    return { roles: s.rpRoles || "", gender: s.rpGender || "", styles: s.rpStyles || "" };
+  }
+  /* ★ 2026-07-13 v3：選擇狀態集中存 prefState（帳單端取消勾選也改這裡 → 雙向同步） */
+  const prefState = new Map();   // 店員名 → { role, style }
+  function prefOf(name) {
+    if (!prefState.has(name)) prefState.set(name, { role: "隨緣", style: "隨緣" });
+    return prefState.get(name);
+  }
+  function renderStaffPrefs() {
+    const glob = document.getElementById("odGlobalPrefs");
+    const names = Array.from(pickedStaff);
+    if (glob) glob.style.display = names.length ? "none" : "";
+    /* 面板直接長在店員名簿卡片上（.staff-pick 下方） */
+    document.querySelectorAll("#staffList .staff-pick-prefs").forEach((el) => el.remove());
+    names.forEach((n, i) => {
+      const card = Array.from(document.querySelectorAll("#staffList .staff-card"))
+        .find((c) => c.querySelector("h3")?.textContent?.trim() === n);
+      const host = card?.querySelector(".staff-pick");
+      if (!host) return;
+      const p = staffProfile(n);
+      const st = prefOf(n);
+      const roleOpts  = p.roles.trim() === "皆可" ? ROLES.filter((r) => r !== "隨緣") : splitOpts(p.roles);
+      const styleOpts = p.styles.trim() === "皆可" ? STYLES.filter((r) => r !== "隨緣") : splitOpts(p.styles);
+      const chips = (opts, group, cur) => ['<label class="order-chip"><input type="radio" name="' + group + '" value="隨緣"' + (cur === "隨緣" ? " checked" : "") + ' />隨緣</label>']
+        .concat(opts.map((o) => `<label class="order-chip"><input type="radio" name="${group}" value="${esc(o)}"${cur === o ? " checked" : ""} />${esc(o)}</label>`)).join("");
+      const box = document.createElement("div");
+      box.className = "staff-pick-prefs";
+      box.innerHTML = `
+        ${p.gender ? `<p class="staff-pref-gender">扮演性別呈現：${esc(p.gender)}</p>` : ""}
+        <div class="staff-pref-row"><em>身分<small>＋${fmt(FEE.role)}/單</small></em><div class="order-choice-wrap">${
+          roleOpts.length ? chips(roleOpts, "odRoleS" + i, st.role)
+          : '<span class="order-note">尚未登記可接身分</span>'}</div></div>
+        <div class="staff-pref-row"><em>風格<small>＋${fmt(FEE.persona)}/單</small></em><div class="order-choice-wrap">${
+          styleOpts.length ? chips(styleOpts, "odStyleS" + i, st.style)
+          : '<span class="order-note">尚未登記可接風格</span>'}</div></div>`;
+      box.querySelectorAll('input[name="odRoleS' + i + '"]').forEach((el) =>
+        el.addEventListener("change", () => { prefOf(n).role = el.value; updateTotals(); }));
+      box.querySelectorAll('input[name="odStyleS' + i + '"]').forEach((el) =>
+        el.addEventListener("change", () => { prefOf(n).style = el.value; updateTotals(); }));
+      host.appendChild(box);
+    });
+  }
+  function collectStaffPrefs() {
+    return Array.from(pickedStaff).map((n, i) => {
+      const p = staffProfile(n);
+      const st = prefOf(n);
+      return { name: n, tag: "店員" + "ABC"[i], role: st.role || "隨緣", style: st.style || "隨緣", gender: p.gender };
+    });
+  }
+  /* 顧客逐位扮演身分（人數變動時重建、保留已填內容） */
+  function renderGuestRoles() {
+    const box = document.getElementById("odGuestRoles");
+    if (!box) return;
+    const n = Number(document.getElementById("odGuests")?.value) || 1;
+    const old = Array.from(box.querySelectorAll("input")).map((el) => el.value);
+    box.innerHTML = Array.from({ length: n }, (_, i) =>
+      `<input type="text" class="od-guest-role" maxlength="30" placeholder="顧客${GUEST_TAG[i]} 的扮演身分（例：迷路的吟遊詩人）" value="${esc(old[i] || "")}" />`
+    ).join("");
+  }
+  function guestRoleLines() {
+    return Array.from(document.querySelectorAll("#odGuestRoles input"))
+      .map((el, i) => ({ tag: GUEST_TAG[i], v: el.value.trim() }))
+      .filter((x) => x.v);
+  }
   { /* ★ 預約日期最小值＝今天+3（瀏覽器日曆直接反灰不可選） */
     const d = new Date(); d.setDate(d.getDate() + 3);
     const el = document.getElementById("custDate");
@@ -2736,11 +2850,13 @@ loadRooms();
             return;
           }
           e.target.checked ? pickedStaff.add(name) : pickedStaff.delete(name);
+          renderStaffPrefs();   /* ★ 指名變動 → 逐位可選項面板重繪 */
           updateTotals();
         };
       }
       card.appendChild(bar);
     });
+    renderStaffPrefs();   /* ★ 卡片重建後，把已勾店員的選項面板掛回去 */
     updateTotals();
   }
 
@@ -2792,9 +2908,11 @@ loadRooms();
     const staffFee = namedN > 0
       ? Array.from(pickedStaff).reduce((sum, n) => sum + feeOf(n), 0) * units
       : FEE.seat * units;
-    /* ★ RP 輕重加價（僅指名時計）：勾個性＋persona、勾職業身分＋role；兩者都選＝重度 */
-    const styleOn = namedN > 0 && (pickVal("odStyle") !== "隨緣" || document.getElementById("odStyleCustom").value.trim() !== "");
-    const roleOn  = namedN > 0 && (pickVal("odRole")  !== "隨緣" || document.getElementById("odRoleCustom").value.trim()  !== "");
+    /* ★ RP 輕重加價（僅指名時計）：任一指名店員被勾了個性/身分即計（每單一次）
+       2026-07-13 改讀逐店員面板 */
+    const sp = namedN > 0 ? collectStaffPrefs() : [];
+    const styleOn = sp.some((p) => p.style && p.style !== "隨緣");
+    const roleOn  = sp.some((p) => p.role  && p.role  !== "隨緣");
     const rpFee = (styleOn ? FEE.persona : 0) + (roleOn ? FEE.role : 0);
     const rpLevel = namedN === 0 ? "" : (styleOn && roleOn ? "重" : (styleOn || roleOn ? "中" : "輕"));
     const photoFee = extraPhotos * FEE.photo;
@@ -2818,9 +2936,40 @@ loadRooms();
       else { minEl.textContent = "尚差 " + fmt(FEE.min - c.dishTotal) + " 達到單點料理低消（" + fmt(FEE.min) + "）"; minEl.className = "order-min-note"; }
     }
     const pk = document.getElementById("odPickedNote");
-    if (pk) pk.textContent = c.namedN
-      ? `目前指名：${c.namedN} 位（${Array.from(pickedStaff).join("、")}）`
-      : "目前指名：0 位（隨緣，由店家安排 1 位店員）";
+    if (pk) {
+      const warns = c.namedN ? dutyWarnings() : [];
+      pk.textContent = (c.namedN
+        ? `目前指名：${c.namedN} 位（${Array.from(pickedStaff).join("、")}）`
+        : "目前指名：0 位（隨緣，由店家安排 1 位店員）")
+        + (warns.length ? `　⚠ 依排班表，${warns.join("、")} 於所選日期／場次未排班——仍可送單，店家將與您確認代班或改期。` : "");
+    }
+    /* ★ 2026-07-13 v3：服務逐項結算＋帳單端可直接取消 RP 加價（同步名簿勾選） */
+    const svcEl = document.getElementById("odServiceList");
+    if (svcEl) {
+      const rows = [];
+      if (c.namedN) {
+        Array.from(pickedStaff).forEach((n) => rows.push(`<div class="osl-row"><span>指名 ${esc(n)}</span><b>${fmt(feeOf(n))} × ${c.units} 時段</b></div>`));
+        const sp2 = collectStaffPrefs();
+        const roleSel  = sp2.filter((p) => p.role  !== "隨緣");
+        const styleSel = sp2.filter((p) => p.style !== "隨緣");
+        if (roleSel.length) rows.push(`<label class="osl-row osl-ck"><span><input type="checkbox" id="odCkRole" checked /> 指定職業身分（${roleSel.map((p) => `${esc(p.name)}＝${esc(p.role)}`).join("、")}）</span><b>＋${fmt(FEE.role)}</b></label>`);
+        if (styleSel.length) rows.push(`<label class="osl-row osl-ck"><span><input type="checkbox" id="odCkStyle" checked /> 指定個性風格（${styleSel.map((p) => `${esc(p.name)}＝${esc(p.style)}`).join("、")}）</span><b>＋${fmt(FEE.persona)}</b></label>`);
+      } else {
+        rows.push(`<div class="osl-row"><span>隨緣坐檯（店家安排 1 位）</span><b>${fmt(FEE.seat)} × ${c.units} 時段</b></div>`);
+      }
+      if (extraPhotos) rows.push(`<div class="osl-row"><span>額外加拍 × ${extraPhotos} 張</span><b>＋${fmt(extraPhotos * FEE.photo)}</b></div>`);
+      svcEl.innerHTML = rows.join("");
+      const ckR = document.getElementById("odCkRole");
+      if (ckR) ckR.onchange = () => {   /* 取消勾選 → 全部身分改回隨緣 → 名簿面板同步重繪 */
+        Array.from(pickedStaff).forEach((n) => { prefOf(n).role = "隨緣"; });
+        renderStaffPrefs(); updateTotals();
+      };
+      const ckS = document.getElementById("odCkStyle");
+      if (ckS) ckS.onchange = () => {
+        Array.from(pickedStaff).forEach((n) => { prefOf(n).style = "隨緣"; });
+        renderStaffPrefs(); updateTotals();
+      };
+    }
     document.getElementById("odDishTotal").textContent    = fmt(c.dishTotal);
     document.getElementById("odServiceTotal").textContent = fmt(c.serviceTotal);
     document.getElementById("odRoomTotal").textContent    = pickedRoom
@@ -2830,6 +2979,8 @@ loadRooms();
   }
   document.getElementById("odDuration").onchange = updateTotals;
   document.getElementById("odGuests").onchange = updateTotals;
+  document.getElementById("custDate")?.addEventListener("change", updateTotals);
+  document.getElementById("custSessionBox")?.addEventListener("change", updateTotals);
   /* ★ 勾個性／職業身分（含自訂輸入）→ RP 加價即時重算 */
   document.getElementById("odRoleBox").addEventListener("change", updateTotals);
   document.getElementById("odStyleBox").addEventListener("change", updateTotals);
@@ -2887,11 +3038,18 @@ loadRooms();
     lines.push(`　時長：${dur} 分鐘（${c.units} 個時段）`);
     lines.push("　指名：" + (c.namedN ? Array.from(pickedStaff).map((n) => `${n}（${fmt(feeOf(n))}/時段）`).join("、") : "隨緣（不指名價）"));
     lines.push("　服務模式：" + pick("odMode"));
-    lines.push("　店員扮演身分：" + pick("odRole") + (roleCustom ? `／自訂：${roleCustom}` : ""));
-    const guestRole = document.getElementById("odGuestRole").value.trim();
-    if (guestRole) lines.push("　顧客扮演身分：" + guestRole);
-    lines.push("　性別：" + pick("odGender"));
-    lines.push("　服務風格：" + pick("odStyle") + (styleCustom ? `／自訂：${styleCustom}` : ""));
+    if (c.namedN) {
+      collectStaffPrefs().forEach((p) => {
+        lines.push(`　${p.tag} ${p.name}：扮演＝${p.role}／風格＝${p.style}` + (p.gender ? `（性別呈現：${p.gender}）` : ""));
+      });
+    } else {
+      lines.push("　扮演身分偏好：" + pick("odRole") + (roleCustom ? `／自訂：${roleCustom}` : ""));
+      lines.push("　性別偏好：" + pick("odGender"));
+      lines.push("　風格偏好：" + pick("odStyle") + (styleCustom ? `／自訂：${styleCustom}` : ""));
+    }
+    guestRoleLines().forEach((g) => lines.push(`　顧客${g.tag} 扮演身分：${g.v}`));
+    { const warns = c.namedN ? dutyWarnings() : [];
+      if (warns.length) lines.push(`　※ 排班提示：${warns.join("、")} 於該日期／場次未排班（送單後由店家確認代班或改期）`); }
     if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.rpFee ? `（個性${c.styleOn ? " ＋" + fmt(FEE.persona) : "—"}／職業身分${c.roleOn ? " ＋" + fmt(FEE.role) : "—"}）` : "（基本，無加價）"));
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
     lines.push("　店員服務小計：" + fmt(c.serviceTotal));
@@ -2936,7 +3094,7 @@ loadRooms();
      - 通知：管理員登入時每 45 秒輪詢 CSV，偵測到新回應→風鈴聲＋右下角視窗
        （點開訂單列表／一鍵複製給顧客的預約成功通知訊息）。
      ============================================================ */
-  const OCFG = { formUrl: "", entryId: "", csvUrl: "", sheetUrl: "", open: false, vol: 60 };
+  const OCFG = { formUrl: "", entryId: "", csvUrl: "", sheetUrl: "", staffCsvUrl: "", vipCsvUrl: "", open: false, vol: 60 };
   let ocfgLoaded = false;
   (async () => {
     try {
@@ -2944,7 +3102,47 @@ loadRooms();
       if (snap.exists()) Object.assign(OCFG, snap.data() || {});
     } catch (_) {}
     ocfgLoaded = true;
+    renderVipBoard();   /* ★ 2026-07-13：設定載入後同步貴客榜 */
   })();
+
+  /* ---------- ★ 2026-07-13：貴客榜＝預約總表「已完成」自動彙總 ----------
+     讀預約總表發布 CSV，狀態=已完成的列依「顧客角色ID」彙總：
+     有「金額」欄→依總消費排行；沒有→依完成次數排行。榜單前 5 名寫進 .rank-board。 */
+  async function renderVipBoard() {
+    const board = document.querySelector(".rank-board");
+    if (!board || !OCFG.vipCsvUrl) return;
+    try {
+      const res = await fetch(OCFG.vipCsvUrl, { cache: "no-store" });
+      const rows = parseCSV(await res.text());
+      const hi = rows.findIndex((r) => r.some((c) => String(c).includes("顧客角色ID")));
+      if (hi < 0) return;
+      const H = rows[hi].map((c) => String(c));
+      const iId = H.findIndex((h) => h.includes("顧客角色ID"));
+      const iSt = H.findIndex((h) => h.includes("狀態"));
+      const iAmt = H.findIndex((h) => h.includes("金額"));
+      const agg = new Map();
+      for (const r of rows.slice(hi + 1)) {
+        const id = String(r[iId] || "").trim();
+        const st = String(r[iSt] || "").trim();
+        if (!id || id.includes("範例") || !st.startsWith("已完成")) continue;
+        const amt = iAmt >= 0 ? (parseInt(String(r[iAmt]).replace(/[^\d]/g, ""), 10) || 0) : 0;
+        const cur = agg.get(id) || { n: 0, sum: 0 };
+        cur.n += 1; cur.sum += amt;
+        agg.set(id, cur);
+      }
+      if (!agg.size) return;
+      const ranked = Array.from(agg.entries())
+        .sort((a, b) => (b[1].sum - a[1].sum) || (b[1].n - a[1].n));
+      const linesEl = board.querySelectorAll(".rank-line");
+      ranked.slice(0, linesEl.length).forEach(([id, v], i) => {
+        const line = linesEl[i];
+        const nameEl = line.querySelector("b");
+        const amtEl = line.querySelector(".rank-amt");
+        if (nameEl) nameEl.textContent = id;
+        if (amtEl) amtEl.textContent = v.sum ? v.sum.toLocaleString("zh-Hant-TW") + " Gil" : `完成 ${v.n} 次`;
+      });
+    } catch (e) { console.warn("貴客榜同步失敗：", e); }
+  }
 
   function canSubmitNow() {
     return ocfgLoaded && OCFG.formUrl && OCFG.entryId && (OCFG.open === true || isAdmin);
@@ -2966,9 +3164,60 @@ loadRooms();
         headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
       localStorage.setItem("yjc_order_ts", String(now));
       localStorage.setItem("yjc_order_hash", h);
-      alert("📨 預約單已送出！我們收到後會盡快與您聯繫。\n（明細已保留在下方，可自行複製留存）");
+      /* ★ 2026-07-13：保存到本裝置的預約紀錄（最多 20 筆） */
+      try {
+        const arr = JSON.parse(localStorage.getItem("yjc_orders") || "[]");
+        arr.unshift({ ts: now, text });
+        localStorage.setItem("yjc_orders", JSON.stringify(arr.slice(0, 20)));
+        renderMyOrders();
+      } catch (_) {}
+      alert("📨 預約單已送出！我們收到後會盡快與您聯繫。\n（已存入下方「伍・我的預約紀錄」，可隨時查看帳單）");
     } catch (e) { alert("❌ 送出失敗，請改用「複製明細」貼到 Discord 預約區：" + (e.message || e)); }
   }
+
+  /* ---------- ★ 2026-07-13：伍・我的預約紀錄（本裝置） ---------- */
+  function renderMyOrders() {
+    const wrap = document.getElementById("myOrdersWrap");
+    const list = document.getElementById("myOrders");
+    if (!wrap || !list) return;
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem("yjc_orders") || "[]"); } catch (_) {}
+    wrap.style.display = arr.length ? "" : "none";
+    list.innerHTML = arr.map((o, i) => {
+      const d = new Date(o.ts);
+      const when = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const total = (o.text.match(/――― 總計：([^ ―]+)/) || [, "—"])[1];
+      const date  = (o.text.match(/消費日期：([^\n]+)/) || [, ""])[1];
+      return `<div class="myorder-row"><span>${esc(when)} 送出｜消費日 ${esc(date)}｜總計 ${esc(total)}</span>
+        <span class="myorder-btns"><button type="button" class="admin-btn" data-mo-view="${i}">查看帳單</button>
+        <button type="button" class="admin-btn danger" data-mo-del="${i}">刪除</button></span></div>`;
+    }).join("");
+    list.querySelectorAll("[data-mo-view]").forEach((b) => b.onclick = () => openBill(arr[Number(b.dataset.moView)]));
+    list.querySelectorAll("[data-mo-del]").forEach((b) => b.onclick = () => {
+      if (!confirm("刪除這筆本機紀錄？（不影響店家端的訂單）")) return;
+      arr.splice(Number(b.dataset.moDel), 1);
+      localStorage.setItem("yjc_orders", JSON.stringify(arr));
+      renderMyOrders();
+    });
+  }
+  function openBill(o) {
+    document.getElementById("billModal")?.remove();
+    const wrap = document.createElement("div");
+    wrap.className = "admin-modal"; wrap.id = "billModal";
+    const d = new Date(o.ts);
+    wrap.innerHTML = `
+      <div class="bill-card">
+        <div class="bill-head"><span class="hanko">緣</span>
+          <div><b>茶談百緣</b><small>幻想友人帳 · RP Shop</small></div></div>
+        <pre class="bill-body">${esc(o.text)}</pre>
+        <div class="bill-foot">送出時間：${d.toLocaleString("zh-TW")}　※ 截圖此帳單即可分享給同行友人</div>
+        <div class="admin-modal-btns"><button type="button" class="admin-btn" id="billClose">關閉</button></div>
+      </div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+    document.getElementById("billClose").onclick = () => wrap.remove();
+  }
+  renderMyOrders();
 
   /* ---------- 管理員接單通知（輪詢發布的回應 CSV） ---------- */
   function parseCSV(t) {
@@ -3045,6 +3294,77 @@ loadRooms();
     } catch (_) {}
   }, 45000);
 
+  /* ---------- ★ 2026-07-13：⟳ 更新店員排班表（CSV → 店員檔案） ----------
+     讀排班登記表發布的 CSV，依表頭找欄位，同名店員取「最後一列」為準，
+     寫回店員資料庫：可被指名/指名費/可接扮演身分/性別呈現/可接風格/加拍。
+     店員名簿卡片與預約表單的逐位可選項會立即更新。 */
+  async function syncStaffSchedule() {
+    if (!OCFG.staffCsvUrl) { openOrderCfg(); alert("請先在 🛎 設定裡貼上「排班登記表」發布的 CSV 連結。"); return; }
+    if (typeof staffCache === "undefined" || !staffCache.length) {
+      alert("店員名簿還沒匯入資料庫——請先按「⤓ 匯入預設店員」再更新排班。"); return;
+    }
+    try {
+      const res = await fetch(OCFG.staffCsvUrl, { cache: "no-store" });
+      const rows = parseCSV(await res.text());
+      const hi = rows.findIndex((r) => r.some((c) => String(c).includes("值班店員")));
+      if (hi < 0) throw new Error("CSV 裡找不到「值班店員」表頭——請確認發布的是排班登記表分頁。");
+      const H = rows[hi].map((c) => String(c));
+      const col = (kw) => H.findIndex((h) => h.includes(kw));
+      const iName = col("值班店員"), iAvail = col("可被指名"), iFee = col("指名費"),
+            iRole = col("可接扮演身分"), iGen = col("性別"), iSty = col("可接服務風格"), iPh = col("可配合加拍"),
+            iWeek = col("星期"), iSess = col("時段"), iStat = col("出勤");
+      /* ★ 2026-07-13：排班表改週循環制——「星期」欄可能是 每日/平日/假日/一至四/一、三、五/單日 */
+      const DAYS = "一二三四五六日";
+      const canonDays = (t) => {
+        t = String(t || "").trim();
+        if (!t) return "";
+        if (t.includes("每日") || t.includes("皆可")) return DAYS;
+        if (t.includes("平日")) return "一二三四五";
+        if (t.includes("假日") || t.includes("週末") || t.includes("周末")) return "六日";
+        const m = t.match(/([一二三四五六日]).?至.?([一二三四五六日])/);
+        if (m) {
+          const a = DAYS.indexOf(m[1]), b = DAYS.indexOf(m[2]);
+          if (a >= 0 && b >= a) return DAYS.slice(a, b + 1);
+        }
+        return Array.from(t).filter((ch) => DAYS.includes(ch)).join("");
+      };
+      const prof = new Map();
+      const shiftsMap = new Map();
+      for (const r of rows.slice(hi + 1)) {
+        const name = String(r[iName] || "").trim();
+        if (!name || name.includes("範例")) continue;
+        /* 班表：星期集合｜時段前兩字（早場/午場/晚場/午夜），請假列不算班 */
+        const stat = iStat >= 0 ? String(r[iStat] || "").trim() : "";
+        const days = canonDays(iWeek >= 0 ? r[iWeek] : "");
+        const sess = iSess >= 0 ? String(r[iSess] || "").trim().slice(0, 2) : "";
+        if (days && sess && stat !== "請假") {
+          if (!shiftsMap.has(name)) shiftsMap.set(name, []);
+          shiftsMap.get(name).push(days + "|" + sess);
+        }
+        prof.set(name, {
+          available: iAvail >= 0 ? String(r[iAvail]).trim() !== "否" : true,
+          fee:       iFee  >= 0 ? String(r[iFee]  || "").replace(/[^\d]/g, "") : "",
+          rpRoles:   iRole >= 0 ? String(r[iRole] || "").trim() : "",
+          rpGender:  iGen  >= 0 ? String(r[iGen]  || "").trim() : "",
+          rpStyles:  iSty  >= 0 ? String(r[iSty]  || "").trim() : "",
+          rpPhoto:   iPh   >= 0 ? String(r[iPh]   || "").trim() : "",
+        });
+      }
+      for (const [name, p] of prof) p.shifts = shiftsMap.get(name) || [];   /* ★ 班表一併寫入 */
+      if (!prof.size) { alert("排班表裡沒有讀到任何店員資料列。"); return; }
+      const updated = [], unmatched = [];
+      for (const [name, p] of prof) {
+        const hit = staffCache.find((x) => x.data.name === name);
+        if (!hit) { unmatched.push(name); continue; }
+        await updateDoc(doc(db, "shopPartners", hit.id), p);
+        updated.push(name);
+      }
+      alert(`✔ 排班表匯入完成！\n已更新 ${updated.length} 位：${updated.join("、") || "（無）"}` +
+            (unmatched.length ? `\n⚠ 排班表有、但店員名簿找不到同名（請對齊 ID）：${unmatched.join("、")}` : ""));
+      loadStaff();
+    } catch (e) { alert("❌ 更新失敗：" + (e.message || e)); }
+  }
+
   /* ---------- 🛎 送單／通知設定 ---------- */
   function openOrderCfg() {
     document.getElementById("ocfgModal")?.remove();
@@ -3061,6 +3381,10 @@ loadRooms();
           <input id="ofCsv" value="${esc(OCFG.csvUrl)}" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" /></label>
         <label>訂單列表網址（通知視窗「開啟訂單列表」按鈕，可填回應試算表網址）
           <input id="ofSheet" value="${esc(OCFG.sheetUrl)}" /></label>
+        <label>排班登記表「發布到網路」CSV 連結（⟳ 更新店員排班表用；發布時選「排班登記表」分頁＋CSV）
+          <input id="ofStaffCsv" value="${esc(OCFG.staffCsvUrl)}" placeholder="https://docs.google.com/spreadsheets/…/pub?gid=…&single=true&output=csv" /></label>
+        <label>預約總表「發布到網路」CSV 連結（貴客榜自動排行用；狀態＝已完成的列會依顧客彙總，可留空）
+          <input id="ofVipCsv" value="${esc(OCFG.vipCsvUrl)}" placeholder="發布時選「預約總表」分頁＋CSV" /></label>
         <label>通知音量（0〜100）<input id="ofVol" type="number" min="0" max="100" value="${Number(OCFG.vol) || 60}" /></label>
         <label class="admin-check"><input id="ofOpen" type="checkbox" ${OCFG.open === true ? "checked" : ""} /> 開放所有訪客送單（取消勾選＝僅管理員可送，試用期建議關閉）</label>
         <p class="admin-hint" id="ofMsg">防濫用：蜜罐欄位＋同機 2 分鐘冷卻＋同內容 10 分鐘防重送已內建；更強的防護請在 Google 表單開「僅限登入者作答」。</p>
@@ -3085,6 +3409,8 @@ loadRooms();
           entryId:  document.getElementById("ofEntry").value.trim(),
           csvUrl:   document.getElementById("ofCsv").value.trim(),
           sheetUrl: document.getElementById("ofSheet").value.trim(),
+          staffCsvUrl: document.getElementById("ofStaffCsv").value.trim(),
+          vipCsvUrl:  document.getElementById("ofVipCsv").value.trim(),
           vol:      Math.min(100, Math.max(0, Number(document.getElementById("ofVol").value) || 60)),
           open:     document.getElementById("ofOpen").checked,
         };
@@ -3151,9 +3477,11 @@ loadRooms();
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees, openOrderCfg };
+  window.YJC_ORDER = { decorateMenu, refreshStaff, refreshRooms, openFees, openOrderCfg, syncStaffSchedule };
   decorateMenu();
   refreshStaff();
   refreshRooms();
+  renderGuestRoles();
+  renderStaffPrefs();
   updateTotals();
 })();

@@ -1772,3 +1772,52 @@ img { -webkit-user-drag: none; user-select: none; }
   /* 手機空間不足：貼齊底部但縮窄靠右，仍不擋左側文字 */
   .edit-bar { right: 8px; left: auto; top: auto; bottom: 10px; transform: none; max-width: 62vw; }
 }
+
+/* ★ 2026-07-13 檔尾疊加：逐店員可選項面板＋逐位顧客身分輸入 */
+.staff-pref { border: 1px dashed rgba(176,141,63,.45); border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
+.staff-pref-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; }
+.staff-pref-row em { flex: 0 0 64px; font-style: normal; font-size: .84rem; color: var(--muted, #8a857d); padding-top: 6px; }
+.staff-pref-gender { color: var(--shu, #b3402a); font-size: .8rem; }
+.od-guest-role { display: block; width: 100%; max-width: 420px; margin-top: 8px; padding: 8px 10px;
+  border: 1px solid rgba(120,115,108,.45); border-radius: 6px; background: rgba(255,255,255,.75); font: inherit; }
+
+/* ★ 2026-07-13 檔尾疊加：店員卡上的班表與可接服務資訊 */
+.staff-shifts, .staff-rpline {
+  font-size: .76rem; line-height: 1.7; color: var(--muted, #8a857d);
+  margin-top: 4px; word-break: break-all;
+}
+.staff-shifts { color: var(--shu, #b3402a); }
+
+/* ============================================================
+   ★ 2026-07-13 深夜檔尾疊加：卡上服務面板／逐項結算／預約紀錄帳單卡
+   ============================================================ */
+.staff-pick-prefs { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(120,115,108,.25); text-align: left; }
+.staff-pick-prefs .staff-pref-row { display: block; margin-top: 6px; }
+.staff-pick-prefs em { display: block; font-style: normal; font-size: .78rem; color: var(--muted, #8a857d); margin-bottom: 4px; }
+.staff-pick-prefs em small { color: var(--shu, #b3402a); margin-left: 4px; }
+.staff-pick-prefs .order-chip { font-size: .78rem; padding: 4px 10px; margin: 2px 2px 0 0; }
+
+.order-service-list { margin: 6px 0 12px; }
+.osl-row { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 7px 4px; border-bottom: 1px dashed rgba(120,115,108,.25); font-size: .9rem; }
+.osl-row b { white-space: nowrap; color: var(--ink); font-weight: 600; }
+.osl-ck { cursor: pointer; }
+.osl-ck input { margin-right: 6px; }
+
+.myorder-row { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  flex-wrap: wrap; padding: 9px 4px; border-bottom: 1px dashed rgba(120,115,108,.3); font-size: .88rem; }
+.myorder-btns { display: flex; gap: 6px; }
+
+.bill-card {
+  width: min(560px, 94vw); max-height: 88vh; overflow-y: auto;
+  background: #fdf6ea; border: 1px solid var(--gold, #b08d3f); border-radius: 12px;
+  padding: 22px 24px; box-shadow: 0 16px 44px rgba(44,38,32,.4);
+}
+.bill-head { display: flex; align-items: center; gap: 14px; padding-bottom: 12px;
+  border-bottom: 2px solid var(--shu, #b3402a); margin-bottom: 12px; }
+.bill-head b { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: .2em; display: block; }
+.bill-head small { color: var(--muted, #8a857d); letter-spacing: .1em; }
+.bill-body { white-space: pre-wrap; word-break: break-all; font-size: .88rem; line-height: 1.9;
+  font-family: inherit; margin: 0; }
+.bill-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(120,115,108,.4);
+  font-size: .78rem; color: var(--muted, #8a857d); }

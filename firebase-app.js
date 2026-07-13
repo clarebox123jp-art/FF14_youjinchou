@@ -379,7 +379,11 @@ const EDIT_SEL = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap figcaption,.hero-inne
 /* ★ 2026-07-12：再加入 #menuList——餐點文字（品名/簡介/價格/標籤）由餐單 ✎ 表單與
    點價格機制管理，不走段落編輯，避免動態重繪造成編輯紀錄脫鉤
    舊值備查："#partnerList,#staffList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar" */
-const EXCLUDE = "#partnerList,#staffList,#menuList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
+/* ★ 2026-07-13：再加入 #roomList——包廂容納人數等文字若用點字編輯，只會改字面、
+   不會改資料庫 cap 欄位（預約人數驗證用），造成「畫面 6 位、系統擋 4 位」的矛盾；
+   且多間包廂同字會被一起改。包廂內容一律走 ✎ 表單。
+   舊值備查："#partnerList,#staffList,#menuList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar" */
+const EXCLUDE = "#partnerList,#staffList,#menuList,#roomList,.admin-bar,.admin-modal,.lyrics-panel,.visit-banner,.edit-bar";
 
 const textDefaults = {};                 // 每段的預設內容（供「回復預設」）
 function collectEditables() {
@@ -2373,7 +2377,7 @@ const roomList  = document.getElementById("roomList");
 const roomEmpty = document.getElementById("roomEmpty");
 
 const DEFAULT_ROOMS = [
-  { name: "雨幕咖啡廳雅座",   cap: 3, desc: "窗外雨絲垂落花影，暖燈下一席茶座——雨聲是最好的伴談。",         price: "", available: true, badge: "", photo: "images/rooms/rain-cafe.webp",      order: 1 },
+  { name: "雨幕咖啡廳雅座",   cap: 5,   /* ★ 2026-07-13 依老師線上調整 3→5 */ desc: "窗外雨絲垂落花影，暖燈下一席茶座——雨聲是最好的伴談。",         price: "", available: true, badge: "", photo: "images/rooms/rain-cafe.webp",      order: 1 },
   { name: "咖啡廳吧檯雅座",   cap: 2, desc: "彩繪玻璃與香草吊燈下的吧檯座，看店員在眼前調理一杯緣分。",     price: "", available: true, badge: "", photo: "images/rooms/cafe-counter.webp",   order: 2 },
   { name: "和風別墅",         cap: 2, desc: "圍爐燒水、竹影搖曳，褟褟米上的私語時光。",                     price: "", available: true, badge: "", photo: "images/rooms/wafu-villa.webp",     order: 3 },
   { name: "知識天井澡堂",     cap: 2, desc: "天光自玻璃頂灑落，書香與湯煙共蒸騰的祕湯書齋。",               price: "", available: true, badge: "", photo: "images/rooms/skylight-bath.webp",  order: 4 },
@@ -2381,7 +2385,7 @@ const DEFAULT_ROOMS = [
      舊值備查：{ name:"中央舞台貴賓席", cap:3, desc:"紅幕與薔薇簇擁的最佳視野，把整間店的燈火盡收眼底。", price:"" } */
   /* ★ 2026-07-13：中央舞台區已不再作包廂使用，定位＝開放區域（未指定包廂者的預設入席處）
      舊值備查：desc="紅幕與薔薇簇擁的中央舞台，開放給公會成員自由歇腳掛網——不收分文，但座位有限、先到先得。" */
-  { name: "中央舞台區",       cap: 4, desc: "已不作包廂使用——紅幕與薔薇簇擁的中央舞台，開放公會成員掛網休憩；未指定包廂的客人也可在此與店員互動、觀賞台上演出。座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 0 },   /* ★ 2026-07-13：排序改 0＝清單第一（原 5） */
+  { name: "中央舞台區",       cap: 6,   /* ★ 2026-07-13 依老師線上調整 4→6 */ desc: "已不作包廂使用——紅幕與薔薇簇擁的中央舞台，開放公會成員掛網休憩；未指定包廂的客人也可在此與店員互動、觀賞台上演出。座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 0 },   /* ★ 2026-07-13：排序改 0＝清單第一（原 5） */
   { name: "夢幻花叢",         cap: 1, desc: "白花如雪、彩鯉悠游，吊椅輕晃的一人份夢境。",                   price: "", available: true, badge: "", photo: "images/rooms/dream-garden.webp",   order: 6 },
   { name: "金碧輝煌主沙發",   cap: 1, desc: "金磚與典籍環繞的豪奢一隅，貓咪掌櫃偶爾同席。",                 price: "", available: true, badge: "", photo: "images/rooms/golden-lounge.webp",  order: 7 },
   { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
@@ -2833,6 +2837,13 @@ loadRooms();
   document.getElementById("odStyleCustom").addEventListener("input", updateTotals);
 
   function writeFeeNote() {
+    /* ★ 2026-07-13：帳目價目表同步顯示 💰 設定值（單一真相，杜絕表格與實收不同步） */
+    const bindFmt = { seat: (v) => fmt(v), named: (v) => fmt(v), persona: (v) => "＋" + fmt(v),
+                      role: (v) => "＋" + fmt(v), photo: (v) => "＋" + fmt(v), min: (v) => fmt(v) };
+    document.querySelectorAll("[data-fee-bind]").forEach((el) => {
+      const k = el.dataset.feeBind;
+      if (bindFmt[k] && Number.isFinite(FEE[k])) el.textContent = bindFmt[k](FEE[k]);
+    });
     document.getElementById("odFeeNote").textContent =
       `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價）・RP加價：勾選個性 ＋${fmt(FEE.persona)}、勾選職業身分 ＋${fmt(FEE.role)}（兩者皆選＝重度RP）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
   }

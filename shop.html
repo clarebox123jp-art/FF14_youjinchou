@@ -179,23 +179,23 @@
              佐談餐點 · 每份＝5000 Gil（線上編輯值） -->
         <div class="price-row">
           <span class="price-name">陪聊 · 不指名（隨緣）／每 20 分鐘時段</span>
-          <p class="price-val">50,000 Gil</p>
+          <p class="price-val" data-fee-bind="seat">50,000 Gil</p>
         </div>
         <div class="price-row">
           <span class="price-name">陪聊 · 指名基本／每位店員／每時段</span>
-          <p class="price-val">100,000 Gil</p>
+          <p class="price-val" data-fee-bind="named">100,000 Gil</p>
         </div>
         <div class="price-row">
           <span class="price-name">RP 加價 · 指定個性（服務風格）／每單</span>
-          <p class="price-val">＋50,000 Gil</p>
+          <p class="price-val" data-fee-bind="persona">＋50,000 Gil</p>
         </div>
         <div class="price-row">
           <span class="price-name">RP 加價 · 指定職業扮演身分／每單</span>
-          <p class="price-val">＋100,000 Gil</p>
+          <p class="price-val" data-fee-bind="role">＋100,000 Gil</p>
         </div>
         <div class="price-row">
           <span class="price-name">專業拍照 · 每次消費含 1 張；額外加拍／每張</span>
-          <p class="price-val">＋5,000 Gil</p>
+          <p class="price-val" data-fee-bind="photo">＋10,000 Gil</p><!-- ★ 2026-07-13 依老師線上調整 5,000→10,000，並改為 💰 設定即時綁定 -->
         </div>
         <div class="price-row">
           <span class="price-name">包廂費 · 每次</span>
@@ -203,7 +203,7 @@
         </div>
         <div class="price-row">
           <span class="price-name">佐談餐點 · 依餐單標價；單點低消</span>
-          <p class="price-val">5,000 Gil</p>
+          <p class="price-val" data-fee-bind="min">5,000 Gil</p>
         </div>
         <p class="body price-note" style="margin-top:12px">※ 指名店員「服務性格」和「身分職業」將額外加收費用。<!-- 舊註（大廳外帶價/點價格修改說明）已由老師線上改寫並烘入 2026-07-12 --></p>
       </div>
@@ -498,7 +498,7 @@
        - data-fee-photo＝加拍每張；data-min-order＝單點料理低消
        ============================================================ -->
   <section class="section" id="orderSection"
-           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="5000" data-min-order="5000">
+           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="10000" data-min-order="5000">
     <div class="wrap">
       <!-- ★ 2026-07-13：本區標題與測試警語已搬到「帳目・計費方式」下方與開始預約按鈕合併 -->
 

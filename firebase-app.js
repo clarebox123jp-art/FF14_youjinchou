@@ -2693,9 +2693,11 @@ loadRooms();
     return prefState.get(name);
   }
   function renderStaffPrefs() {
-    const glob = document.getElementById("odGlobalPrefs");
     const names = Array.from(pickedStaff);
-    if (glob) glob.style.display = names.length ? "none" : "";
+    /* ★ 2026-07-13 v2：odGlobalPrefs 不再於指名時隱藏——性別／風格欄已移除，
+       「店員扮演身分」改為常駐顯示名簿勾選結果（updateRoleShow）。
+       舊行為備查：const glob = document.getElementById("odGlobalPrefs");
+                   if (glob) glob.style.display = names.length ? "none" : ""; */
     /* 面板直接長在店員名簿卡片上（.staff-pick 下方） */
     document.querySelectorAll("#staffList .staff-pick-prefs").forEach((el) => el.remove());
     names.forEach((n, i) => {
@@ -2732,6 +2734,15 @@ loadRooms();
       const st = prefOf(n);
       return { name: n, tag: "店員" + "ABC"[i], role: st.role || "隨緣", style: st.style || "隨緣", gender: p.gender };
     });
+  }
+  /* ★ 2026-07-13 v2：「店員扮演身分」唯讀顯示——即時同步店員名簿卡片勾選結果；
+     未指名或未勾選一律顯示「隨緣」（由 updateTotals 帶動，帳單端取消勾選也會同步） */
+  function updateRoleShow() {
+    const el = document.getElementById("odRoleShow");
+    if (!el) return;
+    el.textContent = pickedStaff.size
+      ? collectStaffPrefs().map((p) => `${p.name}：扮演＝${p.role}／風格＝${p.style}`).join("　・　")
+      : "隨緣";
   }
   /* 顧客逐位扮演身分（人數變動時重建、保留已填內容） */
   function renderGuestRoles() {
@@ -2891,8 +2902,9 @@ loadRooms();
     box.innerHTML = opts.map((o) =>
       `<label class="order-chip"><input type="radio" name="${groupName}" value="${o}"${o === "隨緣" ? " checked" : ""} />${o}</label>`).join("");
   }
-  buildChips("odRoleBox",  "odRole",  ROLES);
-  buildChips("odStyleBox", "odStyle", STYLES);
+  /* ★ 2026-07-13 v2：全域 chips 欄位移除（身分/風格改於店員名簿卡片勾選）——
+     舊呼叫備查：buildChips("odRoleBox","odRole",ROLES)；buildChips("odStyleBox","odStyle",STYLES)。
+     buildChips 本體保留（有 if(!box) 防呆），日後如需恢復直接還原兩行即可。 */
 
   /* ---------- 加拍 ---------- */
   const photoQtyEl = document.getElementById("odPhotoQty");
@@ -2976,16 +2988,16 @@ loadRooms();
       ? (pickedRoom.price ? fmt(c.roomFee) : (pickedRoom.rawPrice || "價目待公告"))
       : "開放區域（免費）";   /* ★ 2026-07-13：未選包廂＝中央舞台區開放區域 */
     document.getElementById("odGrandTotal").textContent   = fmt(c.grand);
+    updateRoleShow();   /* ★ 2026-07-13 v2：同步「店員扮演身分」唯讀顯示 */
   }
   document.getElementById("odDuration").onchange = updateTotals;
   document.getElementById("odGuests").onchange = updateTotals;
   document.getElementById("custDate")?.addEventListener("change", updateTotals);
   document.getElementById("custSessionBox")?.addEventListener("change", updateTotals);
-  /* ★ 勾個性／職業身分（含自訂輸入）→ RP 加價即時重算 */
-  document.getElementById("odRoleBox").addEventListener("change", updateTotals);
-  document.getElementById("odStyleBox").addEventListener("change", updateTotals);
-  document.getElementById("odRoleCustom").addEventListener("input", updateTotals);
-  document.getElementById("odStyleCustom").addEventListener("input", updateTotals);
+  /* ★ 勾個性／職業身分（自訂輸入）→ 即時重算
+     ★ 2026-07-13 v2：odRoleBox/odStyleBox/odStyleCustom 已移除，監聽一併除役——
+     舊三行備查：odRoleBox.change／odStyleBox.change／odStyleCustom.input → updateTotals */
+  document.getElementById("odRoleCustom")?.addEventListener("input", updateTotals);
 
   function writeFeeNote() {
     /* ★ 2026-07-13：帳目價目表同步顯示 💰 設定值（單一真相，杜絕表格與實收不同步） */
@@ -3014,7 +3026,8 @@ loadRooms();
     if (pickedRoom && guests > pickedRoom.cap) { alert(`「${pickedRoom.name}」最多容納 ${pickedRoom.cap} 位，同行 ${guests} 位超過上限，請換一間包廂或調整人數。`); return; }
     if (!document.getElementById("odAgree").checked) { alert("請先勾選同意「帳前約定」與善良風俗聲明。"); return; }
     const roleCustom  = document.getElementById("odRoleCustom").value.trim();
-    const styleCustom = document.getElementById("odStyleCustom").value.trim();
+    /* ★ 2026-07-13 v2：odStyleCustom 欄位已移除（風格改於店員名簿卡片勾選）
+       舊行備查：const styleCustom = document.getElementById("odStyleCustom").value.trim(); */
     const dur = document.getElementById("odDuration").value;
     const lines = [];
     lines.push("【茶談百緣｜幻想友人帳 RP 商店・測試預約單】");   /* ★ 2026-07-13 店名定案 */
@@ -3042,10 +3055,14 @@ loadRooms();
       collectStaffPrefs().forEach((p) => {
         lines.push(`　${p.tag} ${p.name}：扮演＝${p.role}／風格＝${p.style}` + (p.gender ? `（性別呈現：${p.gender}）` : ""));
       });
+      if (roleCustom) lines.push(`　自訂身分備註：${roleCustom}`);
     } else {
-      lines.push("　扮演身分偏好：" + pick("odRole") + (roleCustom ? `／自訂：${roleCustom}` : ""));
-      lines.push("　性別偏好：" + pick("odGender"));
-      lines.push("　風格偏好：" + pick("odStyle") + (styleCustom ? `／自訂：${styleCustom}` : ""));
+      /* ★ 2026-07-13 v2：全域「身分 chips／性別 radio／風格 chips」欄位移除——
+         隨緣時僅列顧客自行輸入，未填一律「隨緣」。舊三行備查：
+         扮演身分偏好 pick("odRole")＋roleCustom／性別偏好 pick("odGender")／風格偏好 pick("odStyle")＋styleCustom */
+      lines.push("　扮演身分偏好：" + (roleCustom || "隨緣"));
+      lines.push("　性別偏好：隨緣");
+      lines.push("　風格偏好：隨緣");
     }
     guestRoleLines().forEach((g) => lines.push(`　顧客${g.tag} 扮演身分：${g.v}`));
     { const warns = c.namedN ? dutyWarnings() : [];

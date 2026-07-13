@@ -435,10 +435,23 @@
         <!-- ★ 2026-07-13：指名店員時，改為逐位顯示該店員「排班表登記過」的可選項（JS 渲染） -->
         <div id="odStaffPrefs" style="display:none"></div>
 
-        <div id="odGlobalPrefs"><!-- 未指名（隨緣）時顯示的全域偏好 -->
+        <div id="odGlobalPrefs"><!-- ★ 2026-07-13 v2：店員性別／服務風格欄位移除（改於店員名簿卡片上勾選）；
+             店員扮演身分改為唯讀顯示名簿勾選結果（#odRoleShow），未勾選＝隨緣，並保留自行輸入。
+             舊欄位原文備查：
+             <div class="order-field">
+               <span class="order-label">店員扮演身分（隨緣安排時的偏好；可自行輸入）</span>
+               <div id="odRoleBox" class="order-choice-wrap"></div> …
+             </div>
+             <div class="order-field"><span class="order-label">店員性別</span>
+               <label ...><input type="radio" name="odGender" value="男" />男</label>
+               <label ...><input type="radio" name="odGender" value="女" />女</label>
+               <label ...><input type="radio" name="odGender" value="隨緣" checked />隨緣</label></div>
+             <div class="order-field"><span class="order-label">服務風格（個性；隨緣安排時的偏好，可自行輸入）</span>
+               <div id="odStyleBox" class="order-choice-wrap"></div>
+               <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" /></div> -->
         <div class="order-field">
-          <span class="order-label">店員扮演身分（隨緣安排時的偏好；可自行輸入）</span>
-          <div id="odRoleBox" class="order-choice-wrap"></div>
+          <span class="order-label">店員扮演身分（於上方店員名簿卡片勾選；未勾選＝隨緣）</span>
+          <p class="order-picked" id="odRoleShow">隨緣</p>
           <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂店員身分（選填，例：占星術士）" />
         </div>
 
@@ -446,21 +459,6 @@
         <div class="order-field">
           <span class="order-label">顧客扮演身分（選填，逐位輸入——想以什麼身分入席？）</span>
           <div id="odGuestRoles"></div>
-        </div>
-
-        <div class="order-field">
-          <span class="order-label">店員性別</span>
-          <div class="order-choice-wrap">
-            <label class="order-chip"><input type="radio" name="odGender" value="男" />男</label>
-            <label class="order-chip"><input type="radio" name="odGender" value="女" />女</label>
-            <label class="order-chip"><input type="radio" name="odGender" value="隨緣" checked />隨緣</label>
-          </div>
-        </div>
-
-        <div class="order-field">
-          <span class="order-label">服務風格（個性；隨緣安排時的偏好，可自行輸入）</span>
-          <div id="odStyleBox" class="order-choice-wrap"></div>
-          <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" />
         </div>
         </div><!-- /odGlobalPrefs -->
 

@@ -2779,7 +2779,7 @@ loadRooms();
     const styleCustom = document.getElementById("odStyleCustom").value.trim();
     const dur = document.getElementById("odDuration").value;
     const lines = [];
-    lines.push("【幻想友人帳 RP 商店｜測試預約單】");
+    lines.push("【茶談百緣｜幻想友人帳 RP 商店・測試預約單】");   /* ★ 2026-07-13 店名定案 */
     lines.push("※ 本店尚未正式營業，此明細僅為功能測試，不成立任何訂單。");
     lines.push("顧客暱稱：" + (document.getElementById("odNick").value.trim() || "（未填）"));
     lines.push("同行人數：" + guests + " 位");

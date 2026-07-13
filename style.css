@@ -1574,3 +1574,45 @@ img { -webkit-user-drag: none; user-select: none; }
   pointer-events: none;
 }
 .job.job-photo > * { position: relative; z-index: 1; }
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：店名輪播（.cover-carousel）＋流程標籤（.order-step-flag）
+   ============================================================ */
+.cover-carousel {
+  position: relative;
+  width: min(860px, 100%);
+  aspect-ratio: 16 / 9;
+  margin-left: auto; margin-right: auto;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(176,141,63,.45);
+  box-shadow: 0 10px 30px rgba(44,38,32,.18);
+}
+.cc-slide {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: ccfade 18s infinite;
+}
+.cc-slide:nth-child(1) { animation-delay: 0s; }
+.cc-slide:nth-child(2) { animation-delay: 6s; }
+.cc-slide:nth-child(3) { animation-delay: 12s; }
+@keyframes ccfade {
+  0%   { opacity: 0; }
+  4%   { opacity: 1; }
+  33%  { opacity: 1; }
+  40%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.order-step-flag {
+  display: inline-block;
+  margin: 6px 0 14px;
+  padding: 6px 16px;
+  font-size: .88rem; letter-spacing: .1em;
+  color: #fdf6ea;
+  background: linear-gradient(135deg, #b3402a, #8f2f1e);
+  border-radius: 4px 999px 999px 4px;
+  box-shadow: 0 2px 8px rgba(143,47,30,.3);
+}

@@ -1830,3 +1830,19 @@ img { -webkit-user-drag: none; user-select: none; }
 .menu-card .menu-head { display: block; }
 .menu-card .menu-head .menu-name { display: block; }
 .menu-card .menu-head .menu-price { display: inline-block; margin-top: 2px; font-size: .95rem; }
+
+/* ★ 2026-07-13：店員卡「🎭可接身分／💬風格」文字加深 ----------
+   原色＝var(--muted, #8a857d)（第 1785 行附近），在溫泉背景照上不夠清楚，
+   改為墨色並略加字重；🕐可預約 維持朱紅不動 */
+.staff-rpline { color: var(--ink, #2e2a26); font-weight: 500; }
+
+/* ★ 2026-07-13：包廂「✕ 取消」鈕（勾選後才出現在 .room-pick 旁） */
+.room-unpick {
+  display: inline-flex; align-items: center;
+  margin-top: 10px; margin-left: 8px; padding: 6px 12px;
+  border: 1px solid rgba(179,64,42,.45); border-radius: 999px;
+  background: transparent; color: var(--shu, #b3402a);
+  font-size: .85rem; cursor: pointer; user-select: none;
+  font-family: inherit;
+}
+.room-unpick:hover { background: rgba(179,64,42,.08); }

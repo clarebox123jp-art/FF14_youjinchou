@@ -2885,12 +2885,17 @@ loadRooms();
       if (!slot || !r) return;
       if (r.available === false) { slot.innerHTML = ""; return; }
       const ck = pickedRoom && pickedRoom.name === name ? " checked" : "";
-      slot.innerHTML = `<label class="room-pick"><input type="radio" name="roomPick" value="${esc(name)}"${ck} /> 選這間包廂</label>`;
+      /* ★ 2026-07-13 v2：勾選後旁邊補「✕ 取消」鈕（radio 無法點第二次取消）；
+         取消＝退回中央舞台區（免費）。舊版 slot 只有 label 一枚。 */
+      slot.innerHTML = `<label class="room-pick"><input type="radio" name="roomPick" value="${esc(name)}"${ck} /> 選這間包廂</label>` +
+        (ck ? `<button type="button" class="room-unpick">✕ 取消</button>` : "");
+      card.classList.toggle("is-picked", !!ck);
       slot.querySelector("input").onchange = () => {
         pickedRoom = { name: r.name, price: num(r.price), rawPrice: r.price || "", cap: Number(r.cap) || 1 };
-        list.querySelectorAll(".room-card").forEach((c) => c.classList.toggle("is-picked", c.dataset.room === name));
-        updateTotals();
+        refreshRooms();   /* 重繪各卡：帶出取消鈕＋同步 is-picked＋updateTotals */
       };
+      const un = slot.querySelector(".room-unpick");
+      if (un) un.onclick = () => { pickedRoom = null; refreshRooms(); };
     });
     updateTotals();
   }

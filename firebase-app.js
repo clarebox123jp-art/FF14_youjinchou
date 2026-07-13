@@ -514,6 +514,14 @@ const YJC_FONTS_BUILTIN = [
   { n: "粉圓（內文預設）", f: "jf-openhuninn" },
   { n: "思源黑體",         f: "Noto Sans TC" },
   { n: "思源宋體",         f: "Noto Serif TC" },
+  /* ★ 2026-07-13 新增：毛筆楷書＝教育部標準楷書全字集網頁版（@font-face 在 style.css，
+     字檔約 8.4MB、選用該字型的段落出現時才會下載）。
+     華康三款為商業字型，依法不能內嵌散布——以「本機字型」方式登錄：
+     觀看者電腦有安裝就會顯示，沒安裝會退回預設字型 */
+  { n: "毛筆楷書（教育部標準楷書）", f: "EduKaiStd" },
+  { n: "華康康亭流（需觀看者本機安裝）", f: "華康康亭流" },
+  { n: "華康POP1體（需觀看者本機安裝）", f: "華康POP1體W9" },
+  { n: "華康古印體（需觀看者本機安裝）", f: "華康古印體" },
 ];
 let libFonts = [];                 // 字型庫名單（Google Fonts 家族名）
 let libFontsLoaded = false;

@@ -1666,3 +1666,30 @@ img { -webkit-user-drag: none; user-select: none; }
   font-family: "PoemKai", var(--font-display), serif;
   font-size: clamp(.95rem, 1.8vw, 1.2rem);   /* 毛筆字稍放大更有掛軸感 */
 }
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：全站可選「毛筆楷書」（教育部標準楷書全字集）
+   - CC BY-SA 3.0 TW，標註：中華民國教育部
+   - jsDelivr CDN 為主、GitHub raw 備援；有段落用到才會下載（約 8.4MB）
+   ============================================================ */
+@font-face {
+  font-family: "EduKaiStd";
+  src: url("https://cdn.jsdelivr.net/gh/XiaoPanPanKevinPan/fontCollection@main/edukai-4.0_regen.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/XiaoPanPanKevinPan/fontCollection/main/edukai-4.0_regen.woff2") format("woff2");
+  font-display: swap;
+}
+
+/* ============================================================
+   ★ 2026-07-13 檔尾疊加：角落小詩排版修正
+   - 舊直書（vertical-rl＋row-reverse）在部分瀏覽器會句序顛倒、字距爆開
+   - 改為橫書、由上至下逐句排列；行距與字距收緊
+   ============================================================ */
+.corner-poem {
+  writing-mode: horizontal-tb;      /* 覆寫舊 vertical-rl */
+  flex-direction: column;           /* 覆寫舊 row-reverse：第一句在最上 */
+  align-items: flex-end;            /* 右對齊貼著茶杯 */
+  gap: 4px;                         /* 行距縮小 */
+  letter-spacing: .18em;            /* 字距收斂 */
+  text-align: right;
+}
+.corner-poem .cp-title { margin-bottom: 2px; }

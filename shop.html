@@ -486,10 +486,13 @@
              <div class="order-field"><span class="order-label">服務風格（個性；隨緣安排時的偏好，可自行輸入）</span>
                <div id="odStyleBox" class="order-choice-wrap"></div>
                <input type="text" id="odStyleCustom" maxlength="30" placeholder="自訂風格（選填，例：毒舌但關心人）" /></div> -->
-        <div class="order-field">
+        <div class="order-field" id="odRoleField" hidden>
           <span class="order-label">店員扮演身分（於上方店員名簿卡片勾選；未勾選＝隨緣）</span>
           <p class="order-picked" id="odRoleShow">隨緣</p>
+          <!-- ★ 2026-07-14：依老師指示移除客人自訂店員身分輸入框——
+               身分只由店員名簿卡片勾選產生；整個欄位改為勾選後才顯示（JS 控制 hidden）
           <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂店員身分（選填，例：占星術士）" />
+          -->
         </div>
 
         <!-- ★ 2026-07-13：顧客扮演身分改為依同行人數逐位輸入（顧客甲/乙/丙/丁，JS 渲染）

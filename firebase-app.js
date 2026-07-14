@@ -2856,8 +2856,11 @@ loadRooms();
     });
   }
   /* ★ 2026-07-13 v2：「店員扮演身分」唯讀顯示——即時同步店員名簿卡片勾選結果；
-     未指名或未勾選一律顯示「隨緣」（由 updateTotals 帶動，帳單端取消勾選也會同步） */
+     未指名或未勾選一律顯示「隨緣」（由 updateTotals 帶動，帳單端取消勾選也會同步）
+     ★ 2026-07-14：整個欄位只在名簿有勾選時才顯示（#odRoleField；自訂輸入框已移除） */
   function updateRoleShow() {
+    const field = document.getElementById("odRoleField");
+    if (field) field.hidden = !pickedStaff.size;
     const el = document.getElementById("odRoleShow");
     if (!el) return;
     el.textContent = pickedStaff.size
@@ -3160,7 +3163,8 @@ loadRooms();
     const guests = Number(document.getElementById("odGuests").value) || 1;
     if (pickedRoom && guests > pickedRoom.cap) { alert(`「${pickedRoom.name}」最多容納 ${pickedRoom.cap} 位，同行 ${guests} 位超過上限，請換一間包廂或調整人數。`); return; }
     if (!document.getElementById("odAgree").checked) { alert("請先勾選同意「帳前約定」與善良風俗聲明。"); return; }
-    const roleCustom  = document.getElementById("odRoleCustom").value.trim();
+    /* ★ 2026-07-14：odRoleCustom 輸入框已移除（身分只由名簿勾選產生）——防呆讀法，欄位不存在＝空字串 */
+    const roleCustom  = document.getElementById("odRoleCustom")?.value.trim() || "";
     /* ★ 2026-07-13 v2：odStyleCustom 欄位已移除（風格改於店員名簿卡片勾選）
        舊行備查：const styleCustom = document.getElementById("odStyleCustom").value.trim(); */
     const dur = document.getElementById("odDuration").value;

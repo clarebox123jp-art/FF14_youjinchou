@@ -2046,6 +2046,8 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px) {
   .staff-card .staff-photo-col { flex-basis: 128px; width: 128px; }
   .staff-photo-cap { font-size: .72rem; }
+  /* ★ 2026-07-14 手機修正：同餐單——資訊欄 flex-basis 240px 會被擠到照片下方，改 1 1 0 */
+  .staff-card .staff-info { flex: 1 1 0; min-width: 0; }
 }
 
 /* ============================================================
@@ -2168,7 +2170,43 @@ img { -webkit-user-drag: none; user-select: none; }
 /* 管理列（✎/🙈/✕）維持卡底靠右，不影響訪客卡高 */
 @media (max-width: 640px) {
   .menu-photo-col { flex-basis: 124px; width: 124px; gap: 6px; }
+  /* ★ 2026-07-14 手機修正：flex-basis 230px 在窄螢幕擠不進照片旁 → 整欄被擠到下一行
+     變成上下堆疊；改 1 1 0＝吃掉照片旁剩餘寬度，維持圖左字右 */
+  .menu-body { flex: 1 1 0; min-width: 0; }
   .menu-card .menu-head .menu-name { font-size: 1rem; }
   .menu-card .menu-desc { font-size: .78rem; }
   .menu-photo-col .mo-btn { width: 26px; height: 26px; }
 }
+
+/* ============================================================
+   ★ 2026-07-14 v7 檔尾疊加：熱銷／缺貨標籤改放圖片正下方＋缺貨擋單
+   ------------------------------------------------------------
+   - 標籤（訪客顯示章與管理員 🔥/⛔ 開關）皆改為圖片下方的橫條，
+     不再懸浮蓋圖；photo-col 順序＝圖片 → 標籤 → −/＋ 點餐鍵
+   - 缺貨中的 ＋ 鈕反灰示意（點擊由 JS 跳「此商品目前缺貨…」提示）
+   - v6 的懸浮版選擇器因元素已移出 .photo-frame 而自然失效
+   ============================================================ */
+.menu-photo-col .menu-corner {
+  position: static; display: block;
+  text-align: center; margin: 0;
+  padding: 4px 8px; border-radius: 8px;
+  pointer-events: none;
+}
+.menu-photo-col .menu-corner-admin {
+  position: static; margin: 0;
+  flex-direction: row; justify-content: center; gap: 6px; flex-basis: auto;
+}
+.menu-photo-col .menu-corner-admin button {
+  background: rgba(255, 251, 243, .92);
+  box-shadow: none;
+  border: 1px solid rgba(120, 115, 108, .45);
+  font-size: .72rem; padding: 3px 9px;
+}
+.menu-photo-col .menu-corner-admin button.on {
+  background: var(--shu, #b3402a); border-color: var(--shu, #b3402a); color: #fff;
+}
+/* 缺貨中：＋ 鈕視覺反灰（仍可點，點了由 JS 提示缺貨） */
+.menu-card[data-corner="缺貨中"] .mo-btn[data-mo="1"] {
+  opacity: .4; cursor: not-allowed;
+}
+.menu-card[data-corner="缺貨中"] .mo-btn[data-mo="1"]:hover { background: transparent; color: inherit; }

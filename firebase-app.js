@@ -2215,12 +2215,15 @@ function renderMenu() {
       card.className = "menu-card photo";   // 帶 .photo → 吃相簿燈箱
       if (m.hidden === true) card.classList.add("is-hidden");   /* ★ 2026-07-14：管理員視角的隱藏標示 */
       /* ★ 2026-07-14 v6：照片包進 .menu-photo-col（−/＋ 點餐鍵掛在圖下方）；
-         角標顯示章＝訪客限定（管理員改看圖上的 🔥/⛔ 懸浮開關，亮＝套用中，避免重疊） */
+         角標顯示章＝訪客限定（管理員改看 🔥/⛔ 開關，亮＝套用中，避免重疊）
+         ★ 2026-07-14 v7：角標改放「圖片正下方」不再覆蓋圖片（點餐鍵在其下）；
+         卡片記 data-corner 供「缺貨中擋單」判斷 */
+      card.dataset.corner = m.corner || "";
       const cornerHtml = (!isAdmin && m.corner)
         ? `<span class="menu-corner ${m.corner === "缺貨中" ? "is-out" : "is-hot"}">${esc(m.corner)}</span>` : "";
       const pic = m.photo
-        ? `<div class="photo-frame">${cornerHtml}<img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
-        : `<div class="photo-frame menu-noimg">${cornerHtml}<span>膳</span></div>`;
+        ? `<div class="photo-frame"><img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
+        : `<div class="photo-frame menu-noimg"><span>膳</span></div>`;
       /* ★ 2026-07-12：價格顯示升級——
          訪客：有標價才顯示；管理員：一律顯示（未標價時顯示「＋標價」），
          點價格即可直接輸入更新（毋須開整張編輯表單） */
@@ -2235,7 +2238,7 @@ function renderMenu() {
         return i > -1 ? d.slice(0, i) + `<span class="menu-reco">` + d.slice(i) + `</span>` : d;
       })();
       card.innerHTML = `
-        <div class="menu-photo-col">${pic}</div>
+        <div class="menu-photo-col">${pic}${cornerHtml}</div>
         <div class="menu-body">
           <div class="menu-head">
             <span class="menu-name">${esc(m.name)}</span>
@@ -2283,7 +2286,8 @@ function renderMenu() {
             loadMenu();
           } catch (e) { alert("❌ 角標切換失敗：" + (e.message || e)); }
         });
-        card.querySelector(".photo-frame")?.appendChild(tagBar);
+        /* ★ 2026-07-14 v7：開關鈕改掛圖片正下方（.menu-photo-col），不再懸浮蓋圖 */
+        (card.querySelector(".menu-photo-col") || card).appendChild(tagBar);
         const bar = document.createElement("div");
         bar.className = "admin-actions";
         /* ★ 2026-07-14：加入「隱藏／顯示」一鍵開關（寫 hidden 欄位）
@@ -2936,6 +2940,11 @@ loadRooms();
     const card = btn.closest(".menu-card");
     const name = card.querySelector(".menu-name")?.textContent?.trim();
     if (!name) return;
+    /* ★ 2026-07-14 v7：缺貨中擋單——＋ 無效並提示；− 仍可用（讓已點的人取消） */
+    if (Number(btn.dataset.mo) > 0 && card.dataset.corner === "缺貨中") {
+      alert("此商品目前缺貨，請選擇其他品項");
+      return;
+    }
     const price = num(card.querySelector(".menu-price")?.textContent);
     const cur = dishes.get(name)?.qty || 0;
     const next = Math.max(0, Math.min(20, cur + Number(btn.dataset.mo)));

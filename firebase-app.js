@@ -1766,8 +1766,11 @@ function renderStaff() {
       ? `<div class="staff-dots">${pics.map((_, i) => `<span class="sd${i === 0 ? " on" : ""}"></span>`).join("")}</div>` : "";
     // ★ 2026-07-12：角色設定（人設）——有填才顯示「看角色設定」
     const persona = (s.persona || "").trim();
+    /* ★ 2026-07-14 v2：改橫式名冊——照片在左、文字包進 .staff-info 在右
+       （舊直式短冊版：photo 與各行文字同層平鋪，備查於 git 歷史） */
     card.innerHTML = `
       <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${inner}${dots}</div>
+      <div class="staff-info">
       <h3>${esc(s.name)}</h3>
       ${s.badge ? `<p class="staff-badge${s.available === false ? " is-off" : ""}">${esc(s.badge)}</p>` : ""}
       <p class="staff-role">${esc(s.role)}</p>
@@ -1775,9 +1778,10 @@ function renderStaff() {
       ${Array.isArray(s.shifts) && s.shifts.length ? `<p class="staff-shifts">🕐 可預約：${esc(formatShifts(s.shifts))}</p>` : ""}
       ${s.rpRoles ? `<p class="staff-rpline staff-rp-roles">🎭 可接身分：${esc(s.rpRoles)}</p>` : ""}
       ${s.rpStyles ? `<p class="staff-rpline staff-rp-styles">💬 風格：${esc(s.rpStyles)}${s.rpPhoto === "是" ? "　📸 可加拍" : ""}</p>` : ""}
-      ${""/* ★ 2026-07-14：加上 staff-rp-roles / staff-rp-styles 細分 class，供 style.css 檔尾分色資訊框使用（原 class 保留相容） */}
+      ${""/* ★ 2026-07-14：staff-rp-roles / staff-rp-styles 細分 class 供分色資訊框使用 */}
       ${persona ? `<button type="button" class="staff-persona-btn">看角色設定 ▾</button>
-      <div class="staff-persona" hidden>${esc(persona).replace(/\n/g, "<br>")}</div>` : ""}`;
+      <div class="staff-persona" hidden>${esc(persona).replace(/\n/g, "<br>")}</div>` : ""}
+      </div>`;
     // 卡片內照片自動輪播（每 3.5 秒換一張；hover 暫停）
     if (pics.length > 1) startStaffCarousel(card);
     const pbtn = card.querySelector(".staff-persona-btn");
@@ -2171,9 +2175,13 @@ function renderMenu() {
       const card = document.createElement("article");
       card.className = "menu-card photo";   // 帶 .photo → 吃相簿燈箱
       if (m.hidden === true) card.classList.add("is-hidden");   /* ★ 2026-07-14：管理員視角的隱藏標示 */
+      /* ★ 2026-07-14：圖片左上角標籤（corner 欄位＝「熱銷中」或「缺貨中」，二擇一或不標；
+         管理員在卡片上的 🔥／⛔ 小鈕一鍵勾選／取消） */
+      const cornerHtml = m.corner
+        ? `<span class="menu-corner ${m.corner === "缺貨中" ? "is-out" : "is-hot"}">${esc(m.corner)}</span>` : "";
       const pic = m.photo
-        ? `<div class="photo-frame"><img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
-        : `<div class="photo-frame menu-noimg"><span>膳</span></div>`;
+        ? `<div class="photo-frame">${cornerHtml}<img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
+        : `<div class="photo-frame menu-noimg">${cornerHtml}<span>膳</span></div>`;
       /* ★ 2026-07-12：價格顯示升級——
          訪客：有標價才顯示；管理員：一律顯示（未標價時顯示「＋標價」），
          點價格即可直接輸入更新（毋須開整張編輯表單） */
@@ -2223,6 +2231,19 @@ function renderMenu() {
         };
       }
       if (isAdmin && id) {
+        /* ★ 2026-07-14：圖片角標快速開關——點亮＝套用、再點＝取消；兩者互斥（同存 corner 欄位） */
+        const tagBar = document.createElement("div");
+        tagBar.className = "menu-corner-admin";
+        tagBar.innerHTML = `<button type="button" data-c="熱銷中" class="${m.corner === "熱銷中" ? "on" : ""}">🔥 熱銷中</button>
+                            <button type="button" data-c="缺貨中" class="${m.corner === "缺貨中" ? "on" : ""}">⛔ 缺貨中</button>`;
+        tagBar.querySelectorAll("button").forEach((b) => b.onclick = async (ev) => {
+          ev.stopPropagation();
+          try {
+            await updateDoc(doc(db, "shopPartners", id), { corner: m.corner === b.dataset.c ? "" : b.dataset.c });
+            loadMenu();
+          } catch (e) { alert("❌ 角標切換失敗：" + (e.message || e)); }
+        });
+        card.appendChild(tagBar);
         const bar = document.createElement("div");
         bar.className = "admin-actions";
         /* ★ 2026-07-14：加入「隱藏／顯示」一鍵開關（寫 hidden 欄位）
@@ -2713,6 +2734,29 @@ loadRooms();
   function dutyWarnings() {
     return Array.from(pickedStaff).filter((n) => staffOnDuty(n) === false);
   }
+  /* ★ 2026-07-14：名簿即時出勤標示——客人選好「日期＋場次」後，
+     每張店員卡依週循環班表標示：有班＝照片角落綠標「✓ 本場有班」；
+     無班＝整張卡轉黑白（.is-offduty）＋照片上醒目朱紅標「本場無班」。
+     未匯入班表的店員、或日期／場次未選齊時不標示（staffOnDuty 回 null）。
+     維持「不擋單」原則：無班仍可勾選指名，明細照舊寫入 ⚠ 提醒 */
+  function refreshDutyBadges() {
+    document.querySelectorAll("#staffList .staff-card").forEach((card) => {
+      card.classList.remove("is-offduty");
+      card.querySelectorAll(".staff-duty-tag").forEach((el) => el.remove());
+      const name = card.querySelector("h3")?.textContent?.trim();
+      if (!name) return;
+      const duty = staffOnDuty(name);
+      if (duty === null) return;
+      const photo = card.querySelector(".staff-photo");
+      if (photo) {
+        const tag = document.createElement("span");
+        tag.className = "staff-duty-tag " + (duty ? "is-on" : "is-off");
+        tag.textContent = duty ? "✓ 本場有班" : "本場無班";
+        photo.appendChild(tag);
+      }
+      if (!duty) card.classList.add("is-offduty");
+    });
+  }
 
   function staffProfile(name) {
     const s = staffRows().find((x) => x.name === name) || {};
@@ -2900,6 +2944,7 @@ loadRooms();
       card.appendChild(bar);
     });
     renderStaffPrefs();   /* ★ 卡片重建後，把已勾店員的選項面板掛回去 */
+    refreshDutyBadges();  /* ★ 2026-07-14：卡片重建後，出勤標示也要掛回去 */
     updateTotals();
   }
 
@@ -3031,6 +3076,9 @@ loadRooms();
   document.getElementById("odGuests").onchange = updateTotals;
   document.getElementById("custDate")?.addEventListener("change", updateTotals);
   document.getElementById("custSessionBox")?.addEventListener("change", updateTotals);
+  /* ★ 2026-07-14：日期／場次一變動，名簿出勤標示即時重算 */
+  document.getElementById("custDate")?.addEventListener("change", refreshDutyBadges);
+  document.getElementById("custSessionBox")?.addEventListener("change", refreshDutyBadges);
   /* ★ 勾個性／職業身分（自訂輸入）→ 即時重算
      ★ 2026-07-13 v2：odRoleBox/odStyleBox/odStyleCustom 已移除，監聽一併除役——
      舊三行備查：odRoleBox.change／odStyleBox.change／odStyleCustom.input → updateTotals */
@@ -3524,10 +3572,13 @@ loadRooms();
     };
   }
 
-  /* ★ 2026-07-12：「開始預約」按鈕 → 平滑捲到餐單區，讓顧客從壹開始點 */
+  /* ★ 2026-07-12：「開始預約」按鈕 → 平滑捲到餐單區，讓顧客從壹開始點
+     ★ 2026-07-14：改捲到「入席登記・顧客資訊」（#custInfo）——預約流程實際從登記開始；
+       找不到時才退回餐單區（舊行為備查：menuSection → menuList） */
   const startBtn = document.getElementById("odStart");
   if (startBtn) startBtn.onclick = () => {
-    const target = document.getElementById("menuSection") || document.getElementById("menuList");
+    const target = document.getElementById("custInfo")
+      || document.getElementById("menuSection") || document.getElementById("menuList");
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 

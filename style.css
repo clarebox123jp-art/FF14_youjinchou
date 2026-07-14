@@ -1921,3 +1921,80 @@ img { -webkit-user-drag: none; user-select: none; }
   font-size: .72rem; letter-spacing: .08em;
   color: #8a857d; border: 1px dashed #8a857d; border-radius: 999px;
 }
+
+/* ============================================================
+   ★ 2026-07-14 v2 檔尾疊加：店員名簿改「橫式名冊」——一行一位
+   ------------------------------------------------------------
+   - 覆寫本檔上方同日 v1 直式卡（192px 窄欄，資訊被拉太長難讀）：
+     照片在左（固定窄幅短冊）、資訊在右（寬欄好閱讀）、
+     「☑ 指名」金底長條橫貫卡片底部，最好點
+   - 搭配 firebase-app.js renderStaff：文字已包進 .staff-info
+   ============================================================ */
+.staff-row {
+  flex-direction: column; align-items: stretch;
+  gap: 16px; max-width: 720px; margin-left: auto; margin-right: auto;
+}
+.staff-card {
+  width: auto; max-width: none;
+  flex-direction: row; flex-wrap: wrap; align-items: stretch;
+  text-align: left; gap: 0 14px;
+  padding: 12px;
+}
+.staff-card .staff-photo {
+  flex: 0 0 148px; width: 148px;
+  aspect-ratio: 3 / 5;   /* 覆寫 3/7：橫式卡不必拉太高 */
+  align-self: flex-start;
+}
+.staff-card .staff-info {
+  flex: 1 1 240px; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.staff-card h3 { margin-top: 2px; }
+.staff-card .staff-badge { margin: 4px 0 0; }
+.staff-card .staff-role { margin-top: 2px; }
+.staff-card .staff-serv { margin-top: 2px; }
+.staff-card .staff-shifts,
+.staff-card .staff-rpline { width: 100%; margin-top: 7px; }
+.staff-card .staff-persona { width: 100%; }
+/* 指名區與管理鈕：橫貫整張卡的底部長條（覆寫 v1 的 margin-top:auto 吸底） */
+.staff-card > .staff-pick { flex-basis: 100%; margin-top: 12px; text-align: left; }
+.staff-card > .admin-actions { flex-basis: 100%; margin-top: 10px; padding-top: 0; justify-content: flex-end; }
+.staff-card > .admin-actions ~ .staff-pick { margin-top: 8px; }
+@media (max-width: 640px) {
+  .staff-row { gap: 12px; }
+  .staff-card { width: auto; padding: 10px; }
+  .staff-card .staff-photo { flex-basis: 112px; width: 112px; }
+}
+
+/* —— ★ 2026-07-14：名簿即時出勤標示（選好日期＋場次後生效）—— */
+.staff-card.is-offduty { filter: grayscale(1); opacity: .72; }
+.staff-card.is-offduty:hover { opacity: .88; }
+.staff-duty-tag {
+  position: absolute; top: 8px; left: 8px; z-index: 3;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .1em;
+  color: #fff; pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+.staff-duty-tag.is-on  { background: rgba(58, 99, 80, .92);  border: 1px solid rgba(255,255,255,.55); }
+.staff-duty-tag.is-off { background: rgba(143, 47, 30, .94); border: 1px solid rgba(255,255,255,.55); font-size: .8rem; }
+
+/* —— ★ 2026-07-14：餐點圖片左上角「熱銷中／缺貨中」角標＋管理員快速開關 —— */
+.menu-card .photo-frame { position: relative; }
+.menu-corner {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  padding: 3px 10px; border-radius: 4px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .12em;
+  color: #fff; pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .28);
+}
+.menu-corner.is-hot { background: linear-gradient(135deg, #c9463c, #8f2f1e); border: 1px solid rgba(255, 255, 255, .55); }
+.menu-corner.is-out { background: #5f5a54; border: 1px solid rgba(255, 255, 255, .4); }
+.menu-corner-admin { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+.menu-corner-admin button {
+  border: 1px solid rgba(120, 115, 108, .45); border-radius: 999px;
+  background: rgba(255, 255, 255, .65); color: var(--ink, #2e2a26);
+  padding: 3px 10px; font-size: .74rem; cursor: pointer; font-family: inherit;
+}
+.menu-corner-admin button.on { background: var(--shu, #b3402a); border-color: var(--shu, #b3402a); color: #fff; }
+.menu-corner-admin button:hover { border-color: var(--shu, #b3402a); }

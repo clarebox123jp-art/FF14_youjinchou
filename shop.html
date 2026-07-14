@@ -273,7 +273,7 @@
       <div class="order-step reveal" id="custInfo">
         <h3 class="order-step-title">入席登記 · 顧客資訊</h3>
         <div class="order-field">
-          <span class="order-label">您的所屬伺服器與遊戲角色 ID（必填）</span>
+          <span class="order-label">您的所屬伺服器與遊戲角色 ID <span class="req-mark">※必填</span></span><!-- ★ 2026-07-15：（必填）改紅色必填標記 -->
           <div class="cust-row">
             <select id="custServer"><!-- ★ 2026-07-14：伺服器改下拉七選一（舊：文字輸入 placeholder 伺服器（例：鳳凰）） -->
               <option value="">伺服器（請選擇）</option>
@@ -300,11 +300,11 @@
           <div class="cust-row cust-co"><select class="coServer"><option value="">同行③ 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /><span class="coSexPick"><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="男" />男</label><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="女" />女</label><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="保密" checked />保密</label></span></div>
         </div>
         <div class="order-field">
-          <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）</span>
+          <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）<span class="req-mark">※必填</span></span>
           <div class="cust-row"><input type="date" id="custDate" /></div>
         </div>
         <div class="order-field">
-          <span class="order-label">來訪場次（先勾場次，再填詳細入席時間）</span>
+          <span class="order-label">來訪場次（先勾場次，再填詳細入席時間）<span class="req-mark">※必填</span></span>
           <div class="order-choice-wrap" id="custSessionBox">
             <label class="order-chip"><input type="radio" name="custSession" value="早場 10:00-12:00" />早場 10:00–12:00</label>
             <label class="order-chip"><input type="radio" name="custSession" value="午場 14:00-17:00" />午場 14:00–17:00</label>
@@ -371,7 +371,7 @@
       </div>
       <!-- 餐單由 firebase-app.js 第 16 段渲染進 #menuList（依分類分組） -->
       <!-- ★ 2026-07-12：拿掉 reveal——動態長高的容器用捲動淡入會因 15% 門檻永遠達不到而整塊隱形（舊值 class="menu-wrap reveal" 備查） -->
-      <div class="order-step-flag">預約流程 壹 · 挑選料理（按「＋」加入，單點低消 5,000 Gil）</div>
+      <div class="order-step-flag">預約流程 壹 · 挑選料理（按「＋」加入，單點低消 5,000 Gil）<span class="req-mark">※必填（至少 1 道且達低消）</span></div>
       <div class="menu-wrap" id="menuList"></div>
       <p class="body" id="menuEmpty" style="text-align:center;margin-top:30px;display:none">餐單籌備中，敬請期待。</p>
     </div>
@@ -636,9 +636,11 @@
         </div>
         <label class="order-consent">
           <input type="checkbox" id="odAgree" />
-          我已閱讀<a href="#rulesSection" class="order-rules-link">「帳前約定」入店須知</a>，並同意自訂內容符合善良風俗。
+          我已閱讀<a href="#rulesSection" class="order-rules-link">「帳前約定」入店須知</a>，並同意自訂內容符合善良風俗。<span class="req-mark">※必填</span>
         </label>
         <button type="button" class="btn primary" id="odGenerate">送出預約訂單（測試）</button>
+        <!-- ★ 2026-07-15：未勾同意前送出鈕上鎖（JS 控制），此行為提醒文字 -->
+        <p class="order-note od-lock-note" id="odLockNote">※ 請先勾選上方「我已閱讀『帳前約定』入店須知」，送出鈕才會亮起。</p>
         <div id="odResultWrap" style="display:none">
           <textarea id="odResult" rows="14" readonly></textarea>
           <button type="button" class="btn" id="odCopy">📋 複製明細</button>

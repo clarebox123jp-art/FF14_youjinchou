@@ -2315,3 +2315,28 @@ img { -webkit-user-drag: none; user-select: none; }
   .cust-co { flex-wrap: wrap; }            /* 同行列：性別籤放不下時自動換行 */
   .coSexPick { flex: 1 1 100%; margin-top: 4px; }
 }
+
+/* ★ 2026-07-15：必填標記＋送出鈕同意上鎖 */
+.req-mark {
+  color: #c0433a;
+  font-weight: 700;
+  font-size: .78rem;
+  margin-left: 6px;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+.btn.primary.is-locked,
+.btn.primary:disabled {
+  background: #b7b2a9 !important;     /* 未勾同意＝灰鈕 */
+  border-color: #a19c93 !important;
+  color: #f2efe9 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  filter: none;
+  opacity: .85;
+}
+.od-lock-note {
+  color: #c0433a;
+  font-size: .8rem;
+  margin-top: 6px;
+}

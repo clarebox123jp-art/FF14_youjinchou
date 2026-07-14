@@ -3260,6 +3260,8 @@ loadRooms();
   document.getElementById("odGenerate").onclick = () => {
     const c = calc();
     if (document.getElementById("odWeb")?.value) return;   /* 蜜罐被填＝機器人，靜默擋下 */
+    /* ★ 2026-07-15：雙保險——按鈕理應上鎖，但若被繞過仍擋下並提醒 */
+    if (!document.getElementById("odAgree").checked) { alert("請先勾選上方「我已閱讀『帳前約定』入店須知」，才能送出預約訂單。"); return; }
     const custErr = validateCustomer();
     if (custErr) { alert(custErr); return; }
     if (!dishes.size) { alert("請先在上方「茶點・餐單」點選至少 1 道料理。"); return; }
@@ -3340,6 +3342,7 @@ loadRooms();
       }
       sb.textContent = isAdmin && OCFG.open !== true ? "📨 送出預約單（管理員試用）" : "📨 送出預約單";
       sb.onclick = () => submitOrder(orderText);
+      refreshAgreeLock();   /* ★ 2026-07-15：新生成的送出鈕也套用同意上鎖狀態 */
     } else if (sb) sb.remove();
     document.getElementById("odResult").scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -3348,6 +3351,21 @@ loadRooms();
     try { await navigator.clipboard.writeText(ta.value); alert("已複製預約明細！"); }
     catch { ta.select(); document.execCommand("copy"); alert("已複製預約明細！"); }
   };
+  /* ★ 2026-07-15：送出鈕上鎖——未勾「我已閱讀帳前約定」前，#odGenerate（與已生成的 #odSubmit）
+     一律灰色 disabled 不可按，並顯示 #odLockNote 提醒；勾選後恢復朱紅可按、提醒隱藏。
+     載入時立即套用一次（預設未勾＝上鎖）。 */
+  function refreshAgreeLock() {
+    const ok = !!document.getElementById("odAgree")?.checked;
+    [document.getElementById("odGenerate"), document.getElementById("odSubmit")].forEach((b) => {
+      if (!b) return;
+      b.disabled = !ok;
+      b.classList.toggle("is-locked", !ok);
+    });
+    const note = document.getElementById("odLockNote");
+    if (note) note.style.display = ok ? "none" : "";
+  }
+  document.getElementById("odAgree")?.addEventListener("change", refreshAgreeLock);
+  refreshAgreeLock();
 
   /* ============================================================
      ★ 2026-07-13 深夜：真送單（Google 表單）＋防濫用＋管理員接單通知

@@ -78,11 +78,9 @@
 
   <!-- ============================================================
        ★ 2026-07-11 新增：預約系統入口
-       - 開關存在 Firestore「siteContent/config-shop」{ bookingOpen, bookingUrl }
-       - 預設關閉＝顯示「敬請期待！」；管理員登入後用管理列「🏮 預約開關」
-         可隨時切換開放、並填入 Google 預約表單網址
-       - 按鈕文字與連結由 firebase-app.js 第 10 段動態設定，不要直接改這裡的字
-       ============================================================ -->
+       ★ 2026-07-14 移除：站內已有完整「開始預約」流程，此外連 Google 表單
+         的舊入口依老師指示停用（JS 端防呆會自動略過；管理列 🏮 預約開關鈕
+         也隨之不再顯示）。欲恢復拆掉下方註解即可。
   <section class="section" style="padding-top:0;padding-bottom:34px">
     <div class="wrap reveal" style="text-align:center">
       <a id="bookingBtn" class="booking-btn is-closed sfx" href="#" rel="noopener">🏮 預約系統｜敬請期待！</a>
@@ -91,6 +89,7 @@
       </p>
     </div>
   </section>
+       ============================================================ -->
 
   <hr class="divider" />
 

@@ -2025,6 +2025,9 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 .staff-photo-cap::before { content: "🎭 "; }
 .staff-dots .sd { width: 8px; height: 8px; }   /* 指示點可點擊 → 放大好按 */
+/* ★ 2026-07-14 修正：第 984 行 .staff-photo img { display:block } 蓋過了 hidden 屬性，
+   導致輪播只換文字不換照片（每張都在顯示、被相框裁掉只見第一張）——補回隱藏優先權 */
+.staff-photo img[hidden] { display: none; }
 .sf-thumb .sf-cap {
   width: 62px; margin-top: 3px; padding: 2px 4px;
   border: 1px solid rgba(120, 115, 108, .45); border-radius: 6px;

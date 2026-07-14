@@ -2210,3 +2210,69 @@ img { -webkit-user-drag: none; user-select: none; }
   opacity: .4; cursor: not-allowed;
 }
 .menu-card[data-corner="缺貨中"] .mo-btn[data-mo="1"]:hover { background: transparent; color: inherit; }
+
+/* ============================================================
+   ★ 2026-07-14 v8 檔尾疊加：店員名簿放大特寫面板
+   ------------------------------------------------------------
+   - 點卡片照片 → 和紙特寫面板：橫列該店員最多 3 張照片，
+     每張下方＝🎭 完整身分（photoCaps）＋簡介（photoDescs／預設句）
+   - ‹ ›＝切換上一位／下一位店員；手機改為直向堆疊可捲動
+   ============================================================ */
+.staff-lb-panel {
+  width: min(1040px, 92vw);
+  max-height: 88vh; overflow: auto;
+  background: rgba(253, 248, 238, .97);
+  border: 1px solid rgba(176, 141, 63, .55);
+  border-radius: 16px;
+  padding: 18px 20px 22px;
+  box-shadow: 0 24px 60px rgba(20, 16, 12, .45);
+  transition: opacity .35s ease;
+}
+.staff-lb-title {
+  margin: 0 0 14px; text-align: center;
+  font-family: var(--font-display, inherit);
+  font-size: 1.18rem; font-weight: 700;
+  letter-spacing: .14em; color: var(--ink, #2e2a26);
+}
+.staff-lb-strip {
+  display: flex; gap: 16px;
+  justify-content: center; align-items: flex-start;
+}
+.staff-lb-strip figure {
+  margin: 0; flex: 1 1 0; min-width: 0; max-width: 300px;
+  display: flex; flex-direction: column;
+}
+.staff-lb-strip img {
+  width: 100%; aspect-ratio: 3 / 5; object-fit: cover; object-position: 50% 22%;
+  border-radius: 10px;
+  border: 1px solid rgba(176, 141, 63, .45);
+  box-shadow: 0 8px 18px rgba(44, 38, 32, .18);
+}
+.staff-lb-cap {
+  margin: 9px 0 0; text-align: center;
+  font-size: .86rem; font-weight: 700; letter-spacing: .06em;
+  color: var(--shu, #b3402a);
+}
+.staff-lb-desc {
+  margin: 4px 0 0; text-align: center;
+  font-size: .78rem; line-height: 1.75;
+  color: var(--ink, #2e2a26); opacity: .9;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .staff-lb-panel { width: min(420px, 94vw); padding: 14px 12px 16px; }
+  .staff-lb-strip { flex-direction: column; align-items: center; }
+  .staff-lb-strip figure { max-width: 280px; width: 100%; flex: none; }
+}
+
+/* ★ 2026-07-14：伺服器改下拉七選一——select 比照 .cust-row 文字框樣式 */
+.cust-row select {
+  flex: 1 1 0; min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(120, 115, 108, .5);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .88);
+  font-family: inherit; font-size: .9rem;
+  color: var(--ink, #2e2a26);
+}
+.cust-row select:focus { outline: 2px solid rgba(176, 141, 63, .5); }

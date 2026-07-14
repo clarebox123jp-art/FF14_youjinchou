@@ -573,27 +573,33 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 /* ------------------------------------------------------------
    14) RP 商店「店員名簿」燈箱：點長條照片 → 放大看完整原圖
         ＋★2026-07-11 上一張／下一張
+        ＋★2026-07-14 v8 改版：單張放大 → 「店員特寫面板」
+          同時橫列該店員最多 3 張照片，每張下方顯示 🎭 完整身分
+          （data-cap）＋簡介（data-desc；沒填由文青預設句補上）
    - 只在有 #staffList 的頁面（shop.html）作用
    - 卡片由 firebase-app.js 第 13 段動態產生 → 用事件委派，
      之後線上新增／編輯的店員照片也自動有燈箱
-   - 切換範圍＝店員名簿裡有照片的卡片，循環輪播；沿用 .lightbox 樣式
+   - ‹ ›＝切換上一位／下一位店員（有照片者循環）；沿用 .lightbox 樣式
    - 關閉：右上 ×、點背景、Esc　　切換：左右箭頭鈕、鍵盤 ← →、手機左右滑
 ------------------------------------------------------------ */
 (function () {
   if (!document.getElementById("staffList")) return;
 
   const lb = document.createElement("div");
-  lb.className = "lightbox";
+  lb.className = "lightbox staff-lb";
   lb.innerHTML =
     '<button class="lb-close" aria-label="關閉放大">×</button>' +
-    '<button class="lb-nav prev" aria-label="上一張">‹</button>' +
-    '<img class="lb-img" alt="" />' +
-    '<button class="lb-nav next" aria-label="下一張">›</button>' +
-    '<p class="lb-cap"></p>';
+    '<button class="lb-nav prev" aria-label="上一位">‹</button>' +
+    '<div class="staff-lb-panel">' +
+    '  <p class="staff-lb-title"></p>' +
+    '  <div class="staff-lb-strip"></div>' +
+    '</div>' +
+    '<button class="lb-nav next" aria-label="下一位">›</button>';
   document.body.appendChild(lb);
 
-  const lbImg = lb.querySelector(".lb-img");
-  const lbCap = lb.querySelector(".lb-cap");
+  const panel = lb.querySelector(".staff-lb-panel");
+  const title = lb.querySelector(".staff-lb-title");
+  const strip = lb.querySelector(".staff-lb-strip");
   const prevBtn = lb.querySelector(".lb-nav.prev");
   const nextBtn = lb.querySelector(".lb-nav.next");
 
@@ -604,23 +610,37 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return Array.from(document.querySelectorAll("#staffList .staff-photo"))
       .filter((b) => b.querySelector("img"));   // 「印」佔位（無照片）不列入
   }
-  // 取卡片目前顯示中的那張（多張輪播時抓可見的，否則第一張）
-  function visibleImg(box) {
-    return box.querySelector("img:not([hidden])") || box.querySelector("img");
+  /* 沒填簡介時的預設句（依照片序輪替；有身分者以身分開場） */
+  const FALLBACK = [
+    "帳中一影，靜候有緣人入席。",
+    "光影流轉，換個角度又是另一段緣。",
+    "茶煙裊裊之間，等一句攀談。",
+  ];
+  function escT(s) {
+    return String(s || "").replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
   function showAt(i) {
     if (!group.length) return;
     idx = (i + group.length) % group.length;    // 循環
     const box = group[idx];
-    const img = visibleImg(box);
-    /* ★ 2026-07-14：換圖淡入淡出（同相簿燈箱；transition 在 style.css .lb-img） */
-    lbImg.style.opacity = "0";
-    lbImg.src = img.currentSrc || img.src;
-    lbImg.alt = img.alt || "";
-    requestAnimationFrame(() => requestAnimationFrame(() => { lbImg.style.opacity = "1"; }));
     const name = box.dataset.name || "";
     const role = box.dataset.role || "";
-    lbCap.textContent = name && role ? name + " · " + role : name;
+    /* ★ 淡入淡出：面板整塊先降透明，內容換好再升回（transition 在 style.css） */
+    panel.style.opacity = "0";
+    const imgs = Array.from(box.querySelectorAll("img")).slice(0, 3);   // 最多 3 張
+    title.textContent = name && role ? name + " · " + role : name;
+    strip.innerHTML = imgs.map(function (im, n) {
+      const cap = (im.dataset.cap || "").trim();
+      const desc = (im.dataset.desc || "").trim()
+        || (cap ? "以「" + cap + "」之姿在帳中恭候——攀談一句，故事便開始。" : FALLBACK[n % FALLBACK.length]);
+      return '<figure>' +
+        '<img src="' + (im.currentSrc || im.src) + '" alt="' + escT(im.alt || name) + '" />' +
+        (cap ? '<p class="staff-lb-cap">🎭 ' + escT(cap) + '</p>' : '') +
+        '<p class="staff-lb-desc">' + escT(desc) + '</p>' +
+        '</figure>';
+    }).join("");
+    requestAnimationFrame(function () { requestAnimationFrame(function () { panel.style.opacity = "1"; }); });
     const multi = group.length > 1;
     prevBtn.style.display = multi ? "" : "none";
     nextBtn.style.display = multi ? "" : "none";
@@ -635,7 +655,7 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   function closeLB() {
     lb.classList.remove("open");
     document.body.style.overflow = "";
-    lbImg.removeAttribute("src");
+    strip.innerHTML = "";
     group = [];
   }
 

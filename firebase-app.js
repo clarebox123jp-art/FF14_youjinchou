@@ -1779,10 +1779,12 @@ function renderStaff() {
     // ★ 2026-07-12：照片改吃陣列 photos[]（可多張輪播）；相容舊的單張 photo 欄位
     const pics = (Array.isArray(s.photos) && s.photos.length) ? s.photos : (s.photo ? [s.photo] : []);
     /* ★ 2026-07-14：每張照片可對應一個「身分」說明（photoCaps[]，與 photos[] 同索引；
-       輪播切到哪張，身分就同步顯示在照片下方；沒填的照片不顯示） */
+       輪播切到哪張，身分就同步顯示在照片下方；沒填的照片不顯示）
+       ★ 2026-07-14 v8：再加逐張「簡介」（photoDescs[]，顯示於放大特寫每張照片下方） */
     const caps = Array.isArray(s.photoCaps) ? s.photoCaps : [];
+    const descs = Array.isArray(s.photoDescs) ? s.photoDescs : [];
     const inner = pics.length
-      ? pics.map((src, i) => `<img src="${src}" alt="${esc(s.name)} 的照片" loading="lazy" data-cap="${esc(caps[i] || "")}"${i === 0 ? "" : ' hidden'} />`).join("")
+      ? pics.map((src, i) => `<img src="${src}" alt="${esc(s.name)} 的照片" loading="lazy" data-cap="${esc(caps[i] || "")}" data-desc="${esc(descs[i] || "")}"${i === 0 ? "" : ' hidden'} />`).join("")
       : `<div class="noimg" aria-hidden="true"><span>印</span></div>`;
     const dots = pics.length > 1
       ? `<div class="staff-dots">${pics.map((_, i) => `<span class="sd${i === 0 ? " on" : ""}"></span>`).join("")}</div>` : "";
@@ -1851,8 +1853,10 @@ function openStaffForm(id = null, s = {}) {
   // ★ 2026-07-12：照片改用陣列（多張輪播）；相容舊的單張 photo
   let photos = (Array.isArray(s.photos) && s.photos.length) ? s.photos.slice() : (s.photo ? [s.photo] : []);
   /* ★ 2026-07-14：每張照片的「身分」說明（photoCaps 與 photos 同索引；
-     刪除／排序照片時一併同步搬動） */
+     刪除／排序照片時一併同步搬動）
+     ★ 2026-07-14 v8：加「簡介」photoDescs（同索引；顯示於放大特寫） */
   let caps = photos.map((_, i) => (Array.isArray(s.photoCaps) ? s.photoCaps[i] : "") || "");
+  let descs = photos.map((_, i) => (Array.isArray(s.photoDescs) ? s.photoDescs[i] : "") || "");
   const wrap = document.createElement("div");
   wrap.className = "admin-modal";
   wrap.id = "staffModal";
@@ -1895,22 +1899,25 @@ function openStaffForm(id = null, s = {}) {
               <button type="button" data-mv="${i}" data-dir="1" title="往後">▶</button>
             </div>
             <input type="text" class="sf-cap" data-cap="${i}" maxlength="14" placeholder="身分（選填）" value="${esc(caps[i] || "")}" />
+            <input type="text" class="sf-cap sf-desc" data-desc="${i}" maxlength="40" placeholder="簡介（選填，顯示於放大特寫）" value="${esc(descs[i] || "")}" />
           </div>`).join("")
       : `<p class="admin-hint">目前沒有照片；選檔後會顯示縮圖。第一張為卡片預設封面。</p>`;
   };
   renderThumbs();
-  /* ★ 2026-07-14：身分輸入即時寫回 caps（重繪縮圖前先收齊，避免打到一半被洗掉） */
+  /* ★ 2026-07-14：身分輸入即時寫回 caps（重繪縮圖前先收齊，避免打到一半被洗掉）；簡介同理寫回 descs */
   thumbs.addEventListener("input", (e) => {
     if (e.target.dataset.cap !== undefined) caps[Number(e.target.dataset.cap)] = e.target.value;
+    if (e.target.dataset.desc !== undefined) descs[Number(e.target.dataset.desc)] = e.target.value;
   });
   thumbs.addEventListener("click", (e) => {
     const rm = e.target.dataset.rm, mv = e.target.dataset.mv;
-    if (rm !== undefined) { photos.splice(Number(rm), 1); caps.splice(Number(rm), 1); renderThumbs(); }
+    if (rm !== undefined) { photos.splice(Number(rm), 1); caps.splice(Number(rm), 1); descs.splice(Number(rm), 1); renderThumbs(); }
     else if (mv !== undefined) {
       const i = Number(mv), j = i + Number(e.target.dataset.dir);
       if (j >= 0 && j < photos.length) {
         [photos[i], photos[j]] = [photos[j], photos[i]];
         [caps[i], caps[j]] = [caps[j], caps[i]];   /* ★ 2026-07-14：身分跟著照片一起搬 */
+        [descs[i], descs[j]] = [descs[j], descs[i]];
         renderThumbs();
       }
     }
@@ -1919,7 +1926,7 @@ function openStaffForm(id = null, s = {}) {
     const msg = document.getElementById("sfMsg");
     try {
       msg.textContent = "壓縮圖片中…";
-      for (const f of Array.from(e.target.files)) { photos.push(await compressImage(f)); caps.push(""); }
+      for (const f of Array.from(e.target.files)) { photos.push(await compressImage(f)); caps.push(""); descs.push(""); }
       e.target.value = ""; msg.textContent = ""; renderThumbs();
     } catch (err) { msg.textContent = "❌ 圖片處理失敗：" + (err.message || err); }
   };
@@ -1941,6 +1948,7 @@ function openStaffForm(id = null, s = {}) {
         persona:  document.getElementById("sfPersona").value.trim(),   // ★ 人設
         photos:   photos,                                              // ★ 多張照片
         photoCaps: photos.map((_, i) => (caps[i] || "").trim()),       // ★ 2026-07-14：各照片對應身分
+        photoDescs: photos.map((_, i) => (descs[i] || "").trim()),     // ★ 2026-07-14 v8：各照片簡介（放大特寫用）
         photo:    photos[0] || "",                                     // 相容舊欄位（封面）
         order:    Number(document.getElementById("sfOrder").value) || 0,
       };
@@ -2837,9 +2845,10 @@ loadRooms();
       box.className = "staff-pick-prefs";
       box.innerHTML = `
         ${p.gender ? `<p class="staff-pref-gender">扮演性別呈現：${esc(p.gender)}</p>` : ""}
-        <div class="staff-pref-row"><em>身分<small>＋${fmt(FEE.role)}/單</small></em><div class="order-choice-wrap">${
+        <div class="staff-pref-row"><em>身分<small>已含指名費</small></em><div class="order-choice-wrap">${
           roleOpts.length ? chips(roleOpts, "odRoleS" + i, st.role)
           : '<span class="order-note">尚未登記可接身分</span>'}</div></div>`;
+      /* ★ 2026-07-14：身分加價取消，small 標籤由「＋FEE.role/單」改為「已含指名費」 */
       /* 舊「風格」列備查：
         <div class="staff-pref-row"><em>風格<small>＋FEE.persona/單</small></em>…styleOpts chips…</div> */
       box.querySelectorAll('input[name="odRoleS' + i + '"]').forEach((el) =>
@@ -3055,11 +3064,14 @@ loadRooms();
       ? Array.from(pickedStaff).reduce((sum, n) => sum + feeOf(n), 0) * units
       : FEE.seat * units;
     /* ★ RP 輕重加價（僅指名時計）：任一指名店員被勾了個性/身分即計（每單一次）
-       2026-07-13 改讀逐店員面板 */
+       2026-07-13 改讀逐店員面板
+       ★ 2026-07-14：職業扮演身分加價取消——勾選的扮演角色已包含在指名費中，
+       rpFee 恆為 0（roleOn／rpLevel 保留作程度描述用）。
+       舊算式備查：const rpFee = (styleOn ? FEE.persona : 0) + (roleOn ? FEE.role : 0); */
     const sp = namedN > 0 ? collectStaffPrefs() : [];
     const styleOn = sp.some((p) => p.style && p.style !== "隨緣");
     const roleOn  = sp.some((p) => p.role  && p.role  !== "隨緣");
-    const rpFee = (styleOn ? FEE.persona : 0) + (roleOn ? FEE.role : 0);
+    const rpFee = 0;
     const rpLevel = namedN === 0 ? "" : (styleOn && roleOn ? "重" : (styleOn || roleOn ? "中" : "輕"));
     const photoFee = extraPhotos * FEE.photo;
     const roomFee = pickedRoom ? pickedRoom.price : 0;
@@ -3097,7 +3109,10 @@ loadRooms();
         Array.from(pickedStaff).forEach((n) => rows.push(`<div class="osl-row"><span>指名 ${esc(n)}</span><b>${fmt(feeOf(n))} × ${c.units} 時段</b></div>`));
         const sp2 = collectStaffPrefs();
         const roleSel  = sp2.filter((p) => p.role  !== "隨緣");
-        if (roleSel.length) rows.push(`<label class="osl-row osl-ck"><span><input type="checkbox" id="odCkRole" checked /> 指定職業身分（${roleSel.map((p) => `${esc(p.name)}＝${esc(p.role)}`).join("、")}）</span><b>＋${fmt(FEE.role)}</b></label>`);
+        /* ★ 2026-07-14：身分加價取消——改為純資訊列（已含指名費），
+           不再有可取消勾選的加價行。舊寫法備查：
+           <label …><input id="odCkRole" checked /> 指定職業身分（…）</label><b>＋FEE.role</b> */
+        if (roleSel.length) rows.push(`<div class="osl-row"><span>指定扮演身分（${roleSel.map((p) => `${esc(p.name)}＝${esc(p.role)}`).join("、")}）</span><b>已含指名費</b></div>`);
         /* ★ 2026-07-14：服務風格選擇已取消（風格改卡片固定顯示、不加價）——
            styleSel 列與 odCkStyle 取消勾選處理一併移除，備查：
            const styleSel = sp2.filter((p) => p.style !== "隨緣");
@@ -3107,12 +3122,8 @@ loadRooms();
       }
       if (extraPhotos) rows.push(`<div class="osl-row"><span>額外加拍 × ${extraPhotos} 張</span><b>＋${fmt(extraPhotos * FEE.photo)}</b></div>`);
       svcEl.innerHTML = rows.join("");
-      const ckR = document.getElementById("odCkRole");
-      if (ckR) ckR.onchange = () => {   /* 取消勾選 → 全部身分改回隨緣 → 名簿面板同步重繪 */
-        Array.from(pickedStaff).forEach((n) => { prefOf(n).role = "隨緣"; });
-        renderStaffPrefs(); updateTotals();
-      };
-      /* ★ 2026-07-14：odCkStyle 處理已隨風格選擇一併移除（備查於 git 歷史） */
+      /* ★ 2026-07-14：odCkRole／odCkStyle 取消勾選處理已隨加價制一併移除
+         （身分改為已含指名費的純資訊列；要改選就回名簿面板點「隨緣」）——備查於 git 歷史 */
     }
     document.getElementById("odDishTotal").textContent    = fmt(c.dishTotal);
     document.getElementById("odServiceTotal").textContent = fmt(c.serviceTotal);
@@ -3143,8 +3154,8 @@ loadRooms();
       if (bindFmt[k] && Number.isFinite(FEE[k])) el.textContent = bindFmt[k](FEE[k]);
     });
     document.getElementById("odFeeNote").textContent =
-      `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價）・RP加價：勾選職業身分 ＋${fmt(FEE.role)}／每單・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
-      /* ★ 2026-07-14 舊文備查：…RP加價：勾選個性 ＋persona、勾選職業身分 ＋role（兩者皆選＝重度RP）… */
+      `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價；勾選扮演身分已含於指名費）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
+      /* ★ 2026-07-14 舊文備查：…RP加價：勾選職業身分 ＋role／每單… */
   }
   writeFeeNote();
 
@@ -3205,9 +3216,9 @@ loadRooms();
     guestRoleLines().forEach((g) => lines.push(`　顧客${g.tag} 扮演身分：${g.v}`));
     { const warns = c.namedN ? dutyWarnings() : [];
       if (warns.length) lines.push(`　※ 排班提示：${warns.join("、")} 於該日期／場次未排班（送單後由店家確認代班或改期）`); }
-    /* ★ 2026-07-14：風格（個性）加價已取消，RP 程度僅由職業身分決定（舊行備查：
-       （個性${styleOn?…}／職業身分${roleOn?…}）） */
-    if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.rpFee ? `（職業身分 ＋${fmt(FEE.role)}）` : "（基本，無加價）"));
+    /* ★ 2026-07-14：風格（個性）加價已取消，RP 程度僅由職業身分決定
+       ★ 2026-07-14 v2：身分加價也取消——扮演身分已含指名費，程度純描述（舊：（職業身分 ＋FEE.role）） */
+    if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.roleOn ? "（扮演身分已含於指名費）" : "（基本）"));
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
     lines.push("　店員服務小計：" + fmt(c.serviceTotal));
     lines.push("――― 包廂 ―――");
@@ -3392,24 +3403,65 @@ loadRooms();
     if (cur.length > 1 || cur[0]) rows.push(cur);
     return rows.filter((r) => r.some((c) => c.trim()));
   }
-  function notifyToast(orderText) {
+  function notifyToast(orderText, ts) {
     document.getElementById("odToast")?.remove();
     const m = orderText.match(/顧客：([^｜\n]+)｜([^\n]+)/);
     const server = m ? m[1].trim() : "", cid = m ? m[2].trim() : "";
-    /* ★ 2026-07-13：DC 出勤工作單（時間/店員/職務/總營收，一鍵複製發到公會 DC） */
+    /* ★ 2026-07-13：DC 出勤工作單（時間/店員/職務/總營收，一鍵複製發到公會 DC）
+       ★ 2026-07-14 v2 依老師規格改版：
+       工作單＝補時長、顧客人數、指名店員扮演身分；需求崗位固定含外場人員，
+       NPC陪聊店員依指名列 ID／依隨緣列人數。
+       回覆訊息＝補接單時間、人數、餐點、指名與身分、預估總消費、聯絡管道。 */
     const g = (re) => (orderText.match(re) || [, ""])[1].trim();
+    /* 指名名單與各自扮演身分（明細行「　tag 名字：扮演＝身分（性別呈現…）」） */
+    const rolePairs = [];
+    orderText.replace(/　\S+ ([^：\n]+)：扮演＝([^（\n]+)/g, (all, nm, rl) => { rolePairs.push({ nm: nm.trim(), rl: rl.trim() }); return all; });
+    const namedRaw = g(/指名：([^\n]+)/);
+    const isNamed = !!namedRaw && !namedRaw.startsWith("隨緣");
+    const namedNames = isNamed ? namedRaw.replace(/（[^）]*）/g, "").split("、").map((s) => s.trim()).filter(Boolean) : [];
+    const withRoles = namedNames.map((nm) => {
+      const p = rolePairs.find((x) => x.nm === nm);
+      return nm + (p && p.rl && p.rl !== "隨緣" ? `（扮演＝${p.rl}）` : "（扮演＝隨緣）");
+    }).join("、");
+    const guestN = g(/同行人數：(\d+)/) || "1";
+    const dur = g(/時長：(\d+ ?分鐘)/) || "未填";
+    const npcLine = isNamed
+      ? `指名 ${namedNames.length} 位：${namedNames.join("、")}`
+      : `隨緣 1 位（自由認領）`;
+    const dishesBlock = (orderText.match(/――― 料理 ―――\n([\s\S]+?)\n　料理小計/) || [, "（見明細）"])[1];
+    const total = g(/――― 總計：([^ ―]+)/);
     const workOrder = [
       "📣【茶談百緣 · 出勤工作單】",
       `日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
-      `入席：${g(/期望入席：([^\n]+)/)}｜顧客：${server}｜${cid}`,
-      "指名：" + g(/指名：([^\n]+)/).replace(/（[^）]*）/g, ""),
+      `入席：${g(/期望入席：([^\n]+)/) || "未填"}｜時長：${dur}`,
+      `顧客：${server}｜${cid}（共 ${guestN} 位）`,
+      "指名：" + (isNamed ? withRoles : "隨緣（不指名）"),
       "包廂：" + g(/――― 包廂 ―――\n　?([^\n]+)/),
-      "餐點：\n" + ((orderText.match(/――― 料理 ―――\n([\s\S]+?)\n　料理小計/) || [, "（見明細）"])[1]),
-      "需求崗位：NPC陪聊店員、備餐、攝影師",
-      "預估營收：" + g(/――― 總計：([^ ―]+)/),
+      "餐點：\n" + dishesBlock,
+      `需求崗位：外場人員、NPC陪聊店員（${npcLine}）、備餐、攝影師`,
+      "預估營收：" + total,
       "可出勤的店員請在下方回覆 ✋",
     ].join("\n");
-    const reply = `【茶談百緣】預約確認通知\n${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，已收到您的預約單！\n內容已登記，我們會依單準備。小提醒：\n・最晚請於消費日 3 天前完成預訂\n・同行點餐與指名將合併於同一張帳單\n如需修改或取消請提前告知，期待您的光臨 🍵`;
+    /* 顧客回覆用的餐點一行版（去掉縮排與價格，只留品項×數量） */
+    const dishesLine = dishesBlock.split("\n")
+      .map((s) => s.trim().split("　")[0]).filter((s) => s && !s.startsWith("（")).join("、");
+    const reply = [
+      "【茶談百緣】預約確認通知",
+      `${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，已收到您的預約單！`,
+      ts ? `接單時間：${ts}` : "",
+      `消費日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
+      `入席人數：${guestN} 位｜時長：${dur}`,
+      dishesLine ? `餐點：${dishesLine}` : "",
+      "指名：" + (isNamed ? `共 ${namedNames.length} 位——${withRoles}` : "隨緣（不指名）"),
+      total ? `預估總消費：${total}` : "",
+      "小提醒：",
+      "・最晚請於消費日 3 天前完成預訂",
+      "・同行點餐與指名將合併於同一張帳單",
+      "如需修改或取消：Discord 密語會長 ke7235，或於遊戲中聯絡任意幹部",
+      "幹部名簿：https://clarebox123jp-art.github.io/FF14_youjinchou/members.html",
+      "期待您的光臨 🍵",
+    ].filter(Boolean).join("\n");
+    /* ★ 舊版工作單／回覆文備查於 git 歷史（2026-07-13 版） */
     const t = document.createElement("div");
     t.id = "odToast"; t.className = "od-toast";
     t.innerHTML = `<b>🔔 收到新預約單！</b><span>${esc(cid ? `${server}｜${cid}` : "點開查看內容")}</span>
@@ -3446,7 +3498,8 @@ loadRooms();
       if (n > seen) {
         localStorage.setItem("yjc_orders_seen", String(n));
         const last = rows[rows.length - 1];
-        notifyToast(last.join("\n"));
+        /* ★ 2026-07-14：第 1 欄＝表單時間戳記，帶進回覆訊息當「接單時間」 */
+        notifyToast(last.join("\n"), (last[0] || "").trim());
       }
     } catch (_) {}
   }, 45000);

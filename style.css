@@ -2047,3 +2047,67 @@ img { -webkit-user-drag: none; user-select: none; }
   .staff-card .staff-photo-col { flex-basis: 128px; width: 128px; }
   .staff-photo-cap { font-size: .72rem; }
 }
+
+/* ============================================================
+   ★ 2026-07-14 v5 檔尾疊加：送出預約按鈕華麗化＋餐單改橫式卡
+   ============================================================ */
+/* —— 送出預約訂單（#odGenerate）與送出預約單（#odSubmit）：
+      朱紅金框大圓章，與「開始預約」同一家族 —— */
+#odGenerate, #odSubmit {
+  display: block;
+  width: min(480px, 100%);
+  margin: 28px auto 0;
+  padding: 18px 30px 16px;
+  font-family: var(--font-display, inherit);
+  font-size: 1.28rem; font-weight: 700;
+  letter-spacing: .32em; text-indent: .32em;
+  color: #fdf6ea;
+  background:
+    radial-gradient(130% 170% at 50% -10%, rgba(255, 224, 168, .3), transparent 55%),
+    linear-gradient(135deg, #c9463c, #8f2f1e);
+  border: 1px solid rgba(255, 231, 186, .8);
+  outline: 2px solid rgba(176, 141, 63, .55);
+  outline-offset: 3px;
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(143, 47, 30, .38), inset 0 1px 0 rgba(255, 255, 255, .28);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+#odGenerate::before, #odSubmit::before { content: "✦ "; color: rgba(255, 231, 186, .95); }
+#odGenerate::after,  #odSubmit::after  { content: " ✦"; color: rgba(255, 231, 186, .95); }
+#odGenerate:hover, #odSubmit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px rgba(143, 47, 30, .48), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+#odGenerate:active, #odSubmit:active { transform: translateY(0); }
+@media (max-width: 640px) {
+  #odGenerate, #odSubmit { font-size: 1.08rem; padding: 15px 20px 13px; letter-spacing: .22em; text-indent: .22em; }
+}
+
+/* —— 餐單改橫式卡：一行一道，照片在左、名稱價格介紹與 −/＋ 在右
+      （比照店員名簿；原直式格狀卡樣式第 1235 行起保留原地，由此覆寫）—— */
+.menu-grid {
+  display: flex; flex-direction: column;
+  gap: 16px; max-width: 720px;
+  margin-left: auto; margin-right: auto;
+}
+.menu-card {
+  flex-direction: row; flex-wrap: wrap; align-items: stretch;
+  gap: 0 16px; padding: 12px;
+}
+.menu-card .photo-frame {
+  flex: 0 0 176px; width: 176px;
+  align-self: flex-start;
+  border-radius: 10px;
+  border: 1px solid rgba(176, 141, 63, .35);
+}
+.menu-body { flex: 1 1 230px; min-width: 0; padding: 2px 0 0; }
+.menu-card .menu-order { justify-content: flex-start; margin-top: 12px; }
+/* 管理員列（🔥/⛔ 角標鈕、✎ 編輯列）橫貫卡片底部 */
+.menu-card > .menu-corner-admin { flex-basis: 100%; margin-top: 10px; justify-content: flex-start; }
+.menu-card > .admin-actions { flex-basis: 100%; margin-top: 8px; padding: 0; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .menu-grid { gap: 12px; }
+  .menu-card { padding: 10px; gap: 0 12px; }
+  .menu-card .photo-frame { flex-basis: 118px; width: 118px; }
+}

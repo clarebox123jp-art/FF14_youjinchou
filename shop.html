@@ -207,7 +207,44 @@
         </div>
         <p class="body price-note" style="margin-top:12px">※ 指名店員「服務性格」和「身分職業」將額外加收費用。<!-- 舊註（大廳外帶價/點價格修改說明）已由老師線上改寫並烘入 2026-07-12 --></p>
       </div>
+    </div>
+  </section>
 
+  <!-- ============================================================
+       ★ 2026-07-11 新增：活動告示板（開幕特惠＋節慶活動）
+       - 文字全部走線上編輯（登入後點字即改），過期活動直接改字輪替
+       - 想增減告示：複製或刪掉一整個 <article class="notice">...</article>
+       ★ 2026-07-14 搬家：由「我的預約紀錄」之後整段原封搬到此處
+         （帳目計費與開始預約之間），讓客人下訂前先看到活動消息
+       ============================================================ -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">News · 活動告示板</p>
+        <h2>活動告示板</h2>
+        <p class="body" style="margin-top:14px">帳中近期的祭事與優惠，皆張貼於此。</p>
+      </div>
+      <div class="notice-board reveal">
+        <article class="notice">
+          <p class="notice-tag">🎊 開幕特惠</p>
+          <h3>開帳誌慶 · 首月同慶</h3>
+          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：開幕首月光臨的每一位旅人，餐點一律八折，並附贈本店特調飲品一杯；預約拍照服務者，加贈精修照片一張。 -->
+          <p>尚在規劃中，敬請期待！</p>
+        </article>
+        <article class="notice">
+          <p class="notice-tag">🌸 節慶活動</p>
+          <h3>當季祭事 · 籌備中</h3>
+          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：新年初詣、櫻花祭、盂蘭盆納涼祭——四季的祭事正在籌備中，詳情將於此告示板與 Discord 同步公告。 -->
+          <p>尚在規劃中，敬請期待！</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ★ 2026-07-14：原「帳目計費」大 section 於此切開重啟，
+       讓活動告示板插進帳目計費與預約入口之間；以下內容原封不動 -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
       <!-- ★ 2026-07-13：預約入口＝標題＋測試警語＋開始預約按鈕（合併版，順流而下不回捲） -->
       <div class="reveal" style="margin-top:34px">
         <p class="eyebrow">Order · 線上預約點餐</p>
@@ -220,7 +257,7 @@
       <div class="order-start-wrap reveal">
         <button type="button" class="order-start-btn" id="odStart">
           <span class="osb-deco">✦</span> 開 始 預 約 <span class="osb-deco">✦</span>
-          <small>從挑選料理開始，一路點到送出</small>
+          <small>從入席登記開始，一路點到送出</small><!-- ★ 2026-07-14 改字；舊文：從挑選料理開始，一路點到送出 -->
         </button>
       </div>
 
@@ -595,32 +632,9 @@
 
   <!-- ============================================================
        ★ 2026-07-11 新增：活動告示板（開幕特惠＋節慶活動）
-       - 文字全部走線上編輯（登入後點字即改），過期活動直接改字輪替
-       - 想增減告示：複製或刪掉一整個 <article class="notice">...</article>
+       ★ 2026-07-14 搬家：整段原封搬到「帳目・計費方式」與「開始預約」
+         之間（本頁前段），此處僅留此註記
        ============================================================ -->
-  <section class="section">
-    <div class="wrap">
-      <div class="reveal">
-        <p class="eyebrow">News · 活動告示板</p>
-        <h2>活動告示板</h2>
-        <p class="body" style="margin-top:14px">帳中近期的祭事與優惠，皆張貼於此。</p>
-      </div>
-      <div class="notice-board reveal">
-        <article class="notice">
-          <p class="notice-tag">🎊 開幕特惠</p>
-          <h3>開帳誌慶 · 首月同慶</h3>
-          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：開幕首月光臨的每一位旅人，餐點一律八折，並附贈本店特調飲品一杯；預約拍照服務者，加贈精修照片一張。 -->
-          <p>尚在規劃中，敬請期待！</p>
-        </article>
-        <article class="notice">
-          <p class="notice-tag">🌸 節慶活動</p>
-          <h3>當季祭事 · 籌備中</h3>
-          <!-- 舊內文（2026-07-13 暫改籌備中，備查）：新年初詣、櫻花祭、盂蘭盆納涼祭——四季的祭事正在籌備中，詳情將於此告示板與 Discord 同步公告。 -->
-          <p>尚在規劃中，敬請期待！</p>
-        </article>
-      </div>
-    </div>
-  </section>
 
   <hr class="divider" />
 

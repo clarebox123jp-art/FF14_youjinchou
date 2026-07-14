@@ -2284,3 +2284,34 @@ img { -webkit-user-drag: none; user-select: none; }
   color: var(--ink, #2e2a26);
 }
 .cust-row select:focus { outline: 2px solid rgba(176, 141, 63, .5); }
+
+/* ═══ ★ 2026-07-15 v10：場次無店員可出勤 → 灰化不可勾選 ═══ */
+.order-chip.is-nostaff {
+  opacity: .55;
+  background: #ecebe6;
+  border-color: rgba(120, 115, 108, .35);
+  color: #8a857d;
+  cursor: not-allowed;
+  pointer-events: none;          /* radio 已 disabled，這裡再擋一層點擊 */
+  box-shadow: none;
+}
+.order-chip.is-nostaff .sess-nostaff-note {
+  display: block;
+  color: #b3402a;                /* 朱紅小字，維持可辨識 */
+  font-size: .72rem;
+  margin-top: 2px;
+  letter-spacing: .04em;
+}
+
+/* ★ 2026-07-15：顧客性別勾選（本人＋同行）——小號籤 */
+.cust-sex-row {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 6px; margin-top: 6px;
+}
+.cust-sex-label { font-size: .82rem; color: var(--muted, #8a857d); margin-right: 2px; }
+.order-chip.sex-chip { font-size: .78rem; padding: 4px 10px; }
+.coSexPick { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 640px) {
+  .cust-co { flex-wrap: wrap; }            /* 同行列：性別籤放不下時自動換行 */
+  .coSexPick { flex: 1 1 100%; margin-top: 4px; }
+}

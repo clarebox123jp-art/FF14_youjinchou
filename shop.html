@@ -282,15 +282,22 @@
             </select>
             <input type="text" id="custId" maxlength="20" placeholder="角色 ID（例：小克瑞爾）" />
           </div>
+          <!-- ★ 2026-07-15：新增顧客性別勾選（預設保密） -->
+          <div class="cust-sex-row"><span class="cust-sex-label">您的性別</span>
+            <label class="order-chip sex-chip"><input type="radio" name="custSex" value="男" />男</label>
+            <label class="order-chip sex-chip"><input type="radio" name="custSex" value="女" />女</label>
+            <label class="order-chip sex-chip"><input type="radio" name="custSex" value="保密" checked />保密</label>
+          </div>
         </div>
         <label class="order-consent" style="margin-top:4px">
           <input type="checkbox" id="custHasCo" /> 有同行顧客（最多 3 位；勾選後，每一位都需填妥伺服器與 ID 才算完整）
         </label>
         <div id="custCoWrap" style="display:none">
-          <!-- ★ 2026-07-14：同行伺服器同步改下拉七選一（舊：文字輸入 coServer） -->
-          <div class="cust-row cust-co"><select class="coServer"><option value="">同行① 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行① 角色 ID" /></div>
-          <div class="cust-row cust-co"><select class="coServer"><option value="">同行② 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行② 角色 ID" /></div>
-          <div class="cust-row cust-co"><select class="coServer"><option value="">同行③ 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /></div>
+          <!-- ★ 2026-07-14：同行伺服器同步改下拉七選一（舊：文字輸入 coServer）
+               ★ 2026-07-15：每列補性別勾選（男/女/保密，預設保密） -->
+          <div class="cust-row cust-co"><select class="coServer"><option value="">同行① 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行① 角色 ID" /><span class="coSexPick"><label class="order-chip sex-chip"><input type="radio" name="coSex1" value="男" />男</label><label class="order-chip sex-chip"><input type="radio" name="coSex1" value="女" />女</label><label class="order-chip sex-chip"><input type="radio" name="coSex1" value="保密" checked />保密</label></span></div>
+          <div class="cust-row cust-co"><select class="coServer"><option value="">同行② 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行② 角色 ID" /><span class="coSexPick"><label class="order-chip sex-chip"><input type="radio" name="coSex2" value="男" />男</label><label class="order-chip sex-chip"><input type="radio" name="coSex2" value="女" />女</label><label class="order-chip sex-chip"><input type="radio" name="coSex2" value="保密" checked />保密</label></span></div>
+          <div class="cust-row cust-co"><select class="coServer"><option value="">同行③ 伺服器</option><option>伊弗利特</option><option>迦樓羅</option><option>利維坦</option><option>鳳凰</option><option>奧汀</option><option>巴哈姆特</option><option>泰坦</option></select><input type="text" class="coId" maxlength="20" placeholder="同行③ 角色 ID" /><span class="coSexPick"><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="男" />男</label><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="女" />女</label><label class="order-chip sex-chip"><input type="radio" name="coSex3" value="保密" checked />保密</label></span></div>
         </div>
         <div class="order-field">
           <span class="order-label">預約消費日期（最晚需於消費日 3 天前預訂）</span>

@@ -2753,6 +2753,7 @@ loadRooms();
     return Array.from(document.querySelectorAll("#custCoWrap .cust-co")).map((row) => ({
       server: row.querySelector(".coServer").value.trim(),
       id:     row.querySelector(".coId").value.trim(),
+      sex:    row.querySelector(".coSexPick input:checked")?.value || "保密",   /* ★ 2026-07-15：同行性別 */
     }));
   }
   function syncGuests() {
@@ -3283,9 +3284,12 @@ loadRooms();
       lines.push("場次：" + (document.querySelector('input[name="custSession"]:checked')?.value || ""));
       lines.push("期望入席：" + document.getElementById("custTime").value.trim());
     }
-    lines.push("顧客：" + document.getElementById("custServer").value.trim() + "｜" + document.getElementById("custId").value.trim());
+    /* ★ 2026-07-15：顧客／同行性別寫入明細（勾選值，預設保密）
+       舊行備查：lines.push("顧客：" + custServer + "｜" + custId);　同行行無性別括號 */
+    const mySex = document.querySelector('input[name="custSex"]:checked')?.value || "保密";
+    lines.push("顧客：" + document.getElementById("custServer").value.trim() + "｜" + document.getElementById("custId").value.trim() + `（${mySex}）`);
     if (hasCo && hasCo.checked) coRows().filter((r) => r.server && r.id)
-      .forEach((r, k) => lines.push(`同行${k + 1}：${r.server}｜${r.id}`));
+      .forEach((r, k) => lines.push(`同行${k + 1}：${r.server}｜${r.id}（${r.sex}）`));
     lines.push("同行人數：" + guests + " 位（含本人；所有點餐與指名合併同一張帳單）");
     lines.push("――― 料理 ―――");
     dishes.forEach((v, n) => lines.push(`　${n} × ${v.qty}${v.price ? "　" + fmt(v.qty * v.price) : "（未定價）"}`));
@@ -3501,7 +3505,11 @@ loadRooms();
   function notifyToast(orderText, ts) {
     document.getElementById("odToast")?.remove();
     const m = orderText.match(/顧客：([^｜\n]+)｜([^\n]+)/);
-    const server = m ? m[1].trim() : "", cid = m ? m[2].trim() : "";
+    /* ★ 2026-07-15：顧客行尾多了「（性別）」——擷取 ID 時剝掉，回覆抬頭才不會帶括號 */
+    const server = m ? m[1].trim() : "", cid = m ? m[2].replace(/（[^）]*）\s*$/, "").trim() : "";
+    /* 全員性別列表（顧客＋同行，依明細行順序），供工作單彙整 */
+    const sexList = [];
+    orderText.replace(/(?:顧客|同行\d+)：[^\n]*（(男|女|保密)）/g, (all, sx) => { sexList.push(sx); return all; });
     /* ★ 2026-07-13：DC 出勤工作單（時間/店員/職務/總營收，一鍵複製發到公會 DC）
        ★ 2026-07-14 v2 依老師規格改版：
        工作單＝補時長、顧客人數、指名店員扮演身分；需求崗位固定含外場人員，
@@ -3529,7 +3537,7 @@ loadRooms();
       "📣【茶談百緣 · 出勤工作單】",
       `日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
       `入席：${g(/期望入席：([^\n]+)/) || "未填"}｜時長：${dur}`,
-      `顧客：${server}｜${cid}（共 ${guestN} 位）`,
+      `顧客：${server}｜${cid}（共 ${guestN} 位${sexList.length ? "；性別：" + sexList.join("、") : ""}）`,  /* ★ 2026-07-15：補性別彙整 */
       "指名：" + (isNamed ? withRoles : "隨緣（不指名）"),
       "包廂：" + g(/――― 包廂 ―――\n　?([^\n]+)/),
       "餐點：\n" + dishesBlock,

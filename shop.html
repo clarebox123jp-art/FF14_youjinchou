@@ -492,11 +492,14 @@
           <input type="text" id="odRoleCustom" maxlength="30" placeholder="自訂店員身分（選填，例：占星術士）" />
         </div>
 
-        <!-- ★ 2026-07-13：顧客扮演身分改為依同行人數逐位輸入（顧客甲/乙/丙/丁，JS 渲染） -->
+        <!-- ★ 2026-07-13：顧客扮演身分改為依同行人數逐位輸入（顧客甲/乙/丙/丁，JS 渲染）
+             ★ 2026-07-14：依老師指示取消此欄位（JS 端 renderGuestRoles/guestRoleLines
+               具防呆會自動略過，明細不再出現「顧客X 扮演身分」行）；欲恢復把下方註解拆掉即可
         <div class="order-field">
           <span class="order-label">顧客扮演身分（選填，逐位輸入——想以什麼身分入席？）</span>
           <div id="odGuestRoles"></div>
         </div>
+        -->
         </div><!-- /odGlobalPrefs -->
 
         <!-- ★ 2026-07-13：善良風俗提醒併入「預約注意事項」（原獨立框移除，避免重複） -->

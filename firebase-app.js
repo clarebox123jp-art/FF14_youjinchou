@@ -2214,9 +2214,9 @@ function renderMenu() {
       const card = document.createElement("article");
       card.className = "menu-card photo";   // 帶 .photo → 吃相簿燈箱
       if (m.hidden === true) card.classList.add("is-hidden");   /* ★ 2026-07-14：管理員視角的隱藏標示 */
-      /* ★ 2026-07-14：圖片左上角標籤（corner 欄位＝「熱銷中」或「缺貨中」，二擇一或不標；
-         管理員在卡片上的 🔥／⛔ 小鈕一鍵勾選／取消） */
-      const cornerHtml = m.corner
+      /* ★ 2026-07-14 v6：照片包進 .menu-photo-col（−/＋ 點餐鍵掛在圖下方）；
+         角標顯示章＝訪客限定（管理員改看圖上的 🔥/⛔ 懸浮開關，亮＝套用中，避免重疊） */
+      const cornerHtml = (!isAdmin && m.corner)
         ? `<span class="menu-corner ${m.corner === "缺貨中" ? "is-out" : "is-hot"}">${esc(m.corner)}</span>` : "";
       const pic = m.photo
         ? `<div class="photo-frame">${cornerHtml}<img src="${m.photo}" alt="${esc(m.name)}" loading="lazy" /></div>`
@@ -2235,13 +2235,14 @@ function renderMenu() {
         return i > -1 ? d.slice(0, i) + `<span class="menu-reco">` + d.slice(i) + `</span>` : d;
       })();
       card.innerHTML = `
-        ${pic}
+        <div class="menu-photo-col">${pic}</div>
         <div class="menu-body">
           <div class="menu-head">
             <span class="menu-name">${esc(m.name)}</span>
             ${priceHtml}
           </div>
-          ${m.tag ? `<div class="menu-tag">${esc(m.tag)}</div>` : ""}
+          ${""/* ★ 2026-07-14 v6：依老師指定移除等級星級列；舊寫法備查：
+               ${m.tag ? `<div class="menu-tag">...</div>` : ""} （tag 欄位資料仍保留在資料庫） */}
           <p class="menu-desc">${descHtml}</p>
           ${m.badge ? `<div class="menu-badge${m.badge === "已售完" ? " is-soldout" : ""}">${esc(m.badge)}</div>` : ""}
           ${isAdmin && m.hidden === true ? `<div class="menu-hidden-tag">🙈 已隱藏（訪客看不到）</div>` : ""}
@@ -2270,7 +2271,7 @@ function renderMenu() {
         };
       }
       if (isAdmin && id) {
-        /* ★ 2026-07-14：圖片角標快速開關——點亮＝套用、再點＝取消；兩者互斥（同存 corner 欄位） */
+        /* ★ 2026-07-14 v6：圖片角標快速開關改懸浮在圖片左上角（點亮＝套用、再點＝取消；兩者互斥） */
         const tagBar = document.createElement("div");
         tagBar.className = "menu-corner-admin";
         tagBar.innerHTML = `<button type="button" data-c="熱銷中" class="${m.corner === "熱銷中" ? "on" : ""}">🔥 熱銷中</button>
@@ -2282,7 +2283,7 @@ function renderMenu() {
             loadMenu();
           } catch (e) { alert("❌ 角標切換失敗：" + (e.message || e)); }
         });
-        card.appendChild(tagBar);
+        card.querySelector(".photo-frame")?.appendChild(tagBar);
         const bar = document.createElement("div");
         bar.className = "admin-actions";
         /* ★ 2026-07-14：加入「隱藏／顯示」一鍵開關（寫 hidden 欄位）
@@ -2924,7 +2925,8 @@ loadRooms();
         '<button type="button" class="mo-btn" data-mo="-1" aria-label="減少">−</button>' +
         '<span class="mo-qty">' + (dishes.get(name)?.qty || 0) + "</span>" +
         '<button type="button" class="mo-btn" data-mo="1" aria-label="增加">＋</button>';
-      body.appendChild(bar);
+      /* ★ 2026-07-14 v6：−/＋ 點餐鍵改掛在圖片下方（.menu-photo-col）；找不到才退回文字欄 */
+      (card.querySelector(".menu-photo-col") || body).appendChild(bar);
     });
     updateTotals();
   }

@@ -2111,3 +2111,64 @@ img { -webkit-user-drag: none; user-select: none; }
   .menu-card { padding: 10px; gap: 0 12px; }
   .menu-card .photo-frame { flex-basis: 118px; width: 118px; }
 }
+
+/* ============================================================
+   ★ 2026-07-14 v6 檔尾疊加：餐單橫式卡修正版（依老師指定排版）
+   ------------------------------------------------------------
+   - 卡片高度以一張餐點圖為準（緊湊單列）
+   - 右欄：第一行＝名稱＋價格同列，第二行起＝Lv 星級、介紹、推薦文
+   - 🔥熱銷／⛔缺貨：懸浮於圖片左上角（訪客看章、管理員看發光開關）
+   - −/＋ 點餐鍵移到圖片正下方
+   - 覆寫上方 v5 版；搭配 firebase-app.js .menu-photo-col 結構
+   ============================================================ */
+.menu-card { align-items: flex-start; gap: 0 16px; }
+.menu-photo-col {
+  flex: 0 0 168px; width: 168px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.menu-card .photo-frame {
+  flex: none; width: 100%; aspect-ratio: 1 / 1;
+  align-self: auto; position: relative;
+}
+/* 第一行：名稱＋價格同列（覆寫稍早的上下兩行版） */
+.menu-card .menu-head {
+  display: flex; flex-wrap: wrap;
+  justify-content: space-between; align-items: baseline; gap: 4px 10px;
+}
+.menu-card .menu-head .menu-name { display: inline; }
+.menu-card .menu-head .menu-price { display: inline; margin-top: 0; }
+.menu-body { padding-top: 0; }
+/* ★ 依老師指定移除等級星級（JS 已停止渲染，此為保險；舊：margin-top:4px） */
+.menu-card .menu-tag { display: none; }
+.menu-card .menu-desc { margin-top: 8px; }
+/* 推薦文併回簡介同一段（覆寫 v3 的 display:block 獨立行；用全形空格＋✦ 銜接） */
+.menu-card .menu-reco { display: inline; margin-top: 0; }
+.menu-card .menu-reco::before { content: "　✦ "; opacity: .75; }
+/* −/＋ 點餐鍵：圖片正下方置中 */
+.menu-photo-col .menu-order {
+  margin: 0; justify-content: center; width: 100%;
+}
+/* 🔥/⛔ 管理開關：懸浮圖片左上角、直向小疊 */
+.menu-card .photo-frame .menu-corner-admin {
+  position: absolute; top: 8px; left: 8px; z-index: 3;
+  flex-direction: column; align-items: flex-start;
+  gap: 4px; margin: 0; flex-basis: auto;
+}
+.menu-card .photo-frame .menu-corner-admin button {
+  background: rgba(255, 251, 243, .92);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+  font-size: .72rem; padding: 2px 9px;
+}
+.menu-card .photo-frame .menu-corner-admin button.on {
+  background: var(--shu, #b3402a); color: #fff;
+  box-shadow: 0 2px 8px rgba(143, 47, 30, .5);
+}
+/* 管理員視角：左上角以「發光的開關鈕」代表現況，隱藏訪客用顯示章避免重疊 */
+.photo-frame:has(.menu-corner-admin) > .menu-corner { display: none; }
+/* 管理列（✎/🙈/✕）維持卡底靠右，不影響訪客卡高 */
+@media (max-width: 640px) {
+  .menu-photo-col { flex-basis: 124px; width: 124px; gap: 6px; }
+  .menu-card .menu-head .menu-name { font-size: 1rem; }
+  .menu-card .menu-desc { font-size: .78rem; }
+  .menu-photo-col .mo-btn { width: 26px; height: 26px; }
+}

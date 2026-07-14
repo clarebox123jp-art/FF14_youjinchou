@@ -1710,19 +1710,33 @@ async function loadStaff() {
   renderStaff();
 }
 
-/* ★ 2026-07-12：店員卡多張照片輪播（卡片內小輪播；燈箱另有左右切換） */
+/* ★ 2026-07-12：店員卡多張照片輪播（卡片內小輪播；燈箱另有左右切換）
+   ★ 2026-07-14：輪播切換時同步更新照片下方的「身分」說明（.staff-photo-cap，
+     讀各 img 的 data-cap）；指示點改為可點擊，點哪顆就切到哪張／哪個身分 */
 function startStaffCarousel(card) {
   const imgs = Array.from(card.querySelectorAll(".staff-photo img"));
   const dots = Array.from(card.querySelectorAll(".staff-dots .sd"));
+  const capEl = card.querySelector(".staff-photo-cap");
+  const setCap = (n) => {
+    if (!capEl) return;
+    const t = (imgs[n]?.dataset.cap || "").trim();
+    capEl.textContent = t;
+    capEl.hidden = !t;
+  };
   if (imgs.length < 2) return;
   let i = 0, timer = null;
   const go = (n) => {
     imgs[i].hidden = true; if (dots[i]) dots[i].classList.remove("on");
     i = (n + imgs.length) % imgs.length;
     imgs[i].hidden = false; if (dots[i]) dots[i].classList.add("on");
+    setCap(i);
   };
   const play = () => { timer = setInterval(() => go(i + 1), 3500); };
   const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  dots.forEach((d, n) => {
+    d.style.cursor = "pointer";
+    d.onclick = (e) => { e.stopPropagation(); stop(); go(n); play(); };
+  });
   card.addEventListener("mouseenter", stop);
   card.addEventListener("mouseleave", play);
   play();
@@ -1759,17 +1773,24 @@ function renderStaff() {
     card.className = "staff-card";
     // ★ 2026-07-12：照片改吃陣列 photos[]（可多張輪播）；相容舊的單張 photo 欄位
     const pics = (Array.isArray(s.photos) && s.photos.length) ? s.photos : (s.photo ? [s.photo] : []);
+    /* ★ 2026-07-14：每張照片可對應一個「身分」說明（photoCaps[]，與 photos[] 同索引；
+       輪播切到哪張，身分就同步顯示在照片下方；沒填的照片不顯示） */
+    const caps = Array.isArray(s.photoCaps) ? s.photoCaps : [];
     const inner = pics.length
-      ? pics.map((src, i) => `<img src="${src}" alt="${esc(s.name)} 的照片" loading="lazy"${i === 0 ? "" : ' hidden'} />`).join("")
+      ? pics.map((src, i) => `<img src="${src}" alt="${esc(s.name)} 的照片" loading="lazy" data-cap="${esc(caps[i] || "")}"${i === 0 ? "" : ' hidden'} />`).join("")
       : `<div class="noimg" aria-hidden="true"><span>印</span></div>`;
     const dots = pics.length > 1
       ? `<div class="staff-dots">${pics.map((_, i) => `<span class="sd${i === 0 ? " on" : ""}"></span>`).join("")}</div>` : "";
     // ★ 2026-07-12：角色設定（人設）——有填才顯示「看角色設定」
     const persona = (s.persona || "").trim();
     /* ★ 2026-07-14 v2：改橫式名冊——照片在左、文字包進 .staff-info 在右
-       （舊直式短冊版：photo 與各行文字同層平鋪，備查於 git 歷史） */
+       （舊直式短冊版：photo 與各行文字同層平鋪，備查於 git 歷史）
+       ★ 2026-07-14 v3：照片包進 .staff-photo-col，下方掛 .staff-photo-cap 身分說明（隨輪播同步） */
     card.innerHTML = `
-      <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${inner}${dots}</div>
+      <div class="staff-photo-col">
+        <div class="staff-photo" data-name="${esc(s.name)}" data-role="${esc(s.role)}">${inner}${dots}</div>
+        <p class="staff-photo-cap"${(caps[0] || "").trim() ? "" : " hidden"}>${esc(caps[0] || "")}</p>
+      </div>
       <div class="staff-info">
       <h3>${esc(s.name)}</h3>
       ${s.badge ? `<p class="staff-badge${s.available === false ? " is-off" : ""}">${esc(s.badge)}</p>` : ""}
@@ -1824,6 +1845,9 @@ function openStaffForm(id = null, s = {}) {
   closeStaffForm();
   // ★ 2026-07-12：照片改用陣列（多張輪播）；相容舊的單張 photo
   let photos = (Array.isArray(s.photos) && s.photos.length) ? s.photos.slice() : (s.photo ? [s.photo] : []);
+  /* ★ 2026-07-14：每張照片的「身分」說明（photoCaps 與 photos 同索引；
+     刪除／排序照片時一併同步搬動） */
+  let caps = photos.map((_, i) => (Array.isArray(s.photoCaps) ? s.photoCaps[i] : "") || "");
   const wrap = document.createElement("div");
   wrap.className = "admin-modal";
   wrap.id = "staffModal";
@@ -1844,7 +1868,7 @@ function openStaffForm(id = null, s = {}) {
       <label class="admin-check"><input id="sfAvail" type="checkbox" ${s.available === false ? "" : "checked"} /> 開放被指名（取消勾選＝顧客無法勾選此店員）</label>
       <label>角色設定・人設（可多行，選填；訪客點「看角色設定」展開）
         <textarea id="sfPersona" rows="4" placeholder="例：白銀鄉小店的帳簿主，總在櫃檯後細數著往來的緣分……">${esc(s.persona || "")}</textarea></label>
-      <label>照片（可多張，會在卡片上自動輪播）<input id="sfPhoto" type="file" accept="image/*" multiple /></label>
+      <label>照片（可多張，會在卡片上自動輪播；每張可在下方縮圖填「身分」，輪播到哪張就顯示哪個身分）<input id="sfPhoto" type="file" accept="image/*" multiple /></label>
       <div id="sfThumbs" class="sf-thumbs"></div>
       <label>排序（數字小的排前面）<input id="sfOrder" type="number" value="${Number.isFinite(s.order) ? s.order : (staffCache.length + 1)}" /></label>
       <p class="admin-hint" id="sfMsg"></p>
@@ -1865,23 +1889,32 @@ function openStaffForm(id = null, s = {}) {
               <button type="button" data-rm="${i}" title="刪除">✕</button>
               <button type="button" data-mv="${i}" data-dir="1" title="往後">▶</button>
             </div>
+            <input type="text" class="sf-cap" data-cap="${i}" maxlength="14" placeholder="身分（選填）" value="${esc(caps[i] || "")}" />
           </div>`).join("")
       : `<p class="admin-hint">目前沒有照片；選檔後會顯示縮圖。第一張為卡片預設封面。</p>`;
   };
   renderThumbs();
+  /* ★ 2026-07-14：身分輸入即時寫回 caps（重繪縮圖前先收齊，避免打到一半被洗掉） */
+  thumbs.addEventListener("input", (e) => {
+    if (e.target.dataset.cap !== undefined) caps[Number(e.target.dataset.cap)] = e.target.value;
+  });
   thumbs.addEventListener("click", (e) => {
     const rm = e.target.dataset.rm, mv = e.target.dataset.mv;
-    if (rm !== undefined) { photos.splice(Number(rm), 1); renderThumbs(); }
+    if (rm !== undefined) { photos.splice(Number(rm), 1); caps.splice(Number(rm), 1); renderThumbs(); }
     else if (mv !== undefined) {
       const i = Number(mv), j = i + Number(e.target.dataset.dir);
-      if (j >= 0 && j < photos.length) { [photos[i], photos[j]] = [photos[j], photos[i]]; renderThumbs(); }
+      if (j >= 0 && j < photos.length) {
+        [photos[i], photos[j]] = [photos[j], photos[i]];
+        [caps[i], caps[j]] = [caps[j], caps[i]];   /* ★ 2026-07-14：身分跟著照片一起搬 */
+        renderThumbs();
+      }
     }
   });
   document.getElementById("sfPhoto").onchange = async (e) => {
     const msg = document.getElementById("sfMsg");
     try {
       msg.textContent = "壓縮圖片中…";
-      for (const f of Array.from(e.target.files)) photos.push(await compressImage(f));
+      for (const f of Array.from(e.target.files)) { photos.push(await compressImage(f)); caps.push(""); }
       e.target.value = ""; msg.textContent = ""; renderThumbs();
     } catch (err) { msg.textContent = "❌ 圖片處理失敗：" + (err.message || err); }
   };
@@ -1902,6 +1935,7 @@ function openStaffForm(id = null, s = {}) {
         available: document.getElementById("sfAvail").checked,          // ★ 可否被指名
         persona:  document.getElementById("sfPersona").value.trim(),   // ★ 人設
         photos:   photos,                                              // ★ 多張照片
+        photoCaps: photos.map((_, i) => (caps[i] || "").trim()),       // ★ 2026-07-14：各照片對應身分
         photo:    photos[0] || "",                                     // 相容舊欄位（封面）
         order:    Number(document.getElementById("sfOrder").value) || 0,
       };

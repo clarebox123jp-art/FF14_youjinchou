@@ -1998,3 +1998,39 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 .menu-corner-admin button.on { background: var(--shu, #b3402a); border-color: var(--shu, #b3402a); color: #fff; }
 .menu-corner-admin button:hover { border-color: var(--shu, #b3402a); }
+
+/* ============================================================
+   ★ 2026-07-14 v3 檔尾疊加：店員照片放大＋輪播「身分」說明
+   ------------------------------------------------------------
+   - 照片欄由 148px 放大至 190px（外包 .staff-photo-col，照片吃滿欄寬）
+   - 照片下方 .staff-photo-cap＝目前這張照片對應的「身分」，
+     輪播切換即同步更新；點指示點可手動切換身分
+   - 編輯表單縮圖下的 .sf-cap＝逐張填寫身分的小輸入框
+   ============================================================ */
+.staff-card .staff-photo-col {
+  flex: 0 0 190px; width: 190px; align-self: flex-start;
+}
+.staff-card .staff-photo-col .staff-photo {
+  width: 100%; flex: none; align-self: auto;
+  aspect-ratio: 3 / 5;
+}
+.staff-photo-cap {
+  margin-top: 6px; text-align: center;
+  font-size: .78rem; letter-spacing: .06em; line-height: 1.5;
+  color: var(--shu, #b3402a);
+  background: rgba(179, 64, 42, .07);
+  border: 1px solid rgba(179, 64, 42, .3);
+  border-radius: 999px; padding: 3px 8px;
+  overflow-wrap: anywhere;
+}
+.staff-photo-cap::before { content: "🎭 "; }
+.staff-dots .sd { width: 8px; height: 8px; }   /* 指示點可點擊 → 放大好按 */
+.sf-thumb .sf-cap {
+  width: 62px; margin-top: 3px; padding: 2px 4px;
+  border: 1px solid rgba(120, 115, 108, .45); border-radius: 6px;
+  font-size: .7rem; font-family: inherit; background: rgba(255, 255, 255, .85);
+}
+@media (max-width: 640px) {
+  .staff-card .staff-photo-col { flex-basis: 128px; width: 128px; }
+  .staff-photo-cap { font-size: .72rem; }
+}

@@ -2026,8 +2026,18 @@ img { -webkit-user-drag: none; user-select: none; }
 .staff-photo-cap::before { content: "🎭 "; }
 .staff-dots .sd { width: 8px; height: 8px; }   /* 指示點可點擊 → 放大好按 */
 /* ★ 2026-07-14 修正：第 984 行 .staff-photo img { display:block } 蓋過了 hidden 屬性，
-   導致輪播只換文字不換照片（每張都在顯示、被相框裁掉只見第一張）——補回隱藏優先權 */
-.staff-photo img[hidden] { display: none; }
+   導致輪播只換文字不換照片（每張都在顯示、被相框裁掉只見第一張）
+   ★ 2026-07-14 v4：由「補 display:none」升級為交叉淡入淡出——
+   所有照片絕對定位疊在相框裡，hidden＝淡出（opacity 0）而非瞬間消失
+   （舊修正備查：.staff-photo img[hidden] { display: none; }） */
+.staff-photo img { position: absolute; inset: 0; }
+.staff-photo img[hidden] { display: block; opacity: 0; pointer-events: none; }
+.staff-photo img:not([hidden]) { opacity: 1; }
+.staff-photo img { transition: opacity .8s ease, transform .35s ease; }
+/* 身分籤文字換字也淡入淡出（JS 先降透明、換完字再升回） */
+.staff-photo-cap { transition: opacity .3s ease; }
+/* 燈箱 ‹ › 換圖淡入淡出（相簿／餐點／包廂共用燈箱＋店員名簿燈箱皆吃這條） */
+.lightbox .lb-img { transition: opacity .35s ease; }
 .sf-thumb .sf-cap {
   width: 62px; margin-top: 3px; padding: 2px 4px;
   border: 1px solid rgba(120, 115, 108, .45); border-radius: 6px;

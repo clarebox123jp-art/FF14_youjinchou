@@ -1717,11 +1717,16 @@ function startStaffCarousel(card) {
   const imgs = Array.from(card.querySelectorAll(".staff-photo img"));
   const dots = Array.from(card.querySelectorAll(".staff-dots .sd"));
   const capEl = card.querySelector(".staff-photo-cap");
+  /* ★ 2026-07-14 v4：換字也淡入淡出——先降透明、換完字再升回（照片本身的交叉淡化在 CSS） */
   const setCap = (n) => {
     if (!capEl) return;
     const t = (imgs[n]?.dataset.cap || "").trim();
-    capEl.textContent = t;
-    capEl.hidden = !t;
+    capEl.style.opacity = "0";
+    setTimeout(() => {
+      capEl.textContent = t;
+      capEl.hidden = !t;
+      capEl.style.opacity = "1";
+    }, 280);
   };
   if (imgs.length < 2) return;
   let i = 0, timer = null;

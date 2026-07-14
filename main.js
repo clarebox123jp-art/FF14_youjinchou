@@ -214,8 +214,11 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     const fig = group[idx];
     const img = fig.querySelector(".photo-frame img");
     const capEl = fig.querySelector(".cap");
+    /* ★ 2026-07-14：換圖淡入淡出——先降透明，下一影格再升回（transition 在 style.css .lb-img） */
+    lbImg.style.opacity = "0";
     lbImg.src = img.currentSrc || img.src;
     lbImg.alt = img.alt || "";
+    requestAnimationFrame(() => requestAnimationFrame(() => { lbImg.style.opacity = "1"; }));
     lbCap.textContent = capEl ? capEl.textContent : "";
     const multi = group.length > 1;
     prevBtn.style.display = multi ? "" : "none";   // 只有一張就藏箭頭
@@ -470,7 +473,16 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     const live = () => Array.from(box.querySelectorAll("img:not([data-yjc-hidden])"));
     const fig  = box.closest("figure");
     const cap  = fig ? fig.querySelector("figcaption") : null;
-    const setCap = (im) => { if (cap && im) cap.textContent = im.dataset.cap || im.alt || ""; };
+    if (cap) cap.style.transition = "opacity .3s ease";   /* ★ 2026-07-14：圖說換字淡入淡出 */
+    const setCap = (im) => {
+      if (!cap || !im) return;
+      cap.style.opacity = "0";
+      setTimeout(function () {
+        cap.textContent = im.dataset.cap || im.alt || "";
+        cap.style.opacity = "1";
+      }, 280);
+    };
+    /* 舊版備查：const setCap = (im) => { if (cap && im) cap.textContent = im.dataset.cap || im.alt || ""; }; */
     let list = live();
     if (!list.length) return;
     list[0].classList.add("is-on");
@@ -601,8 +613,11 @@ document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     idx = (i + group.length) % group.length;    // 循環
     const box = group[idx];
     const img = visibleImg(box);
+    /* ★ 2026-07-14：換圖淡入淡出（同相簿燈箱；transition 在 style.css .lb-img） */
+    lbImg.style.opacity = "0";
     lbImg.src = img.currentSrc || img.src;
     lbImg.alt = img.alt || "";
+    requestAnimationFrame(() => requestAnimationFrame(() => { lbImg.style.opacity = "1"; }));
     const name = box.dataset.name || "";
     const role = box.dataset.role || "";
     lbCap.textContent = name && role ? name + " · " + role : name;

@@ -2828,7 +2828,9 @@ loadRooms();
       const p = staffProfile(n);
       const st = prefOf(n);
       const roleOpts  = p.roles.trim() === "皆可" ? ROLES.filter((r) => r !== "隨緣") : splitOpts(p.roles);
-      const styleOpts = p.styles.trim() === "皆可" ? STYLES.filter((r) => r !== "隨緣") : splitOpts(p.styles);
+      /* ★ 2026-07-14：依老師指示取消「服務風格」選擇——風格改為卡片 💬 固定顯示，
+         顧客不再指定、不再加價（prefState.style 恆為「隨緣」，加價與明細端自然歸零）。
+         舊寫法備查：const styleOpts = p.styles.trim() === "皆可" ? STYLES.filter(...) : splitOpts(p.styles); */
       const chips = (opts, group, cur) => ['<label class="order-chip"><input type="radio" name="' + group + '" value="隨緣"' + (cur === "隨緣" ? " checked" : "") + ' />隨緣</label>']
         .concat(opts.map((o) => `<label class="order-chip"><input type="radio" name="${group}" value="${esc(o)}"${cur === o ? " checked" : ""} />${esc(o)}</label>`)).join("");
       const box = document.createElement("div");
@@ -2837,14 +2839,11 @@ loadRooms();
         ${p.gender ? `<p class="staff-pref-gender">扮演性別呈現：${esc(p.gender)}</p>` : ""}
         <div class="staff-pref-row"><em>身分<small>＋${fmt(FEE.role)}/單</small></em><div class="order-choice-wrap">${
           roleOpts.length ? chips(roleOpts, "odRoleS" + i, st.role)
-          : '<span class="order-note">尚未登記可接身分</span>'}</div></div>
-        <div class="staff-pref-row"><em>風格<small>＋${fmt(FEE.persona)}/單</small></em><div class="order-choice-wrap">${
-          styleOpts.length ? chips(styleOpts, "odStyleS" + i, st.style)
-          : '<span class="order-note">尚未登記可接風格</span>'}</div></div>`;
+          : '<span class="order-note">尚未登記可接身分</span>'}</div></div>`;
+      /* 舊「風格」列備查：
+        <div class="staff-pref-row"><em>風格<small>＋FEE.persona/單</small></em>…styleOpts chips…</div> */
       box.querySelectorAll('input[name="odRoleS' + i + '"]').forEach((el) =>
         el.addEventListener("change", () => { prefOf(n).role = el.value; updateTotals(); }));
-      box.querySelectorAll('input[name="odStyleS' + i + '"]').forEach((el) =>
-        el.addEventListener("change", () => { prefOf(n).style = el.value; updateTotals(); }));
       host.appendChild(box);
     });
   }
@@ -2864,7 +2863,7 @@ loadRooms();
     const el = document.getElementById("odRoleShow");
     if (!el) return;
     el.textContent = pickedStaff.size
-      ? collectStaffPrefs().map((p) => `${p.name}：扮演＝${p.role}／風格＝${p.style}`).join("　・　")
+      ? collectStaffPrefs().map((p) => `${p.name}：扮演＝${p.role}`).join("　・　")   /* ★ 2026-07-14：風格改固定顯示，不再列於此（舊：／風格＝${p.style}） */
       : "隨緣";
   }
   /* 顧客逐位扮演身分（人數變動時重建、保留已填內容） */
@@ -3098,9 +3097,11 @@ loadRooms();
         Array.from(pickedStaff).forEach((n) => rows.push(`<div class="osl-row"><span>指名 ${esc(n)}</span><b>${fmt(feeOf(n))} × ${c.units} 時段</b></div>`));
         const sp2 = collectStaffPrefs();
         const roleSel  = sp2.filter((p) => p.role  !== "隨緣");
-        const styleSel = sp2.filter((p) => p.style !== "隨緣");
         if (roleSel.length) rows.push(`<label class="osl-row osl-ck"><span><input type="checkbox" id="odCkRole" checked /> 指定職業身分（${roleSel.map((p) => `${esc(p.name)}＝${esc(p.role)}`).join("、")}）</span><b>＋${fmt(FEE.role)}</b></label>`);
-        if (styleSel.length) rows.push(`<label class="osl-row osl-ck"><span><input type="checkbox" id="odCkStyle" checked /> 指定個性風格（${styleSel.map((p) => `${esc(p.name)}＝${esc(p.style)}`).join("、")}）</span><b>＋${fmt(FEE.persona)}</b></label>`);
+        /* ★ 2026-07-14：服務風格選擇已取消（風格改卡片固定顯示、不加價）——
+           styleSel 列與 odCkStyle 取消勾選處理一併移除，備查：
+           const styleSel = sp2.filter((p) => p.style !== "隨緣");
+           if (styleSel.length) rows.push(`…odCkStyle… 指定個性風格 …＋FEE.persona…`); */
       } else {
         rows.push(`<div class="osl-row"><span>隨緣坐檯（店家安排 1 位）</span><b>${fmt(FEE.seat)} × ${c.units} 時段</b></div>`);
       }
@@ -3111,11 +3112,7 @@ loadRooms();
         Array.from(pickedStaff).forEach((n) => { prefOf(n).role = "隨緣"; });
         renderStaffPrefs(); updateTotals();
       };
-      const ckS = document.getElementById("odCkStyle");
-      if (ckS) ckS.onchange = () => {
-        Array.from(pickedStaff).forEach((n) => { prefOf(n).style = "隨緣"; });
-        renderStaffPrefs(); updateTotals();
-      };
+      /* ★ 2026-07-14：odCkStyle 處理已隨風格選擇一併移除（備查於 git 歷史） */
     }
     document.getElementById("odDishTotal").textContent    = fmt(c.dishTotal);
     document.getElementById("odServiceTotal").textContent = fmt(c.serviceTotal);
@@ -3146,7 +3143,8 @@ loadRooms();
       if (bindFmt[k] && Number.isFinite(FEE[k])) el.textContent = bindFmt[k](FEE[k]);
     });
     document.getElementById("odFeeNote").textContent =
-      `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價）・RP加價：勾選個性 ＋${fmt(FEE.persona)}、勾選職業身分 ＋${fmt(FEE.role)}（兩者皆選＝重度RP）・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
+      `（測試價目：不指名(隨緣) ${fmt(FEE.seat)}／時段・指名基本 ${fmt(FEE.named)}／位／時段（店員可個別定價）・RP加價：勾選職業身分 ＋${fmt(FEE.role)}／每單・加拍 ${fmt(FEE.photo)}／張・單點低消 ${fmt(FEE.min)}；包廂費依各包廂標示。管理員可按「💰 價目設定」線上修正）`;
+      /* ★ 2026-07-14 舊文備查：…RP加價：勾選個性 ＋persona、勾選職業身分 ＋role（兩者皆選＝重度RP）… */
   }
   writeFeeNote();
 
@@ -3192,21 +3190,24 @@ loadRooms();
     lines.push("　服務模式：" + pick("odMode"));
     if (c.namedN) {
       collectStaffPrefs().forEach((p) => {
-        lines.push(`　${p.tag} ${p.name}：扮演＝${p.role}／風格＝${p.style}` + (p.gender ? `（性別呈現：${p.gender}）` : ""));
+        /* ★ 2026-07-14：風格改固定顯示不再列（舊：…／風格＝${p.style}…） */
+        lines.push(`　${p.tag} ${p.name}：扮演＝${p.role}` + (p.gender ? `（性別呈現：${p.gender}）` : ""));
       });
       if (roleCustom) lines.push(`　自訂身分備註：${roleCustom}`);
     } else {
       /* ★ 2026-07-13 v2：全域「身分 chips／性別 radio／風格 chips」欄位移除——
          隨緣時僅列顧客自行輸入，未填一律「隨緣」。舊三行備查：
-         扮演身分偏好 pick("odRole")＋roleCustom／性別偏好 pick("odGender")／風格偏好 pick("odStyle")＋styleCustom */
+         扮演身分偏好 pick("odRole")＋roleCustom／性別偏好 pick("odGender")／風格偏好 pick("odStyle")＋styleCustom
+         ★ 2026-07-14：「風格偏好：隨緣」一行移除（顧客不再指定服務風格） */
       lines.push("　扮演身分偏好：" + (roleCustom || "隨緣"));
       lines.push("　性別偏好：隨緣");
-      lines.push("　風格偏好：隨緣");
     }
     guestRoleLines().forEach((g) => lines.push(`　顧客${g.tag} 扮演身分：${g.v}`));
     { const warns = c.namedN ? dutyWarnings() : [];
       if (warns.length) lines.push(`　※ 排班提示：${warns.join("、")} 於該日期／場次未排班（送單後由店家確認代班或改期）`); }
-    if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.rpFee ? `（個性${c.styleOn ? " ＋" + fmt(FEE.persona) : "—"}／職業身分${c.roleOn ? " ＋" + fmt(FEE.role) : "—"}）` : "（基本，無加價）"));
+    /* ★ 2026-07-14：風格（個性）加價已取消，RP 程度僅由職業身分決定（舊行備查：
+       （個性${styleOn?…}／職業身分${roleOn?…}）） */
+    if (c.namedN) lines.push(`　RP 程度：${c.rpLevel}` + (c.rpFee ? `（職業身分 ＋${fmt(FEE.role)}）` : "（基本，無加價）"));
     lines.push(`　拍照：含 1 張專業拍照` + (extraPhotos ? `＋加拍 ${extraPhotos} 張` : ""));
     lines.push("　店員服務小計：" + fmt(c.serviceTotal));
     lines.push("――― 包廂 ―――");

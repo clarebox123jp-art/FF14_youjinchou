@@ -182,7 +182,7 @@
         </div>
         <div class="price-row">
           <span class="price-name">陪聊 · 指名基本／每位店員／每時段</span>
-          <p class="price-val" data-fee-bind="named">100,000 Gil</p>
+          <p class="price-val" data-fee-bind="named">200,000 Gil</p><!-- ★ 2026-07-14：100,000→200,000（活綁定，以 💰 設定為準） -->
         </div>
         <!-- ★ 2026-07-14：服務風格改為卡片固定顯示、顧客不再指定，此加價列停用（欲恢復拆註解）
         <div class="price-row">
@@ -190,10 +190,12 @@
           <p class="price-val" data-fee-bind="persona">＋50,000 Gil</p>
         </div>
         -->
+        <!-- ★ 2026-07-14：扮演身分加價取消——勾選的扮演角色已包含在指名費中，此列停用（欲恢復拆註解）
         <div class="price-row">
           <span class="price-name">RP 加價 · 指定職業扮演身分／每單</span>
           <p class="price-val" data-fee-bind="role">＋100,000 Gil</p>
         </div>
+        -->
         <div class="price-row">
           <span class="price-name">專業拍照 · 每次消費含 1 張；額外加拍／每張</span>
           <p class="price-val" data-fee-bind="photo">＋10,000 Gil</p><!-- ★ 2026-07-13 依老師線上調整 5,000→10,000，並改為 💰 設定即時綁定 -->
@@ -545,7 +547,7 @@
        - data-fee-photo＝加拍每張；data-min-order＝單點料理低消
        ============================================================ -->
   <section class="section" id="orderSection"
-           data-fee-seat="50000" data-fee-named="100000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="10000" data-min-order="5000">
+           data-fee-seat="50000" data-fee-named="200000" data-fee-persona="50000" data-fee-role="100000" data-fee-photo="10000" data-min-order="5000"><!-- ★ 2026-07-14：指名基本 100000→200000（💰 線上設定會覆蓋此預設，記得同步改） -->
     <div class="wrap">
       <!-- ★ 2026-07-13：本區標題與測試警語已搬到「帳目・計費方式」下方與開始預約按鈕合併 -->
 

@@ -2820,6 +2820,47 @@ loadRooms();
       if (!duty) card.classList.add("is-offduty");
     });
   }
+  /* ★ 2026-07-15 v10：場次可選性——顧客選好「消費日期」後，逐一檢查四個場次：
+     依週循環班表，該日該場次若「沒有任何一位（開放指名的）店員有班」→ 整顆場次籤轉灰、
+     radio 停用不可勾，並補一行朱紅小字「該時段無店員可出勤」。
+     只計入「有匯入班表」的店員（班表空＝該員未登記出勤，不算涵蓋）；
+     全站尚無任何班表時不做判斷（避免功能未啟用就整排灰掉）。
+     若原本勾著的場次因換日期變成不可選 → 自動取消勾選並重算金額／已預訂標示。 */
+  function refreshSessionAvail() {
+    const box = document.getElementById("custSessionBox");
+    if (!box) return;
+    const chips = box.querySelectorAll(".order-chip");
+    const reset = () => chips.forEach((lb) => {
+      lb.classList.remove("is-nostaff");
+      const inp = lb.querySelector("input"); if (inp) inp.disabled = false;
+      lb.querySelector(".sess-nostaff-note")?.remove();
+    });
+    const dv = document.getElementById("custDate")?.value;
+    const rows = staffRows().filter((s) => s.available !== false && Array.isArray(s.shifts) && s.shifts.length);
+    if (!dv || !rows.length) { reset(); return; }
+    const w = "日一二三四五六"[new Date(dv + "T00:00:00").getDay()];
+    let cleared = false;
+    chips.forEach((lb) => {
+      const inp = lb.querySelector('input[name="custSession"]');
+      if (!inp) return;
+      const sess = inp.value.slice(0, 2);                      /* 比對邏輯與 staffOnDuty 一致 */
+      const anyOn = rows.some((s) => s.shifts.some((sh) => {
+        const [days, s2] = String(sh).split("|");
+        return days && days.includes(w) && sess.startsWith(String(s2).slice(0, 2));
+      }));
+      lb.classList.toggle("is-nostaff", !anyOn);
+      inp.disabled = !anyOn;
+      lb.querySelector(".sess-nostaff-note")?.remove();
+      if (!anyOn) {
+        if (inp.checked) { inp.checked = false; cleared = true; }
+        const note = document.createElement("small");
+        note.className = "sess-nostaff-note";
+        note.textContent = "該時段無店員可出勤";
+        lb.appendChild(note);
+      }
+    });
+    if (cleared) { updateTotals(); loadBooked(); }
+  }
   /* ★ 2026-07-14 v9：已預訂查詢——選好日期＋場次後抓「訂單回應 CSV」（OCFG.csvUrl），
      逐單比對消費日期＋場次，收集被指名的店員 → refreshDutyBadges 標「該時段已被預訂」。
      同一組日期場次結果快取，不重複抓；未設 csvUrl 或抓取失敗則安靜略過（僅少了此標示）。
@@ -3056,6 +3097,7 @@ loadRooms();
     });
     renderStaffPrefs();   /* ★ 卡片重建後，把已勾店員的選項面板掛回去 */
     refreshDutyBadges();  /* ★ 2026-07-14：卡片重建後，出勤標示也要掛回去 */
+    refreshSessionAvail(); /* ★ 2026-07-15 v10：班表資料到齊後，場次灰化也重算一次 */
     updateTotals();
   }
 
@@ -3191,6 +3233,8 @@ loadRooms();
      ★ 2026-07-14 v9：改走 loadBooked——先查該時段已被預訂的店員，再重繪標示 */
   document.getElementById("custDate")?.addEventListener("change", loadBooked);
   document.getElementById("custSessionBox")?.addEventListener("change", loadBooked);
+  /* ★ 2026-07-15 v10：日期一變動，四個場次的「可選／灰化」也即時重算 */
+  document.getElementById("custDate")?.addEventListener("change", refreshSessionAvail);
   /* ★ 勾個性／職業身分（自訂輸入）→ 即時重算
      ★ 2026-07-13 v2：odRoleBox/odStyleBox/odStyleCustom 已移除，監聽一併除役——
      舊三行備查：odRoleBox.change／odStyleBox.change／odStyleCustom.input → updateTotals */
@@ -3496,23 +3540,34 @@ loadRooms();
     /* 顧客回覆用的餐點一行版（去掉縮排與價格，只留品項×數量） */
     const dishesLine = dishesBlock.split("\n")
       .map((s) => s.trim().split("　")[0]).filter((s) => s && !s.startsWith("（")).join("、");
+    /* ★ 2026-07-15 v3：自動計算 10% 訂金（由總計字串取數字；算不出來就顯示「總消費的一成」） */
+    const totalNum = Number(String(total).replace(/[^\d]/g, ""));
+    const depositTxt = Number.isFinite(totalNum) && totalNum > 0
+      ? Math.ceil(totalNum * 0.1).toLocaleString("zh-Hant-TW") + " Gil（總消費的一成）"
+      : "總消費金額的一成（10%）";
     const reply = [
       "【茶談百緣】預約確認通知",
-      `${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，已收到您的預約單！`,
+      `${cid || "貴客"} 樣${server ? `（${server}）` : ""}您好，感謝您的預約——我們已經收到您的訂單了！`,
       ts ? `接單時間：${ts}` : "",
       `消費日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
       `入席人數：${guestN} 位｜時長：${dur}`,
       dishesLine ? `餐點：${dishesLine}` : "",
       "指名：" + (isNamed ? `共 ${namedNames.length} 位——${withRoles}` : "隨緣（不指名）"),
       total ? `預估總消費：${total}` : "",
+      "――――――――――",
+      "💰 訂金小約定：",
+      `為了替您留住喜歡的店員與座位，請於來店場次 3 天前，先向店長（會長：小克瑞爾／DC 密語 ke7235）預付訂金 ${depositTxt}。`,
+      "訂金入帳後，服務便正式啟動，我們會依您的心意安排店員值勤；這筆訂金將全數折抵當日消費，敬請放心。",
+      "若因本店因素需要異動或取消，訂金會全數退還，也不會留下任何取消紀錄。",
+      "――――――――――",
       "小提醒：",
       "・最晚請於消費日 3 天前完成預訂",
       "・同行點餐與指名將合併於同一張帳單",
       "如需修改或取消：Discord 密語會長 ke7235，或於遊戲中聯絡任意幹部",
       "幹部名簿：https://clarebox123jp-art.github.io/FF14_youjinchou/members.html",
-      "期待您的光臨 🍵",
+      "茶已備好，靜候您如約而來 🍵",
     ].filter(Boolean).join("\n");
-    /* ★ 舊版工作單／回覆文備查於 git 歷史（2026-07-13 版） */
+    /* ★ 舊版工作單／回覆文備查於 git 歷史（2026-07-13／07-14 版；07-15 v3 加訂金段＋潤飾口吻） */
     const t = document.createElement("div");
     t.id = "odToast"; t.className = "od-toast";
     t.innerHTML = `<b>🔔 收到新預約單！</b><span>${esc(cid ? `${server}｜${cid}` : "點開查看內容")}</span>

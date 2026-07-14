@@ -2793,13 +2793,24 @@ loadRooms();
      維持「不擋單」原則：無班仍可勾選指名，明細照舊寫入 ⚠ 提醒 */
   function refreshDutyBadges() {
     document.querySelectorAll("#staffList .staff-card").forEach((card) => {
-      card.classList.remove("is-offduty");
+      card.classList.remove("is-offduty", "is-booked");
       card.querySelectorAll(".staff-duty-tag").forEach((el) => el.remove());
       const name = card.querySelector("h3")?.textContent?.trim();
       if (!name) return;
+      const photo = card.querySelector(".staff-photo");
+      /* ★ 2026-07-14 v9：該時段已被其他顧客預訂 → 整牌轉灰＋醒目標示（優先於排班標示） */
+      if (bookedKey && bookedSet.has(name)) {
+        if (photo) {
+          const tag = document.createElement("span");
+          tag.className = "staff-duty-tag is-booked";
+          tag.textContent = "該時段已被預訂";
+          photo.appendChild(tag);
+        }
+        card.classList.add("is-booked");
+        return;
+      }
       const duty = staffOnDuty(name);
       if (duty === null) return;
-      const photo = card.querySelector(".staff-photo");
       if (photo) {
         const tag = document.createElement("span");
         tag.className = "staff-duty-tag " + (duty ? "is-on" : "is-off");
@@ -2808,6 +2819,45 @@ loadRooms();
       }
       if (!duty) card.classList.add("is-offduty");
     });
+  }
+  /* ★ 2026-07-14 v9：已預訂查詢——選好日期＋場次後抓「訂單回應 CSV」（OCFG.csvUrl），
+     逐單比對消費日期＋場次，收集被指名的店員 → refreshDutyBadges 標「該時段已被預訂」。
+     同一組日期場次結果快取，不重複抓；未設 csvUrl 或抓取失敗則安靜略過（僅少了此標示）。
+     注意：回應表沒有取消狀態，被取消的訂單仍會佔位——之後如需精準可改接預約總表狀態欄。 */
+  let bookedKey = "", bookedSet = new Set(), bookedBusy = false;
+  function normDate(t) {
+    const m = String(t || "").match(/(\d{4})[\/\-年](\d{1,2})[\/\-月]?(\d{1,2})/);
+    return m ? `${m[1]}/${Number(m[2])}/${Number(m[3])}` : "";
+  }
+  function selSlot() {
+    const d = document.getElementById("custDate")?.value || "";
+    const s = document.querySelector("#custSessionBox input:checked")?.value || "";
+    return d && s ? { d, s: s.trim().split(/\s/)[0] } : null;
+  }
+  async function loadBooked() {
+    const slot = selSlot();
+    const key = slot ? slot.d + "|" + slot.s : "";
+    if (key === bookedKey) { refreshDutyBadges(); return; }
+    bookedKey = key; bookedSet = new Set();
+    if (!slot || !OCFG.csvUrl) { refreshDutyBadges(); return; }
+    if (bookedBusy) return;
+    bookedBusy = true;
+    try {
+      const res = await fetch(OCFG.csvUrl, { cache: "no-store" });
+      const rows = parseCSV(await res.text());
+      const wantD = normDate(slot.d);
+      rows.slice(1).forEach((r) => {
+        const t = r.join("\n");
+        if (normDate((t.match(/消費日期：([^\n（]+)/) || [, ""])[1]) !== wantD) return;
+        const sess = ((t.match(/場次：([^\n]+)/) || [, ""])[1] || "").trim().split(/\s/)[0];
+        if (!sess || sess !== slot.s) return;
+        const named = ((t.match(/指名：([^\n]+)/) || [, ""])[1] || "").trim();
+        if (!named || named.startsWith("隨緣")) return;
+        named.replace(/（[^）]*）/g, "").split("、").forEach((n) => { n = n.trim(); if (n) bookedSet.add(n); });
+      });
+    } catch (_) {}
+    bookedBusy = false;
+    refreshDutyBadges();
   }
 
   function staffProfile(name) {
@@ -3137,9 +3187,10 @@ loadRooms();
   document.getElementById("odGuests").onchange = updateTotals;
   document.getElementById("custDate")?.addEventListener("change", updateTotals);
   document.getElementById("custSessionBox")?.addEventListener("change", updateTotals);
-  /* ★ 2026-07-14：日期／場次一變動，名簿出勤標示即時重算 */
-  document.getElementById("custDate")?.addEventListener("change", refreshDutyBadges);
-  document.getElementById("custSessionBox")?.addEventListener("change", refreshDutyBadges);
+  /* ★ 2026-07-14：日期／場次一變動，名簿出勤標示即時重算
+     ★ 2026-07-14 v9：改走 loadBooked——先查該時段已被預訂的店員，再重繪標示 */
+  document.getElementById("custDate")?.addEventListener("change", loadBooked);
+  document.getElementById("custSessionBox")?.addEventListener("change", loadBooked);
   /* ★ 勾個性／職業身分（自訂輸入）→ 即時重算
      ★ 2026-07-13 v2：odRoleBox/odStyleBox/odStyleCustom 已移除，監聽一併除役——
      舊三行備查：odRoleBox.change／odStyleBox.change／odStyleCustom.input → updateTotals */

@@ -1969,6 +1969,14 @@ img { -webkit-user-drag: none; user-select: none; }
 /* —— ★ 2026-07-14：名簿即時出勤標示（選好日期＋場次後生效）—— */
 .staff-card.is-offduty { filter: grayscale(1); opacity: .72; }
 .staff-card.is-offduty:hover { opacity: .88; }
+/* ★ 2026-07-14 v9：該時段已被其他顧客預訂——同樣轉灰＋墨色醒目標 */
+.staff-card.is-booked { filter: grayscale(1); opacity: .72; }
+.staff-card.is-booked:hover { opacity: .88; }
+.staff-duty-tag.is-booked {
+  background: rgba(64, 60, 54, .94);
+  border: 1px solid rgba(255, 255, 255, .5);
+  font-size: .8rem;
+}
 .staff-duty-tag {
   position: absolute; top: 8px; left: 8px; z-index: 3;
   padding: 3px 10px; border-radius: 999px;

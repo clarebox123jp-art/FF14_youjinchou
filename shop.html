@@ -474,9 +474,16 @@
         <div class="order-field">
           <span class="order-label">服務模式</span>
           <div class="order-choice-wrap">
-            <label class="order-chip"><input type="radio" name="odMode" value="店員1對1服務" checked />店員 1 對 1</label>
-            <label class="order-chip"><input type="radio" name="odMode" value="店員1對多服務（同行共享）" />1 對多（同行共享）</label>
-            <label class="order-chip"><input type="radio" name="odMode" value="多位店員對1服務" />多對 1（眾星拱月）</label>
+            <!-- ★ 2026-07-15 二改：服務模式改四選一（老師新規格）——
+                 1對1不加價／1對多每多1位+25,000／多對1與多對多依指名費加價（重新開放）。
+                 舊三選一備查：
+                 <label class="order-chip"><input type="radio" name="odMode" value="店員1對1服務" checked />店員 1 對 1</label>
+                 <label class="order-chip"><input type="radio" name="odMode" value="店員1對多服務（同行共享）" />1 對多（同行共享）</label>
+                 <label class="order-chip is-nostaff"><input type="radio" name="odMode" value="多位店員對1服務" disabled />多對 1（眾星拱月）｜暫不開放</label> -->
+            <label class="order-chip"><input type="radio" name="odMode" value="1店員對1顧客" checked />1 店員對 1 顧客（不加價）</label>
+            <label class="order-chip"><input type="radio" name="odMode" value="1店員對多顧客" />1 店員對多顧客（每多 1 位＋25,000 Gil）</label>
+            <label class="order-chip"><input type="radio" name="odMode" value="多店員對1顧客" />多店員對 1 顧客（依指名費加價）</label>
+            <label class="order-chip"><input type="radio" name="odMode" value="多店員對多顧客" />多店員對多顧客（依指名費加價）</label>
           </div>
         </div>
 
@@ -679,23 +686,27 @@
         <p class="eyebrow">VIP · 貴賓優待</p>
         <h2>貴賓優待</h2>
         <!-- 舊預設（2026-07-11 同步）：凡於帳中留下足跡的旅人，皆會記在友人帳上；緣分越深，回禮越厚。 -->
-        <p class="body" style="margin-top:14px">凡於帳中留下足跡的旅人，皆會記在友人帳上；緣分越深，回禮越厚。※目前禮遇僅供參考，待工作人員討論確定後會再發布更新版本，我們將以網站公告最新版優待為主。</p>
+        <!-- 舊預設（2026-07-15 四次同步）：…我們將以網站公告最新版優待為主。（無均攤句） -->
+        <p class="body" style="margin-top:14px">凡於帳中留下足跡的旅人，皆會記在友人帳上；緣分越深，回禮越厚。※目前禮遇僅供參考，待工作人員討論確定後會再發布更新版本，我們將以網站公告最新版優待為主。<span style="color: rgb(192, 67, 58);">蒞臨顧客同行人數為2人以上時，該筆累積消費金額以「每位顧客均攤」後計算。</span></p>
       </div>
       <div class="job-grid reveal">
         <article class="job">
           <div class="num">壹</div>
           <h3>結緣 · 白帳</h3>
-          <p>累積消費 100,000 Gil——每次光臨贈特調飲品一杯，並優先收到節慶活動通知。</p>
+          <!-- 舊預設（2026-07-15 四次同步）：累積消費 100,000 Gil——每次光臨贈特調飲品一杯，並優先收到節慶活動通知。 -->
+          <p>累積消費 200,000 Gil——每月一次指定包廂半價優惠，並優先收到節慶活動通知。</p>
         </article>
         <article class="job">
           <div class="num">貳</div>
           <h3>深緣 · 朱帳</h3>
-          <p>累積消費 300,000 Gil——享白帳全部禮遇，拍照服務免費一次，餐點常年九折。</p>
+          <!-- 舊預設（2026-07-15 四次同步）：累積消費 300,000 Gil——享白帳全部禮遇，拍照服務免費一次，餐點常年九折。 -->
+          <p>累積消費 500,000 Gil——享白帳全部禮遇，額外拍照服務免費一次，每次光顧附贈特調飲品一杯。</p>
         </article>
         <article class="job">
           <div class="num">參</div>
           <h3>摯緣 · 金帳</h3>
-          <p>累積消費 600,000 Gil——享朱帳全部禮遇，包廂與 NPC 陪聊時段優先預留，並登上貴客榜。</p>
+          <!-- 舊預設（2026-07-15 四次同步）：累積消費 600,000 Gil——享朱帳全部禮遇，包廂與 NPC 陪聊時段優先預留，並登上貴客榜。 -->
+          <p>累積消費 1,000,000 Gil——享朱帳全部禮遇，包廂費常年八折，與NPC 陪聊時段優先預留，並登上貴客榜。</p>
         </article>
       </div>
     </div>

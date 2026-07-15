@@ -3168,9 +3168,15 @@ loadRooms();
     const rpLevel = namedN === 0 ? "" : (styleOn && roleOn ? "重" : (styleOn || roleOn ? "中" : "輕"));
     const photoFee = extraPhotos * FEE.photo;
     const roomFee = pickedRoom ? pickedRoom.price : 0;
-    return { dishTotal, serviceTotal: staffFee + rpFee + photoFee, roomFee,
-             grand: dishTotal + staffFee + rpFee + photoFee + roomFee,
-             units, namedN, styleOn, roleOn, rpFee, rpLevel };
+    /* ★ 2026-07-15 二改：服務模式加價——「1店員對多顧客」每多 1 位同行 +25,000 Gil；
+       多店員模式不另加價（費用已含在各指名店員的指名費裡）。 */
+    const MODE_CO_FEE = 25000;
+    const modeVal = document.querySelector('input[name="odMode"]:checked')?.value || "";
+    const guests = Number(document.getElementById("odGuests")?.value) || 1;
+    const modeFee = modeVal === "1店員對多顧客" ? Math.max(0, guests - 1) * MODE_CO_FEE : 0;
+    return { dishTotal, serviceTotal: staffFee + rpFee + photoFee + modeFee, roomFee,
+             grand: dishTotal + staffFee + rpFee + photoFee + modeFee + roomFee,
+             units, namedN, styleOn, roleOn, rpFee, rpLevel, modeFee, guests };
   }
   function updateTotals() {
     const c = calc();
@@ -3228,6 +3234,8 @@ loadRooms();
   }
   document.getElementById("odDuration").onchange = updateTotals;
   document.getElementById("odGuests").onchange = updateTotals;
+  /* ★ 2026-07-15 二改：服務模式切換即時重算（1對多有加價） */
+  document.querySelectorAll('input[name="odMode"]').forEach((r) => r.addEventListener("change", updateTotals));
   document.getElementById("custDate")?.addEventListener("change", updateTotals);
   document.getElementById("custSessionBox")?.addEventListener("change", updateTotals);
   /* ★ 2026-07-14：日期／場次一變動，名簿出勤標示即時重算
@@ -3299,7 +3307,7 @@ loadRooms();
     lines.push("――― 店員服務 ―――");
     lines.push(`　時長：${dur} 分鐘（${c.units} 個時段）`);
     lines.push("　指名：" + (c.namedN ? Array.from(pickedStaff).map((n) => `${n}（${fmt(feeOf(n))}/時段）`).join("、") : "隨緣（不指名價）"));
-    lines.push("　服務模式：" + pick("odMode"));
+    lines.push("　服務模式：" + pick("odMode") + (c.modeFee ? `（同行加收 ${fmt(c.modeFee)}＝25,000 × ${c.guests - 1} 位）` : ""));  /* ★ 2026-07-15 二改：列出 1對多 加價 */
     if (c.namedN) {
       collectStaffPrefs().forEach((p) => {
         /* ★ 2026-07-14：風格改固定顯示不再列（舊：…／風格＝${p.style}…） */
@@ -3404,7 +3412,9 @@ loadRooms();
       const H = rows[hi].map((c) => String(c));
       const iId = H.findIndex((h) => h.includes("顧客角色ID"));
       const iSt = H.findIndex((h) => h.includes("狀態"));
-      const iAmt = H.findIndex((h) => h.includes("金額"));
+      /* ★ 2026-07-15：新版預約總表有多個含「金額」的欄——優先取「均分金額」（貴賓累積規則），找不到再退回第一個「金額」欄 */
+      const iAmtSplit = H.findIndex((h) => h.includes("均分金額"));
+      const iAmt = iAmtSplit >= 0 ? iAmtSplit : H.findIndex((h) => h.includes("金額"));
       const agg = new Map();
       for (const r of rows.slice(hi + 1)) {
         const id = String(r[iId] || "").trim();
@@ -3520,7 +3530,36 @@ loadRooms();
     if (cur.length > 1 || cur[0]) rows.push(cur);
     return rows.filter((r) => r.some((c) => c.trim()));
   }
-  function notifyToast(orderText, ts) {
+  /* ★ 2026-07-15 v4：貴賓等級（白帳/朱帳/金帳）——與網頁「貴賓優待」卡片同步；
+     門檻改版時請一併更新此表。累積值取自貴客榜 CSV（狀態=已完成、依顧客角色ID彙總）。 */
+  const VIP_TIERS = [
+    { name: "金帳", min: 1000000, perk: "享朱帳全部禮遇，包廂費常年八折、與 NPC 陪聊時段優先預留，並登上貴客榜" },
+    { name: "朱帳", min: 500000,  perk: "享白帳全部禮遇，額外拍照服務免費一次、每次光顧附贈特調飲品一杯" },
+    { name: "白帳", min: 200000,  perk: "每月一次指定包廂半價優惠，並優先收到節慶活動通知" },
+  ];
+  const tierOf = (sum) => VIP_TIERS.find((t) => sum >= t.min) || null;
+  async function fetchVipSum(cid) {
+    if (!OCFG.vipCsvUrl || !cid) return null;
+    try {
+      const rows = parseCSV(await (await fetch(OCFG.vipCsvUrl, { cache: "no-store" })).text());
+      const hi = rows.findIndex((r) => r.some((c) => String(c).includes("顧客角色ID")));
+      if (hi < 0) return null;
+      const H = rows[hi].map((c) => String(c));
+      const iId = H.findIndex((h) => h.includes("顧客角色ID"));
+      const iSt = H.findIndex((h) => h.includes("狀態"));
+      /* ★ 2026-07-15：新版預約總表有多個含「金額」的欄——優先取「均分金額」（貴賓累積規則），找不到再退回第一個「金額」欄 */
+      const iAmtSplit = H.findIndex((h) => h.includes("均分金額"));
+      const iAmt = iAmtSplit >= 0 ? iAmtSplit : H.findIndex((h) => h.includes("金額"));
+      let sum = 0;
+      for (const r of rows.slice(hi + 1)) {
+        if (String(r[iId] || "").trim() !== cid) continue;
+        if (!String(r[iSt] || "").trim().startsWith("已完成")) continue;
+        sum += iAmt >= 0 ? (parseInt(String(r[iAmt]).replace(/[^\d]/g, ""), 10) || 0) : 0;
+      }
+      return sum;
+    } catch { return null; }
+  }
+  async function notifyToast(orderText, ts) {
     document.getElementById("odToast")?.remove();
     const m = orderText.match(/顧客：([^｜\n]+)｜([^\n]+)/);
     /* ★ 2026-07-15：顧客行尾多了「（性別）」——擷取 ID 時剝掉，回覆抬頭才不會帶括號 */
@@ -3551,6 +3590,35 @@ loadRooms();
       : `隨緣 1 位（自由認領）`;
     const dishesBlock = (orderText.match(/――― 料理 ―――\n([\s\S]+?)\n　料理小計/) || [, "（見明細）"])[1];
     const total = g(/――― 總計：([^ ―]+)/);
+    /* ★ 2026-07-15 v4：貴賓等級查詢＋自動升級判定（totalNum 由回覆段上移共用）
+       同行 2 位以上＝本單金額「每位顧客均攤」後計入累積（與貴賓優待頁面規則一致）。 */
+    const totalNum = Number(String(total).replace(/[^\d]/g, ""));
+    const gN = Math.max(1, parseInt(guestN, 10) || 1);
+    const fmtG = (n) => n.toLocaleString("zh-Hant-TW") + " Gil";
+    let vipWorkLines = [], vipReplyLines = [];
+    if (Number.isFinite(totalNum) && totalNum > 0) {
+      const prevSum = await fetchVipSum(cid);
+      if (prevSum !== null) {
+        const share = gN >= 2 ? Math.floor(totalNum / gN) : totalNum;
+        const newSum = prevSum + share;
+        const pT = tierOf(prevSum), nT = tierOf(newSum);
+        const nextT = [...VIP_TIERS].reverse().find((t) => newSum < t.min);
+        vipWorkLines = [
+          `貴賓等級：${pT ? pT.name + "貴客" : "一般貴客"}（既有累積 ${fmtG(prevSum)}；本單${gN >= 2 ? "均攤" : ""}入帳 +${fmtG(share)}）`,
+          ...(nT && nT !== pT ? [`⭐ 本單完成入帳後升級 → ${nT.name}貴客！請幹部同步更新該顧客禮遇。`] : []),
+        ];
+        vipReplyLines = [
+          "――――――――――",
+          "🏮 友人帳・緣分積累：",
+          `您目前的累積消費為 ${fmtG(prevSum)}，本單完成後約為 ${fmtG(newSum)}${gN >= 2 ? "（同行 2 位以上，依每位顧客均攤計入）" : ""}。`,
+          nT && nT !== pT
+            ? `恭喜您！本單完成入帳後，您將升為「${nT.name}貴客」——${nT.perk}。往後每次光臨，皆可安心享用這份禮遇。`
+            : (nextT
+                ? `您現為「${pT ? pT.name + "貴客" : "一般貴客"}」；距離「${nextT.name}貴客」還差 ${fmtG(nextT.min - newSum)}——每一次光臨，都會記在友人帳上。`
+                : "您已是本店最高等級的「金帳貴客」，感謝您與本店的深厚情誼。"),
+        ];
+      }
+    }
     const workOrder = [
       "📣【茶談百緣 · 出勤工作單】",
       `日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
@@ -3561,13 +3629,13 @@ loadRooms();
       "餐點：\n" + dishesBlock,
       `需求崗位：外場人員、NPC陪聊店員（${npcLine}）、備餐、攝影師`,
       "預估營收：" + total,
+      ...vipWorkLines,   /* ★ 2026-07-15 v4：貴賓等級與升級提示 */
       "可出勤的店員請在下方回覆 ✋",
     ].join("\n");
     /* 顧客回覆用的餐點一行版（去掉縮排與價格，只留品項×數量） */
     const dishesLine = dishesBlock.split("\n")
       .map((s) => s.trim().split("　")[0]).filter((s) => s && !s.startsWith("（")).join("、");
-    /* ★ 2026-07-15 v3：自動計算 10% 訂金（由總計字串取數字；算不出來就顯示「總消費的一成」） */
-    const totalNum = Number(String(total).replace(/[^\d]/g, ""));
+    /* ★ 2026-07-15 v3：自動計算 10% 訂金（totalNum 已於上方貴賓段計算共用） */
     const depositTxt = Number.isFinite(totalNum) && totalNum > 0
       ? Math.ceil(totalNum * 0.1).toLocaleString("zh-Hant-TW") + " Gil（總消費的一成）"
       : "總消費金額的一成（10%）";
@@ -3586,6 +3654,7 @@ loadRooms();
       "訂金入帳後，服務便正式啟動，我們會依您的心意安排店員值勤；這筆訂金將全數折抵當日消費，敬請放心。",
       "若因本店因素需要異動或取消，訂金會全數退還，也不會留下任何取消紀錄。",
       "惟若預約成功卻無故未到，已收的 10% 訂金將不予退還——用以補償店家已為這張訂單投入的時間、金錢與人力，還請您見諒與配合。",
+      ...vipReplyLines,   /* ★ 2026-07-15 v4：友人帳緣分積累（貴賓等級／升級恭賀） */
       "――――――――――",
       "小提醒：",
       "・最晚請於消費日 3 天前完成預訂",

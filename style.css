@@ -2340,3 +2340,98 @@ img { -webkit-user-drag: none; user-select: none; }
   font-size: .8rem;
   margin-top: 6px;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   ★ 疊加區 v10（2026-07-16）：members.html 公會階級・職掌表
+   ‧ 一行一階級：左＝階級名（色籤）、右＝職務說明
+   ‧ 拓界司底下三枚虛線圓章＝職缺（等待應徵）；補人時在 HTML 加 is-filled
+   ════════════════════════════════════════════════════════════════ */
+.rank-table{
+  margin-top: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-2);
+  box-shadow: 0 6px 22px rgba(44,38,32,.08);
+}
+.rank-row{
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--line);
+}
+.rank-row:first-child{ border-top: none; }
+.rank-name{
+  flex: 0 0 172px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.08rem;
+  letter-spacing: .14em;
+  text-align: center;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.rank-name::before{           /* 左緣一道細色條＝該階級的色籤 */
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: currentColor;
+  opacity: .85;
+}
+.rank-duty{
+  flex: 1 1 0;
+  padding: 14px 18px;
+  color: var(--ink);
+  font-size: .94rem;
+  line-height: 1.8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+/* ── 各階級色籤（沉穩和風色，對應老師表格的黃/藍/紫/橘/粉/桃/灰）── */
+.rk-master { color:#8a6414; background:rgba(230,195,80,.22); } /* 帳簿主：金 */
+.rk-vice   { color:#96702a; background:rgba(230,195,80,.12); } /* 左右侍帳：淡金 */
+.rk-photo  { color:#2f4b6e; background:rgba(47,75,110,.12);  } /* 留影司：藍 */
+.rk-mirror { color:#5f4b86; background:rgba(122,106,158,.14);} /* 鏡花司：紫 */
+.rk-pioneer{ color:#a4551c; background:rgba(198,122,59,.16); } /* 拓界司：柿 */
+.rk-yuen   { color:#a4586b; background:rgba(217,138,153,.16);} /* 友緣人：櫻 */
+.rk-oiran  { color:#b13a86; background:rgba(208,97,158,.16); } /* 花魁：桃 */
+.rk-newbie { color:#5c564d; background:rgba(44,38,32,.08);   } /* 新人契：墨灰 */
+/* ── 拓界司職缺圓章 ── */
+.rank-vacancy{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vac-slot{
+  border: 1.5px dashed #c67a3b;
+  color: #a4551c;
+  background: rgba(198,122,59,.07);
+  border-radius: 999px;
+  padding: 3px 14px;
+  font-size: .82rem;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+.vac-slot.is-filled{          /* 補上人後：實線＋不再是「等待應徵」樣式 */
+  border-style: solid;
+  background: rgba(198,122,59,.14);
+  font-weight: 700;
+}
+/* ── 手機：階級名改直向堆疊在說明上方 ── */
+@media (max-width: 640px){
+  .rank-row{ flex-direction: column; }
+  .rank-name{
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    border-right: none;
+    border-bottom: 1px dashed var(--line);
+  }
+  .rank-name::before{ width: 100%; height: 3px; bottom: auto; }
+}

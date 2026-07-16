@@ -130,6 +130,79 @@
     </div>
   </section>
 
+  <!-- ============================================================
+       ★ 公會階級・職掌（2026-07-16 新增：依老師提供的階級表製作）
+       ‧ 想改職掌文字：直接改下面 .rank-duty 內文（或線上點字編輯）
+       ‧ 拓界司補人：把一個 <span class="vac-slot">…</span> 整行
+         換成 <span class="vac-slot is-filled">名字</span> 即可
+       ‧ 樣式在 style.css 檔尾「v10 疊加區」
+       ============================================================ -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="reveal" style="text-align:center">
+        <p class="eyebrow">Ranks</p>
+        <h2 style="font-size:clamp(1.7rem,4.5vw,2.4rem)">公會階級・職掌</h2>
+        <p class="body" style="margin:14px auto 0">帳上每一枚名字，各司其緣、各安其位。</p>
+      </div>
+
+      <div class="rank-table"><!-- ★ 2026-07-16：改為可由 CSV 匯入的動態容器，依鐵則移除 reveal -->
+
+        <div class="rank-row">
+          <div class="rank-name rk-master"><span>帳簿主</span></div>
+          <div class="rank-duty">公會長。掌握「友人帳」的核心，負責公會的資金運用、最終決策、大型外交與方向確立。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-vice"><span>左侍帳－陽</span></div>
+          <div class="rank-duty">外勤副會長。協助帳簿主管理外勤事務，負責協助各部門運作、隊伍組織與新人招募審批。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-vice"><span>右侍帳－陰</span></div>
+          <div class="rank-duty">內勤副會長。協助帳簿主管理內勤事務，負責工房、房屋裝潢等。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-photo"><span>留影司</span></div>
+          <div class="rank-duty">專門負責精心攝影和修圖，分享成果照片。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-mirror"><span>鏡花司</span></div>
+          <div class="rank-duty">專門負責公會房屋設計與美化佈置，同時支援艇匠司工作。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-pioneer"><span>拓界司</span></div>
+          <div class="rank-duty">
+            副本組織者。負責組織零式開荒、高難度副本、或帶領新手下本的領隊。
+            <div class="rank-vacancy">
+              <span class="vac-slot">虛位 壹 ─ 等待應徵</span>
+              <span class="vac-slot">虛位 貳 ─ 等待應徵</span>
+              <span class="vac-slot">虛位 參 ─ 等待應徵</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-yuen"><span>友緣人</span></div>
+          <div class="rank-duty">核心成員。已獲得公會信任、有一定貢獻的長期成員（加入公會至少 7 天）。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-oiran"><span>花魁</span></div>
+          <div class="rank-duty">公會吉祥物專用。</div>
+        </div>
+
+        <div class="rank-row">
+          <div class="rank-name rk-newbie"><span>新人契</span></div>
+          <div class="rank-duty">一般成員／新手。新加入未滿 7 天的成員，享受基礎福利，如 Buff 和低 Gil 傳送。</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">
     <div class="wrap">
       <span class="sigil">✦</span>

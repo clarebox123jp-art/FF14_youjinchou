@@ -259,6 +259,7 @@ function buildAdminBar(email) {
     ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button><button type="button" id="abStaffSync" class="admin-btn">⟳ 更新店員排班表</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
+    ${document.querySelector(".rank-table") ? '<button type="button" id="abRanks" class="admin-btn">⤓ 匯入職掌表</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abSheet" class="admin-btn">📊 排班表</button>' : ""}
     <button type="button" id="abBg" class="admin-btn">🖼 背景設定</button>
     <button type="button" id="abFonts" class="admin-btn">🖋 字型庫</button>
@@ -314,6 +315,9 @@ function buildAdminBar(email) {
   /* ★ 2026-07-11 新增：預約開關／內部排班表／背景設定（實作在第 10 段） */
   const bkBtn = document.getElementById("abBooking");
   if (bkBtn) bkBtn.onclick = openBookingConfig;
+  /* ★ 2026-07-16：匯入職掌表（實作在第 19 段，經 window.YJC_RANKS 呼叫） */
+  const rkBtn = document.getElementById("abRanks");
+  if (rkBtn) rkBtn.onclick = () => window.YJC_RANKS?.importRanks?.();
   const shBtn = document.getElementById("abSheet");   /* ★ 2026-07-13：排班表僅商店頁有，需防呆 */
   if (shBtn) shBtn.onclick = openSheetLink;
   document.getElementById("abBg").onclick = openBgConfig;
@@ -3899,4 +3903,110 @@ loadRooms();
   renderGuestRoles();
   renderStaffPrefs();
   updateTotals();
+})();
+
+/* ============================================================
+   19) ★ 2026-07-16：公會階級・職掌表（members.html .rank-table）
+   ------------------------------------------------------------
+   - 資料存 siteContent/config-ranks：{ url, rows:[{name,duty}], updated }
+   - 頁面載入：Firestore 有資料 → 依「階級名稱」逐列更新職掌文字
+     （拓界司底下的職缺圓章 .rank-vacancy 會原樣保留，不受匯入影響）
+   - 管理列「⤓ 匯入職掌表」：抓發布 CSV（兩欄：公會階級名稱, 職務說明）
+     → 存進 Firestore → 立即重畫。CSV 連結會記住，下次匯入預填上次的。
+   - 比對規則：名稱相同 → 只換文字；CSV 多出的新階級 → 追加一列（墨灰籤）；
+     HTML 有但 CSV 沒有的階級 → 整列隱藏（HTML 原始碼仍在，改回 CSV 就復原）
+   - ⚠ 職掌「說明文字」請一律走 CSV 匯入更新；匯入資料存在時，
+     線上點字對職掌文字的修改會被本段覆蓋（階級名稱與其他文字不受影響）
+   ============================================================ */
+(function rankTableModule() {
+  const rankTable = document.querySelector(".rank-table");
+  if (!rankTable) return;   // 只在幹部成員頁執行
+
+  /* 老師提供的職掌表發布 CSV（第一次匯入的預設值；之後以 Firestore 記住的為準） */
+  const RANKS_CSV_DEFAULT = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYOiKyZwqelU-3SSLEVJwCEEOa3aX9DloaJUrBKFTCNEgMFzODvuRbh3D5BHBkxbqtDJzsmQ6J7wZi/pub?output=csv";
+
+  /* 與第 18 段 parseCSV 同款的引號感知解析器（該函式在別的閉包內拿不到，這裡放一份） */
+  function parseRankCSV(t) {
+    const rows = []; let cur = [""], q = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) {
+        if (ch === '"') { if (t[i + 1] === '"') { cur[cur.length - 1] += '"'; i++; } else q = false; }
+        else cur[cur.length - 1] += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ",") cur.push("");
+      else if (ch === "\n") { rows.push(cur); cur = [""]; }
+      else if (ch !== "\r") cur[cur.length - 1] += ch;
+    }
+    if (cur.length > 1 || cur[0]) rows.push(cur);
+    return rows.filter((r) => r.some((c) => c.trim()));
+  }
+
+  /* 把資料套回表格：只動職掌文字，保留 .rank-vacancy 職缺圓章 */
+  function applyRanks(rows) {
+    const byName = new Map();
+    rankTable.querySelectorAll(".rank-row").forEach((el) => {
+      const n = el.querySelector(".rank-name span")?.textContent.trim();
+      if (n && !byName.has(n)) byName.set(n, el);
+    });
+    const seen = new Set();
+    for (const r of rows) {
+      let el = byName.get(r.name);
+      if (!el) {
+        /* CSV 出現 HTML 沒有的新階級 → 追加一列（墨灰籤；想指定色籤日後可在 HTML 補列） */
+        el = document.createElement("div");
+        el.className = "rank-row";
+        el.innerHTML = `<div class="rank-name rk-newbie"><span></span></div><div class="rank-duty"></div>`;
+        el.querySelector(".rank-name span").textContent = r.name;
+        rankTable.appendChild(el);
+        byName.set(r.name, el);
+      }
+      seen.add(r.name);
+      el.style.display = "";
+      const duty = el.querySelector(".rank-duty");
+      if (duty) {
+        const vac = duty.querySelector(".rank-vacancy");   // 先把職缺圓章抱出來
+        duty.textContent = r.duty;                          // 換文字（會清掉子元素）
+        if (vac) duty.appendChild(vac);                     // 再把職缺圓章放回去
+      }
+    }
+    /* HTML 有、CSV 沒有 → 隱藏（原始碼仍在，CSV 補回該列就會復原） */
+    byName.forEach((el, n) => { if (!seen.has(n)) el.style.display = "none"; });
+  }
+
+  /* 頁面載入：讀 Firestore 覆寫（沒有資料就維持 HTML 內建版；失敗安靜略過） */
+  (async () => {
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-ranks"));
+      const d = snap.exists() ? snap.data() : null;
+      if (d && Array.isArray(d.rows) && d.rows.length) applyRanks(d.rows);
+    } catch (e) { console.warn("職掌表讀取失敗（顯示內建版）：", e); }
+  })();
+
+  /* 管理員匯入：抓 CSV → 存 Firestore → 重畫 */
+  async function importRanks() {
+    if (!isAdmin) { alert("請先以管理員登入。"); return; }
+    let lastUrl = RANKS_CSV_DEFAULT;
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-ranks"));
+      if (snap.exists() && snap.data().url) lastUrl = snap.data().url;
+    } catch (_) {}
+    const url = prompt("職掌表 CSV 連結（兩欄：公會階級名稱、職務說明）：", lastUrl);
+    if (!url) return;
+    try {
+      const res = await fetch(url.trim(), { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      let data = parseRankCSV(await res.text())
+        .filter((r) => r.length >= 2 && r[0].trim() && r[1].trim())
+        .map((r) => ({ name: r[0].trim(), duty: r[1].trim() }));
+      if (data.length && /階級|名稱/.test(data[0].name)) data.shift();   // 跳過表頭列
+      if (!data.length) { alert("CSV 讀到的內容是空的，請確認連結與欄位。"); return; }
+      await setDoc(doc(db, "siteContent", "config-ranks"),
+        { url: url.trim(), rows: data, updated: Date.now() }, { merge: true });
+      applyRanks(data);
+      alert("✅ 職掌表已更新，共 " + data.length + " 個階級。所有訪客重新整理後即可看到。");
+    } catch (e) { alert("❌ 匯入失敗：" + (e.message || e)); }
+  }
+
+  window.YJC_RANKS = { importRanks };
 })();

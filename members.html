@@ -120,6 +120,29 @@
           </div>
         </article>
 
+        <!-- ★ 2026-07-16 新增：拓界司二位 -->
+        <article class="member">
+          <!-- 狂月巴的照片直接借用 RP 商店「店員名簿」的第一張
+               （firebase-app.js 第 20 段自動抓取；抓不到時維持「印」佔位圖） -->
+          <div class="noimg" data-staff-photo="狂月巴" data-alt="拓界司 狂月巴" aria-hidden="true"><span>印</span></div>
+          <div class="info">
+            <p class="role">拓界司 · Raid Leader</p>
+            <h3>狂月巴</h3>
+            <p>零式開荒與高難副本領隊，出團時段請洽公會頻道。</p>
+          </div>
+        </article>
+
+        <article class="member">
+          <!-- Yumu 照片暫留白（「印」佔位）。日後把截圖轉 webp、命名 officer-yumu.webp 放進 images/，
+               再把下面這個 div 換成：<img src="images/officer-yumu.webp" alt="拓界司 Yumu" loading="lazy" /> -->
+          <div class="noimg" aria-hidden="true"><span>印</span></div>
+          <div class="info">
+            <p class="role">拓界司 · Raid Leader</p>
+            <h3>Yumu</h3>
+            <p>高難度副本與帶練領隊，出團時段請洽公會頻道。</p>
+          </div>
+        </article>
+
       </div>
 
       <p class="body reveal" style="text-align:center;margin:44px auto 0">
@@ -177,8 +200,11 @@
           <div class="rank-duty">
             副本組織者。負責組織零式開荒、高難度副本、或帶領新手下本的領隊。
             <div class="rank-vacancy">
-              <span class="vac-slot">虛位 壹 ─ 等待應徵</span>
-              <span class="vac-slot">虛位 貳 ─ 等待應徵</span>
+              <!-- ★ 2026-07-16：壹、貳已補人（原文備查：
+                   <span class="vac-slot">虛位 壹 ─ 等待應徵</span>
+                   <span class="vac-slot">虛位 貳 ─ 等待應徵</span> ） -->
+              <span class="vac-slot is-filled">狂月巴</span>
+              <span class="vac-slot is-filled">Yumu</span>
               <span class="vac-slot">虛位 參 ─ 等待應徵</span>
             </div>
           </div>

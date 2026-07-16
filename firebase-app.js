@@ -4010,3 +4010,35 @@ loadRooms();
 
   window.YJC_RANKS = { importRanks };
 })();
+
+/* ============================================================
+   20) ★ 2026-07-16：幹部卡借用「店員名簿」照片
+   ------------------------------------------------------------
+   - 用法：在任何頁面放 <div class="noimg" data-staff-photo="店員名"
+     data-alt="替代文字"><span>印</span></div>
+   - 本段會抓 shopPartners（kind:"staff"）中同名店員的第一張照片，
+     把佔位 div 換成 <img>；找不到同名店員或沒照片就維持「印」佔位。
+   - 查詢照舊走「無 orderBy 整批抓＋客戶端過濾」，不觸發複合索引。
+   - 目前使用處：members.html 拓界司「狂月巴」的幹部卡。
+   ============================================================ */
+(function borrowStaffPhotos() {
+  const slots = document.querySelectorAll("[data-staff-photo]");
+  if (!slots.length) return;
+  (async () => {
+    try {
+      const snap = await getDocs(collection(db, "shopPartners"));
+      const staff = snap.docs.map((d) => d.data()).filter((x) => x.kind === "staff");
+      slots.forEach((el) => {
+        const name = (el.getAttribute("data-staff-photo") || "").trim();
+        const s = staff.find((x) => (x.name || "").trim() === name);
+        const src = s ? ((Array.isArray(s.photos) && s.photos[0]) || s.photo || "") : "";
+        if (!src) return;   // 沒照片 → 維持「印」佔位
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = el.getAttribute("data-alt") || (name + " 的照片");
+        img.loading = "lazy";
+        el.replaceWith(img);
+      });
+    } catch (e) { console.warn("借用店員照片失敗（維持佔位圖）：", e); }
+  })();
+})();

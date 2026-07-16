@@ -2435,3 +2435,35 @@ img { -webkit-user-drag: none; user-select: none; }
   }
   .rank-name::before{ width: 100%; height: 3px; bottom: auto; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   ★ 疊加區 v11（2026-07-16）：餐單改「一行左右兩道」
+   ‧ .menu-grid 由單欄 flex 改為兩欄 grid（覆寫上方 720px 單欄版）
+   ‧ 每張卡照片欄縮為 136px 讓文字有空間；≤900px 回到一行一道
+   ‧ 640px 以下維持既有手機規則（照片欄 124px）
+   ════════════════════════════════════════════════════════════════ */
+.menu-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: none;              /* 原 720px 寬限拿掉，交給外層 .wrap 控寬 */
+}
+.menu-card{ min-width: 0; }
+.menu-photo-col{ flex: 0 0 136px; width: 136px; }
+.menu-body{ flex: 1 1 0; min-width: 0; }   /* 文字吃照片旁剩餘寬度，避免被擠到下一行 */
+@media (max-width: 900px){      /* 窄幅：回到一行一道（原本的樣子） */
+  .menu-grid{
+    grid-template-columns: 1fr;
+    max-width: 720px;
+    margin-left: auto; margin-right: auto;
+  }
+  .menu-photo-col{ flex-basis: 168px; width: 168px; }
+}
+@media (max-width: 640px){      /* 手機：沿用既有 124px 照片欄 */
+  .menu-photo-col{ flex-basis: 124px; width: 124px; }
+}
+
+/* ★ 2026-07-16 v12：預約流程朱紅標籤內的 ※必填 改黃色
+   （.req-mark 原為朱紅字，放在 .order-step-flag 朱紅底上看不清；
+   只改標籤內的，表單白底處的必填標記維持紅字） */
+.order-step-flag .req-mark { color: #ffd75e; }

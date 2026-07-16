@@ -2118,6 +2118,10 @@ const DEFAULT_MENU = [
   { cat: "yoshoku", name: "近東蝦咖哩",     sub: "main",    tag: "Lv.90 ★★★",  desc: "近東香料燉出濃郁咖哩，鮮蝦飽滿、辛香繚繞。推薦給循著香料去旅行的你。",       price: "11,400 Gil", photo: "images/menu/prawn-curry.webp",    order: 34 },
   { cat: "yoshoku", name: "高級烤牛肉",     sub: "main",    tag: "Lv.80 ★★",   desc: "低溫慢烤鎖住肉汁，切面粉嫩如玫瑰綻放。推薦給無肉不歡、講究火候的你。",           price: "17,400 Gil", photo: "images/menu/roast-beef.webp",     order: 35 },
   { cat: "yoshoku", name: "賢人漢堡",       sub: "main",    tag: "Lv.90 ★★",   desc: "賢人也點頭的豪華層疊——多汁肉排與融化起司的智慧。推薦給豪邁大口、不拘小節的你。", price: "9,600 Gil", photo: "images/menu/archon-burger.webp",  order: 36 },
+/* ★ 2026-07-16 追加三道（老師提供實拍圖，已轉 webp 入 images/menu/） */
+  { cat: "wafu",    name: "散壽司",         sub: "main",    tag: "",            desc: "醋飯上鋪滿當令鮮魚、蛋絲與鮭魚卵，一碗盛開的海之花。推薦給想一次嚐遍大海恩惠的你。",   price: "5,000 Gil",  photo: "images/menu/chirashi-sushi.webp",  order: 37 },
+  { cat: "wafu",    name: "天婦羅拼盤",     sub: "main",    tag: "",            desc: "海老與時蔬裹上薄衣酥炸，金黃脆響、鮮甜不藏。推薦給喜歡剛起鍋那一聲酥脆的你。",         price: "5,000 Gil",  photo: "images/menu/tempura-platter.webp", order: 38 },
+  { cat: "wafu",    name: "鬼殼燒",         sub: "starter", tag: "",            desc: "螺殼為皿、直火焗烤，起司與海味在殼中翻騰。推薦給想豪邁掀開殼中驚喜的你。",             price: "2,500 Gil",  photo: "images/menu/onigara-yaki.webp",    order: 39 },
 ];
 
 let menuCache = [];

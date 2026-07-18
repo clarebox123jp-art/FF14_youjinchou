@@ -87,15 +87,27 @@ if (navToggle && navLinks) {
 /* ------------------------------------------------------------
    4) 滑動淡入：元素滑進畫面時才浮現
 ------------------------------------------------------------ */
+/* ★ 2026-07-16 修正：原本 threshold: 0.15（元素露出 15% 才淡入），
+   遇到「比螢幕高很多」的元素（例：手機版單欄的 .grid-members 幹部卡網格，
+   高度可達螢幕的 6 倍以上）時，可視比例永遠到不了 15% → 永不淡入 → 一片空白。
+   改為 threshold: 0 ＋ rootMargin 下緣內縮 10%，元素一進畫面就觸發，
+   淡入時機幾乎與原本相同，但不再受元素高度影響。
+   舊寫法備查：{ threshold: 0.15 } */
 const io = new IntersectionObserver(
   (entries) => {
     entries.forEach((e) => {
       if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
     });
   },
-  { threshold: 0.15 }
+  { threshold: 0, rootMargin: "0px 0px -10% 0px" }
 );
 document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+/* ★ 2026-07-16 保險絲：萬一有元素因故沒被觸發（例如載入時就整個蓋滿畫面），
+   3 秒後一律強制顯示，避免內容永遠隱形。 */
+setTimeout(() => {
+  document.querySelectorAll(".reveal:not(.in)").forEach((el) => el.classList.add("in"));
+}, 3000);
 
 /* ------------------------------------------------------------
    5) 首頁 Hero 飄落櫻花瓣（和風）

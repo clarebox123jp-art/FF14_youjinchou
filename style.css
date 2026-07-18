@@ -2467,3 +2467,11 @@ img { -webkit-user-drag: none; user-select: none; }
    （.req-mark 原為朱紅字，放在 .order-step-flag 朱紅底上看不清；
    只改標籤內的，表單白底處的必填標記維持紅字） */
 .order-step-flag .req-mark { color: #ffd75e; }
+
+/* ★ 2026-07-16 v13：手機版幹部卡字級微調（PC 不動）
+   ‧ 名稱 .member h3 放大、介紹 .member p 縮小
+   ‧ 只在 640px 以下生效；桌機維持 h3 1.28rem / p 0.95rem */
+@media (max-width: 640px){
+  .member h3 { font-size: 1.5rem; margin: 4px 0 6px; }
+  .member p  { font-size: 0.82rem; line-height: 1.65; }
+}

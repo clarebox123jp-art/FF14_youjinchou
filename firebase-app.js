@@ -3726,9 +3726,18 @@ loadRooms();
     try {
       const res = await fetch(OCFG.staffCsvUrl, { cache: "no-store" });
       const rows = parseCSV(await res.text());
-      const hi = rows.findIndex((r) => r.some((c) => String(c).includes("值班店員")));
-      if (hi < 0) throw new Error("CSV 裡找不到「值班店員」表頭——請確認發布的是排班登記表分頁。");
-      const H = rows[hi].map((c) => String(c));
+      /* ★ 2026-07-19 修正：表頭比對容錯——
+         ① 正規化日文異體字「値」→中文「值」（本工作簿慣用日文變體，如 核対/総表）；
+         ② 去除全形／半形空白與零寬字元，避免「值班 店員」之類對不上；
+         ③ 「值班店員（角色名）」等有後綴者，includes 仍可命中。 */
+      const normH = (s) => String(s || "").replace(/値/g, "值").replace(/[\s\u3000\u200b]/g, "");
+      const hi = rows.findIndex((r) => r.some((c) => normH(c).includes("值班店員")));
+      if (hi < 0) throw new Error(
+        "CSV 裡找不到「值班店員」表頭。\n" +
+        "① 請確認 🛎 設定裡貼的是「排班登記表」分頁發布的 CSV（把該網址直接貼進瀏覽器，看到的內容應該就是排班表本身；若跳出別頁就是 gid 指錯分頁）。\n" +
+        "② 剛改完表頭時，發布 CSV 可能有數分鐘快取延遲，稍候再試一次。"
+      );
+      const H = rows[hi].map((c) => normH(c));
       const col = (kw) => H.findIndex((h) => h.includes(kw));
       const iName = col("值班店員"), iAvail = col("可被指名"), iFee = col("指名費"),
             iRole = col("可接扮演身分"), iGen = col("性別"), iSty = col("可接服務風格"), iPh = col("可配合加拍"),

@@ -601,12 +601,12 @@ setTimeout(() => {
   lb.className = "lightbox staff-lb";
   lb.innerHTML =
     '<button class="lb-close" aria-label="關閉放大">×</button>' +
-    '<button class="lb-nav prev" aria-label="上一位">‹</button>' +
+    '<button class="lb-nav prev" aria-label="上一張">‹</button>' +
     '<div class="staff-lb-panel">' +
     '  <p class="staff-lb-title"></p>' +
     '  <div class="staff-lb-strip"></div>' +
     '</div>' +
-    '<button class="lb-nav next" aria-label="下一位">›</button>';
+    '<button class="lb-nav next" aria-label="下一張">›</button>';
   document.body.appendChild(lb);
 
   const panel = lb.querySelector(".staff-lb-panel");
@@ -615,14 +615,13 @@ setTimeout(() => {
   const prevBtn = lb.querySelector(".lb-nav.prev");
   const nextBtn = lb.querySelector(".lb-nav.next");
 
-  let group = [];   // 有照片的 .staff-photo 清單
-  let idx = 0;
-
-  function photoBoxes() {
-    return Array.from(document.querySelectorAll("#staffList .staff-photo"))
-      .filter((b) => b.querySelector("img"));   // 「印」佔位（無照片）不列入
-  }
-  /* 沒填簡介時的預設句（依照片序輪替；有身分者以身分開場） */
+  /* ★ 2026-07-19 v9 改版：放大面板改「一次一張・左右切換」（直式保留滿高、橫式做到與直式等高）
+     ‧ items ＝ 把每位店員的每一張照片攤平成一份清單，一次只渲染一張
+     ‧ ‹ ›／鍵盤 ←→／手機左右滑 ＝ 切換上一張／下一張照片（同一位看完自動接下一位）
+     ‧ 開啟時從被點的那張照片開始（比對 src；找不到退回該店員第一張）
+     ‧ 圖片高度由 CSS「.staff-lb-strip img」統一控制（直式橫式等高），此處只管內容與切換
+     ── 舊版 v8（橫列該店員最多 3 張、‹ › 切換上一位/下一位店員）已汰換；完整舊碼見 git 歷史 ── */
+  /* 沒填簡介時的預設句（依序輪替；有身分者以身分開場） */
   const FALLBACK = [
     "帳中一影，靜候有緣人入席。",
     "光影流轉，換個角度又是另一段緣。",
@@ -632,34 +631,57 @@ setTimeout(() => {
     return String(s || "").replace(/[&<>"']/g, (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
+  function photoBoxes() {
+    return Array.from(document.querySelectorAll("#staffList .staff-photo"))
+      .filter((b) => b.querySelector("img"));   // 「印」佔位（無照片）不列入
+  }
+  let items = [];   // 攤平後的每一張照片（跨店員）
+  let idx = 0;
+  function buildItems() {
+    const out = [];
+    photoBoxes().forEach(function (box) {
+      const name = box.dataset.name || "";
+      const role = box.dataset.role || "";
+      Array.from(box.querySelectorAll("img")).forEach(function (im) {
+        out.push({
+          src: im.currentSrc || im.src,
+          alt: im.alt || name,
+          cap: (im.dataset.cap || "").trim(),
+          desc: (im.dataset.desc || "").trim(),
+          name: name, role: role,
+        });
+      });
+    });
+    return out;
+  }
   function showAt(i) {
-    if (!group.length) return;
-    idx = (i + group.length) % group.length;    // 循環
-    const box = group[idx];
-    const name = box.dataset.name || "";
-    const role = box.dataset.role || "";
+    if (!items.length) return;
+    idx = (i + items.length) % items.length;    // 循環
+    const it = items[idx];
     /* ★ 淡入淡出：面板整塊先降透明，內容換好再升回（transition 在 style.css） */
     panel.style.opacity = "0";
-    const imgs = Array.from(box.querySelectorAll("img")).slice(0, 3);   // 最多 3 張
-    title.textContent = name && role ? name + " · " + role : name;
-    strip.innerHTML = imgs.map(function (im, n) {
-      const cap = (im.dataset.cap || "").trim();
-      const desc = (im.dataset.desc || "").trim()
-        || (cap ? "以「" + cap + "」之姿在帳中恭候——攀談一句，故事便開始。" : FALLBACK[n % FALLBACK.length]);
-      return '<figure>' +
-        '<img src="' + (im.currentSrc || im.src) + '" alt="' + escT(im.alt || name) + '" />' +
-        (cap ? '<p class="staff-lb-cap">🎭 ' + escT(cap) + '</p>' : '') +
-        '<p class="staff-lb-desc">' + escT(desc) + '</p>' +
-        '</figure>';
-    }).join("");
+    title.textContent = it.name && it.role ? it.name + " · " + it.role : it.name;
+    const desc = it.desc
+      || (it.cap ? "以「" + it.cap + "」之姿在帳中恭候——攀談一句，故事便開始。" : FALLBACK[idx % FALLBACK.length]);
+    strip.innerHTML = '<figure>' +
+      '<img src="' + it.src + '" alt="' + escT(it.alt) + '" />' +
+      (it.cap ? '<p class="staff-lb-cap">🎭 ' + escT(it.cap) + '</p>' : '') +
+      '<p class="staff-lb-desc">' + escT(desc) + '</p>' +
+      '</figure>';
     requestAnimationFrame(function () { requestAnimationFrame(function () { panel.style.opacity = "1"; }); });
-    const multi = group.length > 1;
+    const multi = items.length > 1;
     prevBtn.style.display = multi ? "" : "none";
     nextBtn.style.display = multi ? "" : "none";
   }
   function openFrom(box) {
-    group = photoBoxes();
-    const start = group.indexOf(box);
+    items = buildItems();
+    const vis = box.querySelector("img:not([hidden])") || box.querySelector("img");
+    const startSrc = vis ? (vis.currentSrc || vis.src) : "";
+    let start = items.findIndex(function (it) { return it.src === startSrc; });
+    if (start < 0) {
+      const nm = box.dataset.name || "";
+      start = items.findIndex(function (it) { return it.name === nm; });
+    }
     showAt(start < 0 ? 0 : start);
     lb.classList.add("open");
     document.body.style.overflow = "hidden";
@@ -668,7 +690,7 @@ setTimeout(() => {
     lb.classList.remove("open");
     document.body.style.overflow = "";
     strip.innerHTML = "";
-    group = [];
+    items = [];
   }
 
   document.addEventListener("click", function (e) {

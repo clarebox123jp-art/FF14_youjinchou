@@ -2492,3 +2492,52 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px){
   .staff-lb-strip img { max-height: 62vh; }
 }
+
+/* ═══ ★ 2026-07-19 v15 檔尾疊加：店員放大面板再加大、接近全螢幕（承 v14 不裁切） ═══
+   ‧ 反映老師回饋：v14 後圖片完整但偏小（單張卡在 figure max-width:460、兩側大量留白）
+   ‧ 面板放寬到 min(1280px,96vw)；figure 取消 460 上限並置中
+   ‧ 圖片改 width:auto + max-width:100% + max-height:86vh → 依原圖等比放到最大、不裁切、不留大邊框
+   ‧ 多張並排時仍由 flex 均分，不受影響；手機放大上限一併調高 */
+.staff-lb-panel { width: min(1280px, 96vw); }
+.staff-lb-strip figure { max-width: none; align-items: center; }
+.staff-lb-strip img {
+  width: auto; max-width: 100%;
+  height: auto; max-height: 86vh;
+}
+@media (max-width: 640px){
+  .staff-lb-strip img { max-height: 74vh; }
+}
+
+/* ═══ ★ 2026-07-19 v16 檔尾疊加：店員放大面板改「直向堆疊」，橫式也能放到最大 ═══
+   ‧ 反映老師回饋：左右並排時，橫式照片只分到半個面板寬 → 顯得又矮又小；直式因為夠高看起來才大
+   ‧ 改為每張一排、直向堆疊：橫式可撐滿面板寬（up to 1100px）、直式仍以 86vh 撐滿高，往下捲看下一張
+   ‧ 圖片沿用 width:auto + max-width:100% + max-height:86vh（等比放到最大、不裁切、無邊框）
+   ‧ 承 v14/v15；面板本身 overflow:auto 可捲動看完整組 */
+.staff-lb-strip { flex-direction: column; align-items: center; gap: 22px; }
+.staff-lb-strip figure {
+  flex: 0 0 auto; width: 100%;
+  max-width: min(1100px, 100%);
+  align-items: center;
+}
+.staff-lb-strip img { width: auto; max-width: 100%; height: auto; max-height: 86vh; }
+
+/* ═══ ★ 2026-07-19 v17 檔尾疊加：店員放大面板「一次一張・左右切換」＋橫式與直式等高 ═══
+   ‧ 反映老師需求：直式維持滿高、橫式做到與直式一樣高（於是橫式變寬）、‹ › 左右切換照片
+   ‧ 搭配 main.js 第 14 段 v9：面板一次只渲染一張圖
+   ‧ 關鍵＝固定圖片高度（height:74vh），寬度隨比例自動：直式窄、橫式寬，兩者等高
+   ‧ 面板寬度隨圖自適（max-width 96vw）；過寬的橫式以 96vw 收邊、極窄螢幕才會略低於 74vh
+   ‧ 覆蓋 v14〜v16 的相關尺寸設定 */
+.staff-lb-panel { width: auto; max-width: 96vw; max-height: 94vh; }
+.staff-lb-strip { flex-direction: column; align-items: center; gap: 0; }
+.staff-lb-strip figure {
+  flex: 0 0 auto; width: auto;
+  max-width: 96vw; align-items: center;
+}
+.staff-lb-strip img {
+  height: 74vh; width: auto;
+  max-width: 96vw; max-height: none;
+  object-fit: contain;
+}
+@media (max-width: 640px){
+  .staff-lb-strip img { height: 58vh; max-width: 94vw; }
+}

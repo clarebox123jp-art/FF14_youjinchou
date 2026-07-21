@@ -2475,3 +2475,20 @@ img { -webkit-user-drag: none; user-select: none; }
   .member h3 { font-size: 1.5rem; margin: 4px 0 6px; }
   .member p  { font-size: 0.82rem; line-height: 1.65; }
 }
+
+/* ═══ ★ 2026-07-19 v14 檔尾疊加：店員特寫面板「點擊放大顯示完整原圖、不裁切」 ═══
+   ‧ 原 .staff-lb-strip img ＝ aspect-ratio:3/5 + object-fit:cover → 硬塞直式框並裁掉超出部分
+   ‧ 改為依原圖比例呈現、object-fit:contain 保證不裁切；max-height 防止過高爆版
+   ‧ 單格上限放寬（完整圖常是橫幅），桌機單張看得更清楚
+   ‧ 僅影響「點擊放大」的燈箱面板；卡片上的縮圖輪播（.staff-photo）維持原樣裁切 */
+.staff-lb-strip img {
+  aspect-ratio: auto;
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  object-position: center;
+}
+.staff-lb-strip figure { max-width: 460px; }
+@media (max-width: 640px){
+  .staff-lb-strip img { max-height: 62vh; }
+}

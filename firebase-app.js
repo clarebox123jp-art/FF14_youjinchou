@@ -3014,6 +3014,16 @@ loadRooms();
     if (new Date(dv + "T00:00:00") < min) return "依本店規定，最晚需於消費日 3 天前預訂——請選擇 3 天後（含）的日期。";
     if (!document.querySelector('input[name="custSession"]:checked')) return "請先勾選來訪場次（早場／午場／晚場／午夜場）。";
     if (!document.getElementById("custTime")?.value.trim()) return "請填寫詳細入席時間（例：21:30）。";
+    /* ★ 2026-07-19：聯絡方式（可複選，至少擇一；勾了就要填內容） */
+    {
+      const picked = Array.from(document.querySelectorAll(".custContact:checked"));
+      if (!picked.length) return "請勾選至少一種「聯絡方式」（遊戲中密語／DC 私訊／其他方式）。";
+      const need = { "遊戲中密語": ["ctcGame", "通常遊玩時段"], "DC私訊": ["ctcDc", "Discord ID"], "其他方式": ["ctcOther", "其他聯絡方式"] };
+      for (const p of picked) {
+        const n = need[p.value];
+        if (n && !document.getElementById(n[0])?.value.trim()) return `已勾選「${p.value}」，請填寫${n[1]}。`;
+      }
+    }
     return null;
   }
 
@@ -3309,6 +3319,20 @@ loadRooms();
     if (hasCo && hasCo.checked) coRows().filter((r) => r.server && r.id)
       .forEach((r, k) => lines.push(`同行${k + 1}：${r.server}｜${r.id}（${r.sex}）`));
     lines.push("同行人數：" + guests + " 位（含本人；所有點餐與指名合併同一張帳單）");
+    /* ★ 2026-07-19 新增鉤子行：聯絡方式（可複選，以「、」串接；括號內為顧客填寫內容）
+       ⚠ 新增行，未更動既有「消費日期：/場次：/顧客：/同行人數：/――― 料理 ―――」等既有解析鉤子 */
+    {
+      const ctc = Array.from(document.querySelectorAll(".custContact:checked")).map((b) => {
+        const v = b.value;
+        const val = v === "遊戲中密語" ? document.getElementById("ctcGame")?.value.trim()
+                  : v === "DC私訊"    ? document.getElementById("ctcDc")?.value.trim()
+                  : document.getElementById("ctcOther")?.value.trim();
+        return v === "遊戲中密語" ? `遊戲中密語（遊玩時段：${val || "未填"}）`
+             : v === "DC私訊"    ? `DC私訊（${val || "未填"}）`
+             : `其他方式（${val || "未填"}）`;
+      });
+      lines.push("聯絡方式：" + (ctc.length ? ctc.join("、") : "（未填）"));
+    }
     lines.push("――― 料理 ―――");
     dishes.forEach((v, n) => lines.push(`　${n} × ${v.qty}${v.price ? "　" + fmt(v.qty * v.price) : "（未定價）"}`));
     lines.push("　料理小計：" + fmt(c.dishTotal) + (FEE.min ? `（低消 ${fmt(FEE.min)} ✔）` : ""));
@@ -3632,6 +3656,7 @@ loadRooms();
       `日期：${g(/消費日期：([^\n]+)/)}　${g(/場次：([^\n]+)/)}`,
       `入席：${g(/期望入席：([^\n]+)/) || "未填"}｜時長：${dur}`,
       `顧客：${server}｜${cid}（共 ${guestN} 位${sexList.length ? "；性別：" + sexList.join("、") : ""}）`,  /* ★ 2026-07-15：補性別彙整 */
+      `聯絡方式：${g(/聯絡方式：([^\n]+)/) || "未填"}`,   /* ★ 2026-07-19：方便幹部聯繫顧客 */
       "指名：" + (isNamed ? withRoles : "隨緣（不指名）"),
       "包廂：" + g(/――― 包廂 ―――\n　?([^\n]+)/),
       "餐點：\n" + dishesBlock,
@@ -4054,4 +4079,29 @@ loadRooms();
       });
     } catch (e) { console.warn("借用店員照片失敗（維持佔位圖）：", e); }
   })();
+})();
+
+/* ============================================================
+   21) ★ 2026-07-19 新增：顧客資訊「聯絡方式」（可複選）
+   - 對應 shop.html #custContactField：A 遊戲中密語（填遊玩時段）／
+     B DC 私訊（填 DC ID）／C 其他方式（自行輸入）
+   - 本段只負責「勾選 → 展開／收合對應輸入欄」的連動與清空；
+     必填驗證在 validateCustomer()、寫入明細在「聯絡方式：」一行（皆於第 18 段）
+   - 只在有 #custContactField 的頁面（shop.html）作用
+   ============================================================ */
+(function custContactToggle() {
+  const wrap = document.getElementById("custContactField");
+  if (!wrap) return;
+  const boxes = Array.from(wrap.querySelectorAll(".custContact"));
+  const rows  = Array.from(wrap.querySelectorAll(".cust-contact-row"));
+  function sync() {
+    rows.forEach((row) => {
+      const want = row.getAttribute("data-for");
+      const on = boxes.some((b) => b.checked && b.value === want);
+      row.style.display = on ? "" : "none";
+      if (!on) row.querySelectorAll("input").forEach((i) => { i.value = ""; });   // 取消勾選即清空，避免殘值送出
+    });
+  }
+  boxes.forEach((b) => b.addEventListener("change", sync));
+  sync();
 })();

@@ -289,6 +289,24 @@
             <label class="order-chip sex-chip"><input type="radio" name="custSex" value="保密" checked />保密</label>
           </div>
         </div>
+        <!-- ★ 2026-07-19 新增：聯絡方式（可複選；勾選後才顯示對應輸入欄，JS 連動於 firebase-app.js 第 21 段） -->
+        <div class="order-field" id="custContactField">
+          <span class="order-label">聯絡方式（可複選）<span class="req-mark">※必填（至少擇一）</span></span>
+          <div class="order-choice-wrap">
+            <label class="order-chip"><input type="checkbox" class="custContact" value="遊戲中密語" />A. 遊戲中密語</label>
+            <label class="order-chip"><input type="checkbox" class="custContact" value="DC私訊" />B. DC 私訊</label>
+            <label class="order-chip"><input type="checkbox" class="custContact" value="其他方式" />C. 其他方式</label>
+          </div>
+          <div class="cust-row cust-contact-row" data-for="遊戲中密語" style="display:none">
+            <input type="text" id="ctcGame" maxlength="40" placeholder="通常遊玩時段（例：平日 21:00-24:00／假日午後）" />
+          </div>
+          <div class="cust-row cust-contact-row" data-for="DC私訊" style="display:none">
+            <input type="text" id="ctcDc" maxlength="40" placeholder="Discord ID（例：ke7235）" />
+          </div>
+          <div class="cust-row cust-contact-row" data-for="其他方式" style="display:none">
+            <input type="text" id="ctcOther" maxlength="60" placeholder="其他聯絡方式（請自行填寫）" />
+          </div>
+        </div>
         <label class="order-consent" style="margin-top:4px">
           <input type="checkbox" id="custHasCo" /> 有同行顧客（最多 3 位；勾選後，每一位都需填妥伺服器與 ID 才算完整）
         </label>

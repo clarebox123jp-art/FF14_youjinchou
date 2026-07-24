@@ -259,7 +259,8 @@ function buildAdminBar(email) {
     ${document.getElementById("orderSection") ? '<button type="button" id="abFees" class="admin-btn">💰 價目設定</button><button type="button" id="abOrderCfg" class="admin-btn">🛎 送單/通知設定</button><button type="button" id="abStaffSync" class="admin-btn">⟳ 更新店員排班表</button>' : ""}
     ${document.getElementById("lyricsTrack") ? '<button type="button" id="abLyrics" class="admin-btn">🎼 歌詞設定</button>' : ""}
     ${document.getElementById("bookingBtn") ? '<button type="button" id="abBooking" class="admin-btn">🏮 預約開關</button>' : ""}
-    ${document.querySelector(".rank-table") ? '<button type="button" id="abRanks" class="admin-btn">⤓ 匯入職掌表</button>' : ""}
+    ${document.getElementById("officerGrid") ? '<button type="button" id="abOfficerAdd" class="admin-btn primary">＋ 新增幹部</button>' : ""}
+    ${document.querySelector(".rank-table") ? '<button type="button" id="abRankEdit" class="admin-btn primary">✎ 編輯職掌表</button><button type="button" id="abRanks" class="admin-btn">⤓ 匯入職掌表</button>' : ""}
     ${document.getElementById("menuList") ? '<button type="button" id="abSheet" class="admin-btn">📊 排班表</button>' : ""}
     <button type="button" id="abBg" class="admin-btn">🖼 背景設定</button>
     <button type="button" id="abFonts" class="admin-btn">🖋 字型庫</button>
@@ -318,6 +319,11 @@ function buildAdminBar(email) {
   /* ★ 2026-07-16：匯入職掌表（實作在第 19 段，經 window.YJC_RANKS 呼叫） */
   const rkBtn = document.getElementById("abRanks");
   if (rkBtn) rkBtn.onclick = () => window.YJC_RANKS?.importRanks?.();
+  /* ★ 2026-07-19：幹部卡新增／職掌表線上編輯（實作在第 22 段） */
+  const ofBtn = document.getElementById("abOfficerAdd");
+  if (ofBtn) ofBtn.onclick = () => window.YJC_OFFICERS?.addOfficer?.();
+  const rkEdit = document.getElementById("abRankEdit");
+  if (rkEdit) rkEdit.onclick = () => window.YJC_OFFICERS?.openRankEditor?.();
   const shBtn = document.getElementById("abSheet");   /* ★ 2026-07-13：排班表僅商店頁有，需防呆 */
   if (shBtn) shBtn.onclick = openSheetLink;
   document.getElementById("abBg").onclick = openBgConfig;
@@ -357,6 +363,7 @@ onAuthStateChanged(auth, (user) => {
   renderStaff();                     // ★ 2026-07-11：店員名簿同樣依身分重畫（第 13 段）
   renderMenu();                      // ★ 2026-07-12：餐單同樣依身分重畫（第 16 段）
   renderRooms();                     // ★ 2026-07-12：包廂同樣依身分重畫（第 17 段）
+  window.YJC_OFFICERS?.rerender?.(); // ★ 2026-07-19：幹部卡依身分重畫（第 22 段，顯示／隱藏 ✎✕）
 });
 
 /* ============================================================
@@ -3991,16 +3998,23 @@ loadRooms();
     for (const r of rows) {
       let el = byName.get(r.name);
       if (!el) {
-        /* CSV 出現 HTML 沒有的新階級 → 追加一列（墨灰籤；想指定色籤日後可在 HTML 補列） */
+        /* CSV 出現 HTML 沒有的新階級 → 追加一列
+           ★ 2026-07-19：色籤改吃 r.cls（線上編輯可指定）；未指定仍為墨灰 rk-newbie
+              舊行備查：el.innerHTML = `<div class="rank-name rk-newbie">…` */
         el = document.createElement("div");
         el.className = "rank-row";
-        el.innerHTML = `<div class="rank-name rk-newbie"><span></span></div><div class="rank-duty"></div>`;
+        el.innerHTML = `<div class="rank-name ${r.cls || "rk-newbie"}"><span></span></div><div class="rank-duty"></div>`;
         el.querySelector(".rank-name span").textContent = r.name;
         rankTable.appendChild(el);
         byName.set(r.name, el);
       }
       seen.add(r.name);
       el.style.display = "";
+      /* ★ 2026-07-19：既有列也能換色籤（有指定才動，沒指定維持 HTML 原色） */
+      if (r.cls) {
+        const nameEl = el.querySelector(".rank-name");
+        if (nameEl) nameEl.className = "rank-name " + r.cls;
+      }
       const duty = el.querySelector(".rank-duty");
       if (duty) {
         const vac = duty.querySelector(".rank-vacancy");   // 先把職缺圓章抱出來
@@ -4046,7 +4060,7 @@ loadRooms();
     } catch (e) { alert("❌ 匯入失敗：" + (e.message || e)); }
   }
 
-  window.YJC_RANKS = { importRanks };
+  window.YJC_RANKS = { importRanks, applyRanks };   /* ★ 2026-07-19：applyRanks 開放給第 22 段線上編輯後即時重畫 */
 })();
 
 /* ============================================================
@@ -4104,4 +4118,275 @@ loadRooms();
   }
   boxes.forEach((b) => b.addEventListener("change", sync));
   sync();
+})();
+
+/* ============================================================
+   22) ★ 2026-07-19：幹部頁線上管理（members.html）
+   ------------------------------------------------------------
+   A. 幹部卡（#officerGrid）：管理列「＋ 新增幹部」、每張卡 ✎編輯／✕刪除、排序
+      - 資料存 siteContent/config-officers：{ rows:[{name,role,desc,photo,order}], updated }
+      - 首次使用會自動「收編」目前畫面上的幹部卡（含老師線上點字改過的文字），
+        寫進資料庫後才切換成動態渲染 → 不會弄丟既有內容
+      - photo 可為既有路徑（images/officer-*.webp）或線上上傳（壓縮後存 base64）；
+        留空＝顯示「印」佔位章
+   B. 職掌表（.rank-table）：管理列「✎ 編輯職掌表」
+      - 直接增列／改字／換色籤／排序／刪列，存回 siteContent/config-ranks（與 ⤓ CSV 匯入同一份）
+      - 拓界司底下的職缺圓章 .rank-vacancy 由第 19 段原樣保留，不受編輯影響
+   ⚠ 幹部卡切換成動態渲染後，該區的「線上點字」紀錄會變成孤兒 → 請按 🧹 清失效編輯
+   ============================================================ */
+(function officerAdminModule() {
+  const grid = document.getElementById("officerGrid");
+  const rankTable = document.querySelector(".rank-table");
+  if (!grid && !rankTable) return;   // 只在幹部成員頁執行
+
+  const RK_CLASSES = [
+    ["rk-master", "帳簿主（金）"], ["rk-vice", "侍帳（朱）"], ["rk-photo", "留影司"],
+    ["rk-mirror", "鏡花司"], ["rk-pioneer", "拓界司"], ["rk-yuen", "友緣人"],
+    ["rk-oiran", "花魁"], ["rk-newbie", "新人契（墨灰）"],
+  ];
+
+  /* ---------- A. 幹部卡 ---------- */
+  let officerRows = null;   // null＝尚未入庫（顯示 HTML 內建版）
+
+  /* 從目前畫面收編幹部卡（含線上點字後的實際文字） */
+  function harvestOfficers() {
+    return Array.from(grid.querySelectorAll("article.member")).map((card, i) => {
+      const img = card.querySelector("img");
+      return {
+        name:  card.querySelector("h3")?.textContent.trim() || "",
+        role:  card.querySelector(".role")?.textContent.trim() || "",
+        desc:  card.querySelector(".info > p:not(.role)")?.textContent.trim() || "",
+        photo: img ? (img.getAttribute("src") || "") : "",
+        order: i + 1,
+      };
+    }).filter((r) => r.name);
+  }
+
+  function renderOfficers(rows) {
+    grid.innerHTML = "";
+    rows.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).forEach((r) => {
+      const card = document.createElement("article");
+      card.className = "member";
+      card.innerHTML =
+        (r.photo
+          ? `<img src="${esc(r.photo)}" alt="${esc(r.role || "幹部")} ${esc(r.name)}" loading="lazy" />`
+          : `<div class="noimg" aria-hidden="true"><span>印</span></div>`) +
+        `<div class="info">
+           <p class="role">${esc(r.role || "")}</p>
+           <h3>${esc(r.name)}</h3>
+           <p>${esc(r.desc || "")}</p>
+         </div>`;
+      if (isAdmin) {
+        const bar = document.createElement("div");
+        bar.className = "admin-actions";
+        bar.innerHTML = `<button type="button" data-act="edit">✎ 編輯</button>
+                         <button type="button" data-act="del">✕ 刪除</button>`;
+        bar.querySelector('[data-act="edit"]').onclick = () => openOfficerForm(r);
+        bar.querySelector('[data-act="del"]').onclick = async () => {
+          if (!confirm(`確定要刪除幹部卡「${r.name}」嗎？（無法復原）`)) return;
+          officerRows = officerRows.filter((x) => x !== r);
+          await saveOfficers();
+        };
+        card.appendChild(bar);
+      }
+      grid.appendChild(card);
+    });
+  }
+
+  async function saveOfficers() {
+    officerRows.forEach((r, i) => { if (!Number.isFinite(r.order)) r.order = i + 1; });
+    await setDoc(doc(db, "siteContent", "config-officers"),
+      { rows: officerRows, updated: Date.now() }, { merge: true });
+    renderOfficers(officerRows);
+  }
+
+  /* 尚未入庫時 → 先把畫面現況收編（保住老師改過的文字） */
+  async function ensureSeeded() {
+    if (officerRows) return true;
+    const harvested = harvestOfficers();
+    if (!confirm(`第一次使用線上管理，會先把目前頁面上的 ${harvested.length} 張幹部卡寫進資料庫（含您線上改過的文字），之後才能逐張編輯。\n\n要繼續嗎？`)) return false;
+    officerRows = harvested;
+    await saveOfficers();
+    alert("✔ 已收編現有幹部卡，接下來可以逐張 ✎編輯／✕刪除，或按「＋ 新增幹部」。\n（請記得按 🧹 清失效編輯，清掉舊的點字紀錄）");
+    return true;
+  }
+
+  function closeOfficerForm() { document.getElementById("officerModal")?.remove(); }
+
+  function openOfficerForm(r = null) {
+    closeOfficerForm();
+    const isNew = !r;
+    const wrap = document.createElement("div");
+    wrap.className = "admin-modal";
+    wrap.id = "officerModal";
+    wrap.innerHTML = `
+      <div class="admin-modal-card">
+        <h3>${isNew ? "新增幹部" : "編輯幹部"}</h3>
+        <label>角色名稱<input id="ofName" value="${esc(r?.name || "")}" /></label>
+        <label>職稱（例：拓界司 · Raid Leader）<input id="ofRole" value="${esc(r?.role || "")}" /></label>
+        <label>介紹／可密時段<textarea id="ofDesc" rows="3">${esc(r?.desc || "")}</textarea></label>
+        <label>照片路徑（例：images/officer-yumu.webp；留空＝顯示「印」佔位）
+          <input id="ofPhoto" value="${esc(r?.photo || "")}" /></label>
+        <label>或直接上傳照片（會覆蓋上面的路徑）<input id="ofFile" type="file" accept="image/*" /></label>
+        <label>排序（數字小的排前面）<input id="ofOrder" type="number" value="${Number.isFinite(r?.order) ? r.order : ((officerRows?.length || 0) + 1)}" /></label>
+        <p class="admin-hint" id="ofMsg"></p>
+        <div class="admin-modal-btns">
+          <button type="button" id="ofSave" class="admin-btn primary">儲存</button>
+          <button type="button" id="ofCancel" class="admin-btn">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) closeOfficerForm(); });
+    document.getElementById("ofCancel").onclick = closeOfficerForm;
+    document.getElementById("ofSave").onclick = async () => {
+      const msg = document.getElementById("ofMsg");
+      const btn = document.getElementById("ofSave");
+      try {
+        btn.disabled = true; msg.textContent = "儲存中…";
+        const name = document.getElementById("ofName").value.trim();
+        if (!name) throw new Error("「角色名稱」不能空白。");
+        let photo = document.getElementById("ofPhoto").value.trim();
+        const file = document.getElementById("ofFile").files[0];
+        if (file) photo = await compressImage(file);
+        const data = {
+          name,
+          role:  document.getElementById("ofRole").value.trim(),
+          desc:  document.getElementById("ofDesc").value.trim(),
+          photo,
+          order: Number(document.getElementById("ofOrder").value) || 0,
+        };
+        if (isNew) officerRows.push(data);
+        else Object.assign(r, data);
+        await saveOfficers();
+        closeOfficerForm();
+      } catch (e) {
+        btn.disabled = false;
+        msg.textContent = "❌ " + (e.message || "儲存失敗，請再試一次。");
+      }
+    };
+  }
+
+  async function addOfficer() {
+    if (!isAdmin) { alert("請先以管理員登入。"); return; }
+    if (!(await ensureSeeded())) return;
+    openOfficerForm(null);
+  }
+
+  /* 載入：有資料才切換成動態渲染（沒有就維持 HTML 內建版） */
+  if (grid) (async () => {
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-officers"));
+      const d = snap.exists() ? snap.data() : null;
+      if (d && Array.isArray(d.rows) && d.rows.length) { officerRows = d.rows; renderOfficers(officerRows); }
+    } catch (e) { console.warn("幹部卡讀取失敗（顯示內建版）：", e); }
+  })();
+
+  /* ---------- B. 職掌表編輯器 ---------- */
+  function harvestRanks() {
+    return Array.from(rankTable.querySelectorAll(".rank-row"))
+      .filter((el) => el.style.display !== "none")
+      .map((el) => {
+        const nameEl = el.querySelector(".rank-name");
+        const duty = el.querySelector(".rank-duty");
+        const clone = duty ? duty.cloneNode(true) : null;
+        clone?.querySelector(".rank-vacancy")?.remove();   // 職缺圓章不算職掌文字
+        return {
+          name: nameEl?.querySelector("span")?.textContent.trim() || "",
+          duty: clone ? clone.textContent.trim().replace(/\s+/g, " ") : "",
+          cls: Array.from(nameEl?.classList || []).find((c) => c.startsWith("rk-")) || "rk-newbie",
+        };
+      }).filter((r) => r.name);
+  }
+
+  function closeRankEditor() { document.getElementById("rankModal")?.remove(); }
+
+  async function openRankEditor() {
+    if (!isAdmin) { alert("請先以管理員登入。"); return; }
+    let rows;
+    try {
+      const snap = await getDoc(doc(db, "siteContent", "config-ranks"));
+      const d = snap.exists() ? snap.data() : null;
+      rows = (d && Array.isArray(d.rows) && d.rows.length) ? d.rows.map((r) => ({ ...r })) : harvestRanks();
+    } catch (_) { rows = harvestRanks(); }
+
+    closeRankEditor();
+    const wrap = document.createElement("div");
+    wrap.className = "admin-modal";
+    wrap.id = "rankModal";
+    wrap.innerHTML = `
+      <div class="admin-modal-card rank-editor-card">
+        <h3>編輯公會階級・職掌</h3>
+        <p class="admin-hint">由上而下即為顯示順序；「✕」刪除該階級。拓界司底下的職缺圓章不受影響。</p>
+        <div id="rkRows"></div>
+        <div class="admin-modal-btns" style="justify-content:flex-start">
+          <button type="button" id="rkAdd" class="admin-btn">＋ 新增一階</button>
+        </div>
+        <p class="admin-hint" id="rkMsg"></p>
+        <div class="admin-modal-btns">
+          <button type="button" id="rkSave" class="admin-btn primary">儲存</button>
+          <button type="button" id="rkCancel" class="admin-btn">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) closeRankEditor(); });
+
+    const rowsBox = document.getElementById("rkRows");
+    function paint() {
+      rowsBox.innerHTML = "";
+      rows.forEach((r, i) => {
+        const row = document.createElement("div");
+        row.className = "rk-edit-row";
+        row.innerHTML = `
+          <div class="rk-edit-head">
+            <input class="rkName" value="${esc(r.name || "")}" placeholder="階級名稱" />
+            <select class="rkCls">${RK_CLASSES.map(([v, t]) =>
+              `<option value="${v}"${(r.cls || "rk-newbie") === v ? " selected" : ""}>${t}</option>`).join("")}</select>
+            <button type="button" class="rkUp admin-btn" title="上移">▲</button>
+            <button type="button" class="rkDn admin-btn" title="下移">▼</button>
+            <button type="button" class="rkDel admin-btn" title="刪除">✕</button>
+          </div>
+          <textarea class="rkDuty" rows="2" placeholder="職務說明">${esc(r.duty || "")}</textarea>`;
+        const sync = () => {
+          r.name = row.querySelector(".rkName").value;
+          r.duty = row.querySelector(".rkDuty").value;
+          r.cls  = row.querySelector(".rkCls").value;
+        };
+        row.querySelector(".rkName").oninput = sync;
+        row.querySelector(".rkDuty").oninput = sync;
+        row.querySelector(".rkCls").onchange = sync;
+        row.querySelector(".rkDel").onclick = () => { rows.splice(i, 1); paint(); };
+        row.querySelector(".rkUp").onclick = () => { if (i > 0) { [rows[i - 1], rows[i]] = [rows[i], rows[i - 1]]; paint(); } };
+        row.querySelector(".rkDn").onclick = () => { if (i < rows.length - 1) { [rows[i + 1], rows[i]] = [rows[i], rows[i + 1]]; paint(); } };
+        rowsBox.appendChild(row);
+      });
+    }
+    paint();
+    document.getElementById("rkAdd").onclick = () => { rows.push({ name: "", duty: "", cls: "rk-newbie" }); paint(); };
+    document.getElementById("rkCancel").onclick = closeRankEditor;
+    document.getElementById("rkSave").onclick = async () => {
+      const msg = document.getElementById("rkMsg");
+      const btn = document.getElementById("rkSave");
+      const clean = rows.filter((r) => (r.name || "").trim()).map((r) => ({
+        name: r.name.trim(), duty: (r.duty || "").trim(), cls: r.cls || "rk-newbie",
+      }));
+      if (!clean.length) { msg.textContent = "❌ 至少要保留一個階級。"; return; }
+      try {
+        btn.disabled = true; msg.textContent = "儲存中…";
+        await setDoc(doc(db, "siteContent", "config-ranks"),
+          { rows: clean, updated: Date.now() }, { merge: true });
+        window.YJC_RANKS?.applyRanks?.(clean);
+        closeRankEditor();
+        alert("✅ 職掌表已更新，共 " + clean.length + " 個階級。所有訪客重新整理後即可看到。");
+      } catch (e) {
+        btn.disabled = false;
+        msg.textContent = "❌ 儲存失敗：" + (e.message || e);
+      }
+    };
+  }
+
+  window.YJC_OFFICERS = {
+    addOfficer, openRankEditor,
+    /* 登入／登出後重畫（只在已入庫時才需要；未入庫維持 HTML 內建版） */
+    rerender() { if (grid && officerRows) renderOfficers(officerRows); },
+  };
 })();

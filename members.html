@@ -51,8 +51,13 @@
       <!-- ============================================================
            想加成員就複製一整個 <article class="member">...</article>
            換照片：把角色截圖放進 images/、改 <img src="...">
+           ★ 2026-07-19：本區改為「可由管理列線上增修」的動態容器
+             ‧ 加 id="officerGrid" 供 firebase-app.js 第 22 段接管
+             ‧ 依鐵則移除 reveal（動態容器不掛 reveal，否則手機易留白）
+             ‧ 未在管理列存過幹部資料前，仍顯示下面這份 HTML 內建名單
+             （原始碼：<div class="grid-members reveal">）
            ============================================================ -->
-      <div class="grid-members reveal">
+      <div class="grid-members" id="officerGrid">
 
         <article class="member">
           <img src="images/officer-clair.webp" alt="會長 小克瑞爾" loading="lazy" /><!-- 舊佔位圖：images/member-1.jpg -->

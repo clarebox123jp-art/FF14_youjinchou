@@ -2541,3 +2541,23 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px){
   .staff-lb-strip img { height: 58vh; max-width: 94vw; }
 }
+
+/* ═══ ★ 2026-07-19 v18 檔尾疊加：職掌表線上編輯器（firebase-app.js 第 22 段）═══
+   ‧ 幹部卡的 ✎✕ 沿用既有 .member .admin-actions（第 660 行），此處不重複定義
+   ‧ 僅補「編輯職掌表」彈窗內的每列版面：名稱＋色籤下拉＋上移/下移/刪除，下方職務說明 */
+.rank-editor-card { max-width: 720px; }
+.rank-editor-card #rkRows { max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+.rk-edit-row {
+  border: 1px solid rgba(44, 38, 32, .18);
+  border-radius: 10px;
+  padding: 10px; margin-bottom: 10px;
+  background: rgba(255, 255, 255, .45);
+}
+.rk-edit-head { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.rk-edit-head .rkName { flex: 1 1 160px; min-width: 120px; }
+.rk-edit-head .rkCls { flex: 0 1 150px; }
+.rk-edit-head .admin-btn { padding: 4px 10px; line-height: 1.2; }
+.rk-edit-row .rkDuty { width: 100%; }
+@media (max-width: 640px){
+  .rk-edit-head .rkName, .rk-edit-head .rkCls { flex: 1 1 100%; }
+}

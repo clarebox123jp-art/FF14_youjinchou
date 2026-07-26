@@ -2614,3 +2614,37 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (min-width: 821px) {
   .corner-fx { top: 150px; }
 }
+
+/* ═══ ★ 2026-07-19 v20 檔尾疊加：右上導覽改「橫式單字印章」（覆蓋 v19 直式標籤）═══
+   ‧ 反映老師回饋：直式標籤讓頂端太佔空間 → 改成一字一枚的橫式和紙鈐印，導覽列變回矮
+   ‧ 單字：門(首頁)／緣(公會介紹)／司(幹部成員)／影(相簿)／茶(RP商店)
+     全名仍保留在 HTML，桌機用 data-short 顯示單字（font-size:0 藏全名，::after 顯示印字）；
+     手機（≤820px）維持漢堡選單、顯示完整全名，不受影響
+   ‧ 當前頁 .active＝朱紅印、字略大；導覽列變矮後右上角 GIF 回到 top:72px（覆蓋 v19 補的 150px） */
+@media (min-width: 821px) {
+  .nav { align-items: center; padding-top: 12px; padding-bottom: 12px; }
+  .nav .brand { align-items: center; }
+  .nav-links { gap: 8px; align-items: center; align-self: auto; }
+  .nav-links a {
+    writing-mode: horizontal-tb; text-orientation: mixed; letter-spacing: 0;
+    width: 44px; height: 44px; min-height: 0; padding: 0;
+    font-size: 0;                                  /* 藏全名文字，改用 ::after 顯示單字印 */
+    border: 1px solid rgba(160,120,60,0.42);
+    border-radius: 9px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+  }
+  .nav-links a::after {
+    content: attr(data-short);
+    font-family: var(--font-display);
+    font-size: 1.35rem; line-height: 1; letter-spacing: 0;
+  }
+  .nav-links a:hover { min-height: 0; height: 47px; background: linear-gradient(180deg, #f7efe0, #ecd9b6); }
+  .nav-links a.active {
+    min-height: 0; width: 48px; height: 48px;      /* 當前頁：印章略大＋朱紅底米白字 */
+    background: linear-gradient(180deg, var(--shu), #a5382a);
+    color: #fdf6e9; border-color: rgba(201,164,92,0.9);
+    box-shadow: 0 5px 12px rgba(168,58,44,0.4);
+  }
+  .nav-links a.active::after { font-size: 1.5rem; }
+  .corner-fx { top: 72px; }                        /* 導覽列變矮，GIF 回到列下方（覆蓋 v19 補的 150px） */
+}

@@ -2561,3 +2561,56 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-width: 640px){
   .rk-edit-head .rkName, .rk-edit-head .rkCls { flex: 1 1 100%; }
 }
+
+/* ═══ ★ 2026-07-19 v19 檔尾疊加：日式直式標籤導覽（全頁）＋當前頁變高變色＋回頂端按鈕 ═══
+   ‧ 直式標籤只在桌機（≥821px）生效；手機（≤820px）維持原本漢堡下拉選單、不受影響
+   ‧ 每個分頁＝一片從導覽列垂下的短冊；當前頁 .active＝更長＋朱紅底米白字
+   ‧ 回到首頁頂端：每頁 <footer> 前的 .back-home，連 index.html#top（首頁 <nav id="top">） */
+@media (min-width: 821px) {
+  .nav { align-items: stretch; padding-top: 0; padding-bottom: 0; }
+  .nav .brand { align-items: center; }               /* 品牌標仍垂直置中 */
+  .nav-links { gap: 10px; align-items: flex-start; align-self: flex-start; }
+  .nav-links a {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 0.12em;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    width: 42px; min-height: 104px;
+    padding: 12px 7px 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, rgba(245,237,223,0.97), rgba(235,223,201,0.97));
+    color: var(--ink);
+    border: 1px solid rgba(160,120,60,0.35); border-top: none;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.14);
+    transition: min-height .25s ease, background .25s, color .25s, box-shadow .25s;
+  }
+  .nav-links a:hover { min-height: 114px; background: linear-gradient(180deg, #f7efe0, #ecd9b6); }
+  .nav-links a.active {                                /* 當前頁：更長＋朱紅底米白字 */
+    min-height: 124px;
+    background: linear-gradient(180deg, var(--shu), #a5382a);
+    color: #fdf6e9; border-color: rgba(201,164,92,0.9);
+    box-shadow: 0 7px 16px rgba(168,58,44,0.42);
+  }
+}
+
+/* 回到首頁頂端按鈕（每頁內容最底部、頁尾之上；全裝置皆顯示） */
+.back-home-wrap { text-align: center; padding: 8px 0 4px; }
+.back-home {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-display); font-size: 0.94rem; letter-spacing: 0.06em;
+  color: var(--shu);
+  padding: 10px 26px; border-radius: 999px;
+  border: 1px solid rgba(168,58,44,0.5);
+  background: rgba(245,237,223,0.6);
+  transition: background .25s, color .25s, box-shadow .25s, transform .1s;
+}
+.back-home:hover { background: var(--shu); color: #fdf6e9; box-shadow: 0 6px 16px rgba(168,58,44,0.35); }
+.back-home:active { transform: translateY(1px); }
+
+/* v19 補：直式標籤使導覽列變高（約 124px），桌機時把內頁右上角 GIF（.corner-fx）下移到
+   導覽列下方，避免與標籤重疊；手機為漢堡選單、導覽列矮，維持原本 top 不受影響 */
+@media (min-width: 821px) {
+  .corner-fx { top: 150px; }
+}

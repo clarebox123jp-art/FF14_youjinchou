@@ -422,8 +422,11 @@ function collectImgs() {
   /* ★ 2026-07-12：再加入 #menuList——餐點照片同理由餐單「✎編輯」表單管理，
      避免徽章的換圖/隱藏紀錄與 Firestore 餐單資料互相打架。
      舊值備查："#partnerList,#staffList,.admin-modal" */
+  /* ★ 2026-07-19：再加入 #officerGrid——幹部卡改為動態卡片後，照片由「✎編輯」表單管理，
+     不吃通用的 隱藏/換圖/⊞尺寸 徽章（否則會蓋住幹部卡自己的 ✎✕ 動作列）。
+     舊值備查："#partnerList,#staffList,#menuList,.admin-modal" */
   return Array.from(document.querySelectorAll(".wrap img, .hero-inner img"))
-    .filter((im) => !im.closest("#partnerList,#staffList,#menuList,.admin-modal"));
+    .filter((im) => !im.closest("#partnerList,#staffList,#menuList,#officerGrid,.admin-modal"));
 }
 const imgKeyOf = (im) => im.dataset.imgKey || (im.dataset.imgKey = "i" + h32(im.getAttribute("src") || ""));
 

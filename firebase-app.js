@@ -2534,8 +2534,12 @@ const DEFAULT_ROOMS = [
   { name: "中央舞台區",       cap: 6,   /* ★ 2026-07-13 依老師線上調整 4→6 */ desc: "已不作包廂使用——紅幕與薔薇簇擁的中央舞台，開放公會成員掛網休憩；未指定包廂的客人也可在此與店員互動、觀賞台上演出。座位有限、先到先得。", price: "免費", available: true, badge: "開放區域", photo: "images/rooms/stage-vip.webp",      order: 0 },   /* ★ 2026-07-13：排序改 0＝清單第一（原 5） */
   { name: "夢幻花叢",         cap: 1, desc: "白花如雪、彩鯉悠游，吊椅輕晃的一人份夢境。",                   price: "", available: true, badge: "", photo: "images/rooms/dream-garden.webp",   order: 6 },
   { name: "金碧輝煌主沙發",   cap: 1, desc: "金磚與典籍環繞的豪奢一隅，貓咪掌櫃偶爾同席。",                 price: "", available: true, badge: "", photo: "images/rooms/golden-lounge.webp",  order: 7 },
-  { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
-  { name: "大電視沙發客廳",   cap: 1, desc: "爐火、白沙發與巨幕——窩進來看一部片的距離。",                   price: "", available: true, badge: "", photo: "images/rooms/tv-lounge.webp",      order: 9 },
+  /* ★ 2026-08-04 包廂改裝：移除「祕密的閱讀小空間」；「大電視沙發客廳」換新裝、改名「書瀑觀影廳」＋新照片；
+     新增「畫境包廂」。舊兩列備查：
+     { name: "祕密的閱讀小空間", cap: 1, desc: "書塔林立、光束斜落——只有你與故事知道的角落。",                 price: "", available: true, badge: "", photo: "images/rooms/secret-reading.webp", order: 8 },
+     { name: "大電視沙發客廳",   cap: 1, desc: "爐火、白沙發與巨幕——窩進來看一部片的距離。",                   price: "", available: true, badge: "", photo: "images/rooms/tv-lounge.webp",      order: 9 }, */
+  { name: "畫境包廂",         cap: 1, desc: "藤蔓深處懸一方畫框，人入框中、便成畫中人——顏料與書香，為你留住一幀幻境。", price: "", available: true, badge: "", photo: "images/rooms/frame-garden.webp",  order: 8 },
+  { name: "書瀑觀影廳",       cap: 2, desc: "書牆與水瀑相映，巨幕光影流轉——枕著雨聲與故事，躺看一部片的悠長時光。",   price: "", available: true, badge: "", photo: "images/rooms/cinema-lounge.webp", order: 9 },
   { name: "海景大浴室",       cap: 2, desc: "落日沉入海平線，湯煙裊裊的私人觀景湯屋。",                     price: "", available: true, badge: "", photo: "images/rooms/ocean-bath.webp",     order: 10 },
 ];
 

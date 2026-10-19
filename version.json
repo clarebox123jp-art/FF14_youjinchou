@@ -1,0 +1,22 @@
+{
+  "_comment": "LXPSGAME 版本表（index.html 內 _LXPS_FILE_VERSIONS 的輕量副本）。★ 本檔自 v5.220.0 起一律由交付腳本從 index.html 的 _LXPS_FILE_VERSIONS「丟 node 求值」後自動產生，不可手寫、不可用 regex 掃原始文字（原始文字看得到被註解吃掉的鍵）。★ 鐵則一：鍵集合必須與 _LXPS_FILE_VERSIONS 完全相同，一個不多一個不少、版號逐一相等，否則比對永遠不相等，全校會被判定成舊版而不斷要求更新。★ 鐵則二：adv_quiz_db.js 與 student_roster.js 的值是日期格式（YYYYMMDD）不是 vX.Y.Z，撈鍵時兩種格式都要收。★ 鐵則三：本檔一律排在 index.html 之後上傳（先程式、後版本表）。",
+  "generatedFor": "v5.281.0",
+  "files": {
+    "index.html": "v5.281.0",
+    "mainstory.js": "v5.57.0",
+    "main.css": "v5.243.0",
+    "adv_quiz_db.js": "20261007",
+    "hero_db.js": "v5.277.0",
+    "student_roster.js": "20260922",
+    "avatar_db.js": "v5.25.0",
+    "admin_panel.js": "v5.281.0",
+    "world-boss.js": "v5.239.0",
+    "world-boss-ui.html": "v5.145.0",
+    "arena.js": "v5.91.0",
+    "game_cloud.js": "v5.281.0",
+    "game_battle.js": "v5.276.0",
+    "game_adv.js": "v5.281.0",
+    "constellation_db.js": "v5.277.0",
+    "game_changelog.js": "v5.281.0"
+  }
+}
